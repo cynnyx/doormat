@@ -1,0 +1,9 @@
+build/*
+!build/.keepme
+docs/*
+!docs/.keepme
+CMakeLists.txt.*
+usr/*
+user/*
+.idea/*
+*.autosave
