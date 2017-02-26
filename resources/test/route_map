@@ -1,0 +1,1 @@
+server [::1]:8080 max_fails=1  fail_timeout=300s;

@@ -1,0 +1,16 @@
+403 => /etc/doormat/pages/403.html 
+405 => /etc/doormat/pages/405.html 
+408 => /etc/doormat/pages/408.html
+500 => /etc/doormat/pages/500.html
+502 => /etc/doormat/pages/502.html
+503 => /etc/doormat/pages/503.html
+504 => /etc/doormat/pages/504.html
+routeMap: /etc/doormat/route_map2
+privilegedAddress: /etc/doormat/privileged_ip
+pageBase: /etc/doormat/pages
+errorHost: https://errors.cynny.com/
+certificate: /etc/doormat/certificates/production/wildcard.cy1.cynnt.com-bundle.pem /etc/doormat/certificates/production/wildcard.cy1.cynnt.com.key.pem /etc/doormat/certificates/production/keypass false
+certificate: /etc/doormat/certificates/production/wildcard.cy2.cynnt.com-bundle.pem /etc/doormat/certificates/production/wildcard.cy2.cynnt.com.key.pem /etc/doormat/certificates/production/keypass false
+certificate: /etc/doormat/certificates/production/wildcard.cynnt.com-bundle.pem /etc/doormat/certificates/production/wildcard.cynnt.com.key.pem /etc/doormat/certificates/production/keypass false
+certificate: /etc/doormat/certificates/production/wildcard.cynnt.video-bundle.pem /etc/doormat/certificates/production/wildcard.cynnt.video.key.pem /etc/doormat/certificates/production/keypass false
+

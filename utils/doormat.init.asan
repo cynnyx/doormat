@@ -1,0 +1,38 @@
+#! /bin/sh
+### BEGIN INIT INFO
+# Provides: doormat
+# Required-Start: $remote_fs $syslog
+# Required-Stop: $remote_fs $syslog
+# Default-Start: 2 3 4 5
+# Default-Stop: 0 1 6
+# Short-Description: Doormat
+# Description: This file starts and stops Doormat server
+#
+### END INIT INFO
+
+BASEDIR=/opt/doormat
+export LD_LIBRARY_PATH="${BASEDIR}/lib/"
+export ASAN_OPTIONS="disable_core=0:unmap_shadow_on_exit=1:abort_on_error=1:log_path=/opt/doormat/log/asan_log"
+case "$1" in
+       	status)
+       		pgrep -f "${BASEDIR}/bin/doormat">/dev/null && echo "Doormat: running" && exit 0 || exit 3
+       		;;
+       	start)
+       		shift
+       		"${BASEDIR}/bin/doormat" --config "${BASEDIR}/etc/doormat.config" --daemon $@
+       		;;
+       	stop)
+       		pkill -9 -f "${BASEDIR}/bin/doormat"
+       		;;
+       	restart)
+       		pkill -9 -f  "${BASEDIR}/bin/doormat"
+       		sleep 2
+       		shift
+       		"${BASEDIR}/bin/doormat" --config "${BASEDIR}/etc/doormat.config" --daemon $@
+       		;;
+       	*)
+       		echo "Usage: doormat {start|stop|restart}" >&2
+       		exit 3
+       	;;
+esac
+exit 0

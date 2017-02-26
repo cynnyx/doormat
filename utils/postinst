@@ -1,0 +1,4 @@
+#!/bin/sh
+
+ln -sf /opt/doormat/bin/doormat.init /etc/init.d/doormat
+update-rc.d doormat defaults

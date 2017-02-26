@@ -1,0 +1,12 @@
+#!/bin/sh
+
+BASEDIR=/opt/doormat
+HOMEFOLDER=${BASEDIR}/run
+LOGFOLDER=${BASEDIR}/log
+CACHEFOLDER=${BASEDIR}/cache
+[ -d "${BASEDIR}" ] || mkdir "${BASEDIR}"
+[ -d "${HOMEFOLDER}" ] || mkdir "${HOMEFOLDER}"
+[ -d "${LOGFOLDER}" ] || mkdir "${LOGFOLDER}"
+[ -d "${CACHEFOLDER}" ] || mkdir "${CACHEFOLDER}"
+getent passwd doormat || useradd -c "Doormat User" -r -d "${HOMEFOLDER}" -U doormat
+chown -R doormat:doormat ${BASEDIR}

@@ -1,0 +1,15 @@
+{
+  "name": "fakeserver",
+  "version": "1.0.0",
+  "description": "Fake HTTP Server to test Doormat",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Tazio Ceri <tazio.ceri@cynny.com>",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^4.13.4",
+    "serve-index": "^1.7.3"
+  }
+}
