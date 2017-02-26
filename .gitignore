@@ -1,7 +1,7 @@
 build/*
 !build/.keepme
 docs/*
-!docs/.keepme
+!docs/LICENSE
 CMakeLists.txt.*
 usr/*
 user/*

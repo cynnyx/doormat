@@ -17,6 +17,6 @@ If you want to contribute, please send patches as pull requests against the bran
 
 Code and documentation Copyright (c) 2017 Tazio Ceri, Fabrizio Lasagni, Michele Caini, Alessandro Lenzi, Paolo Monteverde.<br/>
 Code released under [the MIT license](https://github.com/tazio/doormat/blob/master/LICENSE) <br/>
-Docs released under Creative Commons
+Docs released under [Creative Commons](https://github.com/tazio/doormat/blob/master/docs/LICENSE) <br/>
 
 
