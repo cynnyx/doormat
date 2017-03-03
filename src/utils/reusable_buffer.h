@@ -69,7 +69,7 @@ public:
 	{
 		size_t bytes{0};
 		const char* upper_bound = bound?mem + N: wr;
-		if(ptr > mem && ptr <= upper_bound);
+		if(ptr > mem && ptr <= upper_bound)
 		{
 			bytes = ptr - rd;
 			rd = ptr;
