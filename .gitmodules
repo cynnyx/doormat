@@ -16,4 +16,4 @@
 
 [submodule "deps/cynnypp"]
 	path = deps/cynnypp
-	url = git@github.com:cynnyx/cynnypp.git
+	url = https://github.com/cynnyx/cynnypp.git
