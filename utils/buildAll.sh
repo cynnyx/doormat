@@ -162,7 +162,7 @@ echo "cityhash Is installed at ${CITYHASH_ROOT_DIR}"
 
 # Get SPDLOG
 SPDLOG_ROOT_DIR="${BUILD_DIR}/../deps/spdlog"
-if [ ! -e "${SPDLOG_ROOT_DIR}" ] || [ "x${FORCE}" == "xyes" ]; then
+if [ ! -e "${SPDLOG_ROOT_DIR}/include/spdlog" ] || [ "x${FORCE}" == "xyes" ]; then
 	cd "${BUILD_DIR}/../deps"||exit
 	git submodule init spdlog || exit 
 	git submodule update spdlog || exit
