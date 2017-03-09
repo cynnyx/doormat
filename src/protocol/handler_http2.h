@@ -14,9 +14,9 @@
 #include "../chain_of_responsibility/chain_of_responsibility.h"
 
 namespace nghttp2{namespace asio_http2{ namespace server{
-	struct http2_handler;
-	struct serve_mux;
-	struct request;
+	class http2_handler;
+	class serve_mux;
+	class request;
 }}}
 
 namespace server

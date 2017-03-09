@@ -21,7 +21,7 @@ handler_http2::handler_http2()
 	mux->handle("/", [this](const nghttp2::asio_http2::server::request &req,
 		const nghttp2::asio_http2::server::response &res)
 	{
-		auto sh = std::make_shared<stream_handler>(std::move(handler_interface::make_chain()));
+		auto sh = std::make_shared<stream_handler>(handler_interface::make_chain());
 		sh->listener(this);
 		sh->response(&res);
 
@@ -66,7 +66,7 @@ handler_http2::handler_http2()
 		req.on_data([this,sh](const uint8_t *buffer, std::size_t len)
 		{
 			if(len)
-				sh->on_request_body(std::move(dstring{buffer, len}));
+				sh->on_request_body(dstring{buffer, len});
 			else
 				sh->on_request_finished();
 		});

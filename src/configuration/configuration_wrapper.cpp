@@ -18,7 +18,6 @@ using namespace network;
 using std::uint64_t;
 
 static constexpr uint16_t default_port{443};
-static constexpr uint16_t default_port_h{80};
 
 namespace configuration
 {

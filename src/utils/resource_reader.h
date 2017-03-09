@@ -13,7 +13,7 @@ namespace filesystem
 {
 class ErrorCode;
 using Buffer = std::vector<uint8_t>;
-class ChunkedFstreamInterface;
+struct ChunkedFstreamInterface;
 }
 }
 }

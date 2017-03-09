@@ -35,7 +35,6 @@ namespace server
 class handler_http1 : public handler_interface
 {
 	bool persistent_connection = true;
-	bool last_message = false;
 	bool error_happened = false;
 	http::http_codec decoder;
 	errors::error_code error_code_distruction;

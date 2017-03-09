@@ -11,7 +11,7 @@
 #include "../log/access_record.h"
 
 namespace nghttp2{namespace asio_http2{ namespace server{
-	struct response;
+	class response;
 }}}
 
 namespace server

@@ -64,7 +64,6 @@ struct date_setter_test : public ::testing::Test
 		static uint body_called;
 		static uint trailer_called;
 		static uint eom_called;
-		static uint ack_called;
 	};
 
 public:

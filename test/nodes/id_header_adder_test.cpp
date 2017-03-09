@@ -78,7 +78,7 @@ TEST_F(id_header_adder_test, response)
 	resp.hostname( hostname.c_str() );
 	resp.protocol( http::proto_version::HTTP20 );
 
-	ch->on_request_preamble ( std::move( http::http_request{} ) );
+	ch->on_request_preamble ( http::http_request{} );
 
 	const auto& via_header = response.header(http::hf_via);
 	ASSERT_TRUE( via_header );

@@ -8,7 +8,7 @@
 #include "../http/http_commons.h"
 
 class dstring;
-class node_interface;
+struct node_interface;
 
 namespace http
 {

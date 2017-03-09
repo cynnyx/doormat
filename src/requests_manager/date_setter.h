@@ -30,8 +30,6 @@ public:
 		}
 		base::on_header(std::move(preamble));
 	}
-private:
-	std::array<uint8_t,29> buf;
 };
 
 }

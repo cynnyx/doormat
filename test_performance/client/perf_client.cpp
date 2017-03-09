@@ -12,8 +12,6 @@
 namespace doormat {
 namespace performance_test {
 
-static const auto max_length = 1024;
-
 
 perf_client::perf_client(const std::string& host,
 						 uint32_t port,

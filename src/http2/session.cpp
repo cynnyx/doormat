@@ -6,8 +6,6 @@
 #include "../utils/log_wrapper.h"
 #include "http2alloc.h"
 
-const std::size_t header_size_bytes = 8 * 1024;
-
 namespace
 {
 

@@ -78,7 +78,7 @@ public:
 	dstring(const char*, const bool caseins = false) noexcept;
 	dstring(const unsigned char*, const bool caseins = false) noexcept;
 	dstring(const unsigned char*, size_t, const bool caseins = false) noexcept;
-	~dstring();
+	~dstring() noexcept;
 
 	dstring& operator=( const dstring& ) noexcept;
 	dstring& operator=( dstring&& ) noexcept;
