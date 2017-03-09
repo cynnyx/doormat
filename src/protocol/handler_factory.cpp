@@ -1,6 +1,5 @@
 #include "handler_factory.h"
 #include "handler_http1.h"
-#include "handler_http2.h"
 #include "../http2/session.h"
 #include "../connector.h"
 #include "../utils/log_wrapper.h"
@@ -125,21 +124,11 @@ handler_interface* handler_factory::build_handler(handler_type type, http::proto
 	switch(type)
 	{
 		case ht_h1:
-		{
 			LOGDEBUG("HTTP1 selected");
 			return new handler_http1( proto );
-		}
 		case ht_h2:
-			if ( service::locator::configuration().http2_ng() )
-			{
-				LOGTRACE("HTTP2 NG selected");
-				return new http2::session();
-			}
-			else
-			{
-				LOGTRACE("HTTP2 old selected");
-				return new handler_http2();
-			}
+			LOGTRACE("HTTP2 NG selected");
+			return new http2::session();
 		case ht_unknown: return nullptr;
 	}
 	return nullptr;
