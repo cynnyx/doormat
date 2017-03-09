@@ -113,8 +113,6 @@ private:
 	bool headerconfig_configuration(const json &js);
 
 	bool disablehttp2_configuration(const json &js);
-	
-	bool http2_ng( const json& js );
 
 	bool daemon_configuration(const json &js);
 

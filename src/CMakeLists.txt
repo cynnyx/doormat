@@ -35,9 +35,7 @@ set(DOORMAT_COMMON_SOURCES
 	log/access_record.cpp
 	protocol/handler_factory.cpp
 	protocol/handler_http1.cpp
-	protocol/handler_http2.cpp
-	protocol/stream_handler.cpp
-	requests_manager/client_wrapper.cpp
+		requests_manager/client_wrapper.cpp
 	requests_manager/header_filter.cpp
 	requests_manager/interreg_filter.cpp
 	requests_manager/error_file_provider.cpp

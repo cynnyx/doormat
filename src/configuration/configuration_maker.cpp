@@ -17,7 +17,7 @@ const std::string configuration_maker::mandatory_keys[13]
 const std::string configuration_maker::allowed_keys[15]
 {
 	"threads","interreg_address","request_size_limit","header_config","disable_http2",
-	"daemon", "http2_ng", "inspector",
+	"daemon", "inspector",
 	"log_level","cache", "gzip", "connection_attempts", "file_descriptor_limit", "cache_normalization", "magnet"
 };
 
@@ -93,7 +93,6 @@ bool configuration_maker::add_configuration(const std::string &key, const json &
 	if (key == "request_size_limit") return rsizelimit_configuration(js);
 	if (key == "header_config") return headerconfig_configuration(js);
 	if (key == "disable_http2") return disablehttp2_configuration(js);
-	if (key == "http2_ng") return http2_ng(js);
 	if (key == "inspector") return inspector_active_configuration( js );
 	if (key == "daemon") return daemon_configuration(js);
 	if (key == "log_level") return loglevel_configuration(js);
@@ -454,14 +453,6 @@ bool configuration_maker::inspector_active_configuration( const json& js )
 {
 	if(!is_boolean(js)) return false;
 	cw->inspector = js;
-	notify_valid();
-	return true;
-}
-
-bool configuration_maker::http2_ng( const json& js )
-{
-	if(!is_boolean(js)) return false;
-	cw->http2_next = js;
 	notify_valid();
 	return true;
 }

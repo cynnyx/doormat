@@ -57,10 +57,8 @@ class configuration_wrapper
 	uint64_t board_timeout{ 26000L }; // Transaction timeout - board side
 	uint8_t max_connection_attempts{3};
 
-
 	void parse_network_file(const std::string&, std::list<network::IPV4Network>&);
 	bool http2_disabled{false};
-	bool http2_next{false};
 	bool inspector{false};
 	bool daemonize{false};
 	std::string daemon_path{""};
@@ -96,7 +94,6 @@ public:
 	virtual bool comp_mime_matcher(const std::string&) const noexcept;
 
 	virtual bool http2_is_disabled() const noexcept{ return http2_disabled; }
-	virtual bool http2_ng() const noexcept { return http2_next; }
 	virtual bool inspector_active() const noexcept { return inspector; }
 	virtual std::string get_error_filename( uint16_t code ) const;
 	virtual std::string get_route_map() const noexcept { return route_map; }

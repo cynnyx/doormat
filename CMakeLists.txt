@@ -236,7 +236,7 @@ add_definitions(
 )
 add_subdirectory(${PROJECT_SOURCES})
 add_subdirectory(${PROJECT_TESTS})
-add_subdirectory(${PROJECT_PERFORMANCE_TESTS})
+#add_subdirectory(${PROJECT_PERFORMANCE_TESTS})
 
 #
 #QT Creator stuff
