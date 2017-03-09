@@ -19,13 +19,13 @@ set(DOORMAT_TESTCASES_SOURCES
 	ipv4matcher_test.cpp
 	log_test.cpp
 	reusable_buffer_test.cpp
-		stats_test.cpp
+        stats_test.cpp
 	testcommon.cpp
 	utils_test.cpp
-		mock_server/mock_server.cpp
+        mock_server/mock_server.cpp
 	network/communicator_test.cpp
-		nodes/common.cpp
-		)
+        nodes/common.cpp
+)
 
 add_executable(${DOORMAT_TEST_EXECUTABLE} ${DOORMAT_TESTCASES_SOURCES})
 
@@ -41,6 +41,7 @@ target_include_directories(
 	PRIVATE ${CITYHASH_INCLUDE_DIRS}
 	PRIVATE ${ZLIB_INCLUDE_DIRS}
 	PRIVATE ${SPDLOG_INCLUDE_DIR}
+        PRIVATE ${UVW_INCLUDE_DIR}
 )
 
 target_link_libraries(

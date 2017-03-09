@@ -11,12 +11,12 @@ set(SPDLOG_LIB "spdlog")
 
 # common sources: will be packed inside a static lib and linked against all executables
 set(DOORMAT_COMMON_SOURCES
-		configuration/configuration_wrapper.cpp
+        configuration/configuration_wrapper.cpp
 	configuration/header_configuration.cpp
 	constants.cpp
 	daemon.cpp
 	init.cpp
-		http/http_codec.cpp
+        http/http_codec.cpp
 	http/http_commons.cpp
 	http/http_structured_data.cpp
 	http/http_response.cpp
@@ -31,7 +31,7 @@ set(DOORMAT_COMMON_SOURCES
 	log/access_record.cpp
 	protocol/handler_factory.cpp
 	protocol/handler_http1.cpp
-		stats/stats_manager.cpp
+        stats/stats_manager.cpp
 	service_locator/service_locator.cpp
         utils/dstring.cpp
 	utils/dstring_factory.cpp
@@ -39,13 +39,14 @@ set(DOORMAT_COMMON_SOURCES
 	utils/utils.cpp
 	utils/base64.cpp
 	utils/log_wrapper.cpp
-		errors/internal_error.cpp
-		http2/session.cpp
+        utils/loop.cpp
+        errors/internal_error.cpp
+        http2/session.cpp
 	http2/stream.cpp
 	http2/http2alloc.cpp
 	configuration/configuration_maker.cpp
-		log/inspector_serializer.cpp
-		)
+        log/inspector_serializer.cpp
+)
 
 #
 # ----------------- doormat_common archive library -------------------
@@ -61,6 +62,7 @@ target_include_directories(
 	PRIVATE ${CITYHASH_INCLUDE_DIRS}
 	PRIVATE ${ZLIB_INCLUDE_DIRS}
 	PRIVATE ${SPDLOG_INCLUDE_DIR}
+        PRIVATE ${UVW_INCLUDE_DIR}
 )
 
 target_link_libraries(
@@ -98,7 +100,8 @@ target_include_directories(
 	PRIVATE ${NGHTTP2_INCLUDE_DIR}
 	PRIVATE ${CYNNYPP_INCLUDE_DIRS}
 	PRIVATE ${CITYHASH_INCLUDE_DIRS}
-	PRIVATE ${SPDLOG_INCLUDE_DIR}
+        PRIVATE ${SPDLOG_INCLUDE_DIR}
+        PRIVATE ${UVW_INCLUDE_DIR}
 )
 
 target_link_libraries(
