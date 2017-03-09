@@ -14,7 +14,7 @@
 # ------------- find paths where the stuff is supposed to be
 # find the include dir, then we'll know where all the other stuff is
 find_path(UVW_INCLUDE_DIR NAMES uvw.hpp
-        HINTS ${UVW_ROOT_DIR}/deps/uvw/src
+        HINTS ${UVW_ROOT_DIR}/src
         )
 
 if(NOT UVW_INCLUDE_DIR)
