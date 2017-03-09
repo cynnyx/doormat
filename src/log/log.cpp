@@ -55,10 +55,7 @@ static constexpr const char* dot = ".";
 namespace logging
 {
 
-BOOST_LOG_ATTRIBUTE_KEYWORD(severity_attribute, "Severity", logging::severity)
 BOOST_LOG_ATTRIBUTE_KEYWORD(timestamp_attribute, "TimeStamp", std::string)
-BOOST_LOG_ATTRIBUTE_KEYWORD(pid_attribute, "ProcessId", boost::log::attributes::current_process_id::value_type)
-BOOST_LOG_ATTRIBUTE_KEYWORD(tid_attribute, "ThreadId", boost::log::attributes::current_thread_id::value_type)
 
 BOOST_LOG_ATTRIBUTE_KEYWORD(hostname_attribute, "HostName", std::string)
 BOOST_LOG_ATTRIBUTE_KEYWORD(logname_attribute, "LogName", std::string)
@@ -232,7 +229,7 @@ void access_log::impl::log(const access_record& r)
 		auto dur = duration_cast<std::chrono::duration<double,std::ratio<1,1>>>(r.end - r.start).count();
 		size_t n = snprintf(const_cast<char*>(req_time_str.data()), req_time_str.capacity(), "%.3f", dur);
 		req_time_str.resize(n);
-		if(n >= req_time_str.capacity() || n < 0)
+		if(n >= req_time_str.capacity())
 			req_time_str.assign(req_time_str.size(), 'x');
 	}
 

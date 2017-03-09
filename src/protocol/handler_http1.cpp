@@ -25,7 +25,7 @@ bool handler_http1::start() noexcept
 {
 	auto scb = [this](http::http_structured_data** data)
 	{
-		th.emplace_back(std::move(handler_interface::make_chain()), this, connector()->is_ssl() );
+		th.emplace_back(handler_interface::make_chain(), this, connector()->is_ssl() );
 		*data = &(th.back().get_data());
 		(*data)->origin( find_origin() );
 	};
@@ -136,7 +136,7 @@ bool handler_http1::on_write(dstring& data)
 	if(connector())
 	{
 		if(!th.empty() && th.front().has_encoded_data())
-			data = std::move( th.front().get_encoded_data() );
+			data = th.front().get_encoded_data();
 		else if(!th.empty() && th.front().disposable())
 			th.pop_front();
 		return true;

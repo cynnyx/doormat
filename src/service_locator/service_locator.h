@@ -26,7 +26,7 @@ class stats_manager;
 
 namespace routing
 {
-class abstract_destination_provider;
+struct abstract_destination_provider;
 }
 
 class fs_manager_wrapper;

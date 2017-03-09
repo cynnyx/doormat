@@ -233,7 +233,7 @@ bool configuration_maker::operationtimeout_configuration(const json &js)
 
 bool configuration_maker::connectionattempts_configuration(const json &js)
 {
-	if(!is_number_integer(js) || js >= 256)
+	if(!is_number_integer(js) || static_cast<int64_t>(js) >= 256)
 	{
 		notify("key \"", current_key, "\" allows an integer not greather than 256");
 		return false;
@@ -293,7 +293,7 @@ bool configuration_maker::certificate_configuration(const json &js)
 			}
 			if (innerbegin.key() == "default")
 			{
-				if (!is_boolean(innerbegin.value()) || (innerbegin.value() == true && default_count > 0))
+				if (!is_boolean(innerbegin.value()) || (innerbegin.value() && default_count > 0))
 				{
 					notify("only one 'default' field with value true is allowed for the certificates. ");
 					return false;
