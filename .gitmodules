@@ -17,3 +17,6 @@
 [submodule "deps/cynnypp"]
 	path = deps/cynnypp
 	url = https://github.com/cynnyx/cynnypp.git
+[submodule "deps/uvw"]
+	path = deps/uvw
+	url = https://github.com/skypjack/uvw.git
