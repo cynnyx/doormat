@@ -27,10 +27,10 @@ TEST_F(header_filter_test, filter_headers)
 
 	// check the filtering
 	EXPECT_TRUE(last_node::request.is_initialized());
-	EXPECT_GT(last_node::request->hostname().size(), 0);
-	EXPECT_EQ(last_node::req_body, 1);
-	EXPECT_EQ(last_node::req_trailer, 1);
-	EXPECT_EQ(last_node::req_eom, 1);
+	EXPECT_GT(last_node::request->hostname().size(), 0U);
+	EXPECT_EQ(last_node::req_body, 1U);
+	EXPECT_EQ(last_node::req_trailer, 1U);
+	EXPECT_EQ(last_node::req_eom, 1U);
 
 	auto has_connection = last_node::request->has([](const http::http_request::header_t& h) { return utils::icompare(h.first,"Connection"); });
 	auto has_keep_alive = last_node::request->has([](const http::http_request::header_t& h) { return utils::icompare(h.first,"Keep-Alive"); });
@@ -107,7 +107,7 @@ TEST_F(header_filter_test, max_forwards_0)
 	service::locator::service_pool().run(init_fn);
 	EXPECT_TRUE(first_node::response.is_initialized());
 	EXPECT_TRUE(first_node::response->has(http::hf_allow, "GET, HEAD, POST, OPTIONS, PUT, DELETE, PATCH" ) );
-	EXPECT_EQ(first_node::res_eom,1);
+	EXPECT_EQ(first_node::res_eom, 1U);
 }
 
 TEST_F(header_filter_test, max_forwards_1)

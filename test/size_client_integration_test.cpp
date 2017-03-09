@@ -52,7 +52,7 @@ TEST_F(size_client_integration, too_large_body)
 
 		first_node::res_stop_fn = [this, &ios]()
 		{
-			EXPECT_EQ(first_node::res_eom, 0);
+			EXPECT_EQ(first_node::res_eom, 0U);
 			EXPECT_TRUE(first_node::err == INTERNAL_ERROR(errors::http_error_code::entity_too_large) )<<first_node::err;
 			ios.post([this](){ch.reset();});
 		};

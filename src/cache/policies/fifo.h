@@ -27,7 +27,7 @@ public:
 
 	inline size_t free_space(const size_t size_to_free)
 	{
-		auto total_size = 0;
+		auto total_size = 0ULL;
 		while (total_size < size_to_free && fifo.size())
 		{
 			auto element_to_remove = fifo.front().first;

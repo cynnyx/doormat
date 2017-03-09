@@ -101,13 +101,13 @@ TEST_F(date_setter_test, usage)
 	ch->on_request_finished();
 
 	// check not-filtering
-	EXPECT_EQ(date_setter_test::last_node::preamble_called, 1);
-	EXPECT_EQ(date_setter_test::last_node::body_called, 1);
-	EXPECT_EQ(date_setter_test::last_node::trailer_called, 1);
-	EXPECT_EQ(date_setter_test::last_node::finished_called, 1);
-	EXPECT_EQ(date_setter_test::first_node::body_called, 1);
-	EXPECT_EQ(date_setter_test::first_node::trailer_called, 1);
-	EXPECT_EQ(date_setter_test::first_node::eom_called, 1);
+	EXPECT_EQ(date_setter_test::last_node::preamble_called, 1U);
+	EXPECT_EQ(date_setter_test::last_node::body_called, 1U);
+	EXPECT_EQ(date_setter_test::last_node::trailer_called, 1U);
+	EXPECT_EQ(date_setter_test::last_node::finished_called, 1U);
+	EXPECT_EQ(date_setter_test::first_node::body_called, 1U);
+	EXPECT_EQ(date_setter_test::first_node::trailer_called, 1U);
+	EXPECT_EQ(date_setter_test::first_node::eom_called, 1U);
 
 	// check date was set
 	EXPECT_TRUE(first_node::response.date().size());

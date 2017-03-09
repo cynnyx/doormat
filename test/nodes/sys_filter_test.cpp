@@ -18,9 +18,9 @@ TEST_F(sys_filter_test, not_filtering)
 	ch->on_request_finished();
 
 	ASSERT_TRUE(last_node::request.is_initialized());
-	EXPECT_EQ(last_node::req_body,1);
-	EXPECT_EQ(last_node::req_trailer,1);
-	EXPECT_EQ(last_node::req_eom,1);
+	EXPECT_EQ(last_node::req_body, 1U);
+	EXPECT_EQ(last_node::req_trailer, 1U);
+	EXPECT_EQ(last_node::req_eom, 1U);
 }
 
 TEST_F(sys_filter_test, unprivileged)
@@ -52,9 +52,9 @@ TEST_F(sys_filter_test, privileged)
 
 	// check the filtering
 	ASSERT_TRUE(last_node::request.is_initialized());
-	EXPECT_EQ(last_node::req_body,1);
-	EXPECT_EQ(last_node::req_trailer,1);
-	EXPECT_EQ(last_node::req_eom,1);
+	EXPECT_EQ(last_node::req_body, 1U);
+	EXPECT_EQ(last_node::req_trailer, 1U);
+	EXPECT_EQ(last_node::req_eom, 1U);
 }
 
 

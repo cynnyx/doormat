@@ -50,7 +50,7 @@ TEST_F(cache_cleaner_test, clear_tag)
 	ch3->on_request_preamble(std::move(req3));
 	/*checking side effects!*/
 	auto cptr = cache<fifo_policy>::get_instance().get();
-	ASSERT_EQ(cptr->size(), 0);
+	ASSERT_EQ(cptr->size(), 0U);
 	ch3->on_request_finished();
 	ASSERT_TRUE(first_node::response);
 	auto resp = first_node::response;
@@ -68,7 +68,7 @@ TEST_F(cache_cleaner_test, clear_all)
 	ch3->on_request_preamble(std::move(req3));
 	/*checking side effects!*/
 	auto cptr = cache<fifo_policy>::get_instance().get();
-	ASSERT_EQ(cptr->size(), 0);
+	ASSERT_EQ(cptr->size(), 0U);
 	ch3->on_request_finished();
 
 	ASSERT_TRUE(first_node::response);
@@ -111,7 +111,7 @@ TEST_F(cache_cleaner_test, side_effect_tag)
 			req3.hostname("sys.cynny.com");
 			ch3->on_request_preamble(std::move(req3));
 			/*checking side effects!*/
-			ASSERT_EQ(cptr->size(), 300);
+			ASSERT_EQ(cptr->size(), 300U);
 			ch3->on_request_finished();
 			ASSERT_TRUE(first_node::response);
 			auto resp = first_node::response;
@@ -170,7 +170,7 @@ TEST_F(cache_cleaner_test, side_effect_all)
 			req3.hostname("sys.cynny.com");
 			ch3->on_request_preamble(std::move(req3));
 			/*checking side effects!*/
-			ASSERT_EQ(cptr->size(), 0);
+			ASSERT_EQ(cptr->size(), 0U);
 			ch3->on_request_finished();
 			ASSERT_TRUE(first_node::response);
 			auto resp = first_node::response;

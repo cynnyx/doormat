@@ -391,7 +391,7 @@ TEST_F(chain_perf_basic, simplest_get)
 	allocation.push_average();
 	forward.push_average();
 	backward.push_average();
-	ASSERT_EQ(analizing_node::managed_requests, 2*test_repetitions);
+	ASSERT_EQ(analizing_node::managed_requests, 2*static_cast<int>(test_repetitions));
 }
 
 

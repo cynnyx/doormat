@@ -134,8 +134,8 @@ TEST_F(conf_header_filter, full)
 	http::http_request result = last_node::request.get();
 	auto xs = result.header("x-scheme");
 	ASSERT_TRUE( result.header("pippo")  == "666" );
-	ASSERT_EQ( result.header(http::hf_cyndate).size(), 10 );
-	ASSERT_EQ( result.header("r-cyn-time").size(), 13 );
+	ASSERT_EQ( result.header(http::hf_cyndate).size(), 10U );
+	ASSERT_EQ( result.header("r-cyn-time").size(), 13U );
 	ASSERT_TRUE( utils::icompare(xs, "https") );
 	//FIXME
 	/*

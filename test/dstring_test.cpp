@@ -128,7 +128,7 @@ TEST(dstring, converters)
 
 	dstring d2{" 42"};
 	EXPECT_EQ(d2.to_integer(int_value), true);
-	EXPECT_EQ(int_value, 42);
+	EXPECT_EQ(int_value, 42U);
 
 	dstring d4{"pluto"};
 	EXPECT_EQ(std::string(d4), "pluto");
@@ -151,23 +151,23 @@ TEST(dstring, find)
 {
 	dstring d{"abcd:efgh"};
 	EXPECT_EQ(d.find(';'), dstring::npos);
-	EXPECT_EQ(d.find(':'), 4);
+	EXPECT_EQ(d.find(':'), 4U);
 }
 
 TEST(dstring, append)
 {
 	dstring d1("abcd");
-	EXPECT_EQ(d1.size(), 4);
+	EXPECT_EQ(d1.size(), 4U);
 
 	d1.append("efgh",4);
-	EXPECT_EQ(d1.size(), 8);
+	EXPECT_EQ(d1.size(), 8U);
 
 	dstring d2 = d1;
 	EXPECT_TRUE(d2 == d1);
 	EXPECT_TRUE(d2.cdata() == d1.cdata());
 
 	d1.append("ilmn",4);
-	EXPECT_EQ(d1.size(), 12);
+	EXPECT_EQ(d1.size(), 12U);
 	EXPECT_FALSE(d2 == d1);
 	EXPECT_FALSE(d2.cdata() == d1.cdata());
 
@@ -178,10 +178,10 @@ TEST(dstring, append)
 TEST(dstring, append_insensitive)
 {
 	dstring d1{"aBcD",4, true};
-	EXPECT_EQ(d1.size(), 4);
+	EXPECT_EQ(d1.size(), 4U);
 
 	d1.append("efGh",4);
-	EXPECT_EQ(d1.size(), 8);
+	EXPECT_EQ(d1.size(), 8U);
 
 	EXPECT_EQ(std::string(d1),"abcdefgh");
 }
@@ -189,7 +189,7 @@ TEST(dstring, append_insensitive)
 TEST(dstring, reset)
 {
 	dstring d1("abcd");
-	EXPECT_EQ(d1.size(), 4);
+	EXPECT_EQ(d1.size(), 4U);
 
 	//Limited scope
 	{ dstring{d1};}

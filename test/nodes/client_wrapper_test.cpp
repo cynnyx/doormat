@@ -342,7 +342,7 @@ TEST_F(client_wrapper_test, client_hangs)
 	};
 
 	service::locator::service_pool().run(init_fn);
-	EXPECT_GT(stream.size(), 0);
+	EXPECT_GT(stream.size(), 0U);
 }
 
 TEST_F(client_wrapper_test, server_hangs)
@@ -395,7 +395,7 @@ TEST_F(client_wrapper_test, server_hangs)
 	};
 
 	service::locator::service_pool().run(init_fn);
-	EXPECT_GT(stream.size(), 0);
+	EXPECT_GT(stream.size(), 0U);
 }
 
 }

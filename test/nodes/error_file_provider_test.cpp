@@ -22,14 +22,14 @@ TEST_F(error_file_provider_test, not_matching_host)
 	ch->on_request_finished();
 
 	EXPECT_TRUE(last_node::request.is_initialized());
-	EXPECT_EQ(last_node::req_body, 1);
-	EXPECT_EQ(last_node::req_trailer, 1);
-	EXPECT_EQ(last_node::req_eom, 1);
+	EXPECT_EQ(last_node::req_body, 1U);
+	EXPECT_EQ(last_node::req_trailer, 1U);
+	EXPECT_EQ(last_node::req_eom, 1U);
 
 	EXPECT_TRUE(first_node::response.is_initialized());
-	EXPECT_EQ(first_node::res_body, 1);
-	EXPECT_EQ(first_node::res_trailer, 1);
-	EXPECT_EQ(first_node::res_eom, 1);
+	EXPECT_EQ(first_node::res_body, 1U);
+	EXPECT_EQ(first_node::res_trailer, 1U);
+	EXPECT_EQ(first_node::res_eom, 1U);
 }
 
 TEST_F(error_file_provider_test, matching_host)
@@ -47,9 +47,9 @@ TEST_F(error_file_provider_test, matching_host)
 	ch->on_request_finished();
 
 	EXPECT_FALSE(first_node::response.is_initialized());
-	EXPECT_EQ(first_node::res_body, 0);
-	EXPECT_EQ(first_node::res_trailer, 0);
-	EXPECT_EQ(first_node::res_eom, 0);
+	EXPECT_EQ(first_node::res_body, 0U);
+	EXPECT_EQ(first_node::res_trailer, 0U);
+	EXPECT_EQ(first_node::res_eom, 0U);
 }
 
 TEST_F(error_file_provider_test, empty_path)
@@ -74,8 +74,8 @@ TEST_F(error_file_provider_test, empty_path)
 		{
 			ASSERT_TRUE(first_node::response.is_initialized());
 			EXPECT_EQ(first_node::response->status_code(),(uint16_t)errors::http_error_code::forbidden);
-			EXPECT_EQ(first_node::res_body, 1);
-			EXPECT_EQ(first_node::res_eom, 1);
+			EXPECT_EQ(first_node::res_body, 1U);
+			EXPECT_EQ(first_node::res_eom, 1U);
 
 			ios.post( [this](){ch.reset();} );
 		};
@@ -106,8 +106,8 @@ TEST_F(error_file_provider_test, forbidden_path)
 		{
 			ASSERT_TRUE(first_node::response.is_initialized());
 			EXPECT_EQ(first_node::response->status_code(),(uint16_t)errors::http_error_code::forbidden);
-			EXPECT_EQ(first_node::res_body, 1);
-			EXPECT_EQ(first_node::res_eom, 1);
+			EXPECT_EQ(first_node::res_body, 1U);
+			EXPECT_EQ(first_node::res_eom, 1U);
 
 			ios.post( [this](){ch.reset();} );
 		};
@@ -162,13 +162,13 @@ TEST_F(error_file_provider_test, options)
 		first_node::res_stop_fn = [this, &ios]()
 		{
 			EXPECT_FALSE(last_node::request.is_initialized());
-			EXPECT_EQ(last_node::req_body, 0);
-			EXPECT_EQ(last_node::req_trailer, 0);
-			EXPECT_EQ(last_node::req_eom, 0);
+			EXPECT_EQ(last_node::req_body, 0U);
+			EXPECT_EQ(last_node::req_trailer, 0U);
+			EXPECT_EQ(last_node::req_eom, 0U);
 			ASSERT_TRUE(first_node::response.is_initialized());
 			EXPECT_EQ(first_node::response->status_code(), 200);
 			EXPECT_TRUE(first_node::response->has(http::hf_allow, "GET, HEAD,OPTIONS"));
-			EXPECT_EQ(first_node::res_eom, 1);
+			EXPECT_EQ(first_node::res_eom, 1U);
 			EXPECT_FALSE(first_node::err);
 
 			ios.post( [this](){ch.reset();} );
@@ -199,13 +199,13 @@ TEST_F(error_file_provider_test, found_path)
 		first_node::res_stop_fn = [this, &ios]()
 		{
 			EXPECT_FALSE(last_node::request.is_initialized());
-			EXPECT_EQ(last_node::req_body, 0);
-			EXPECT_EQ(last_node::req_trailer, 0);
-			EXPECT_EQ(last_node::req_eom, 0);
+			EXPECT_EQ(last_node::req_body, 0U);
+			EXPECT_EQ(last_node::req_trailer, 0U);
+			EXPECT_EQ(last_node::req_eom, 0U);
 			ASSERT_TRUE(first_node::response.is_initialized());
 			EXPECT_EQ(first_node::response->status_code(), 200);
-			EXPECT_GE(first_node::res_body, 1);
-			EXPECT_EQ(first_node::res_eom, 1);
+			EXPECT_GE(first_node::res_body, 1U);
+			EXPECT_EQ(first_node::res_eom, 1U);
 			EXPECT_FALSE(first_node::err);
 
 			ios.post( [this](){ch.reset();} );

@@ -88,10 +88,10 @@ TEST_F(gzipfilter_test, disabled)
 	ASSERT_TRUE(first_node::response.is_initialized());
 	EXPECT_FALSE(first_node::response->has("content-encoding", "gzip"));
 	EXPECT_FALSE(first_node::err);
-	EXPECT_GE(first_node::res_body, 1);
+	EXPECT_GE(first_node::res_body, 1U);
 	EXPECT_EQ(std::string(first_node::res_body_str), body);
-	EXPECT_EQ(first_node::res_trailer, 1);
-	EXPECT_EQ(first_node::res_eom, 1);
+	EXPECT_EQ(first_node::res_trailer, 1U);
+	EXPECT_EQ(first_node::res_eom, 1U);
 }
 
 TEST_F(gzipfilter_test, below_min)
@@ -115,10 +115,10 @@ TEST_F(gzipfilter_test, below_min)
 	ASSERT_TRUE(first_node::response.is_initialized());
 	EXPECT_FALSE(first_node::response->has("content-encoding", "gzip"));
 	EXPECT_FALSE(first_node::err);
-	EXPECT_GE(first_node::res_body, 1);
+	EXPECT_GE(first_node::res_body, 1U);
 	EXPECT_EQ(std::string(first_node::res_body_str), body);
-	EXPECT_EQ(first_node::res_trailer, 1);
-	EXPECT_EQ(first_node::res_eom, 1);
+	EXPECT_EQ(first_node::res_trailer, 1U);
+	EXPECT_EQ(first_node::res_eom, 1U);
 }
 
 TEST_F(gzipfilter_test, mime_not_match)
@@ -143,10 +143,10 @@ TEST_F(gzipfilter_test, mime_not_match)
 	ASSERT_TRUE(first_node::response.is_initialized());
 	EXPECT_FALSE(first_node::response->has("content-encoding", "gzip"));
 	EXPECT_FALSE(first_node::err);
-	EXPECT_GE(first_node::res_body, 1);
+	EXPECT_GE(first_node::res_body, 1U);
 	EXPECT_EQ(std::string(first_node::res_body_str), body);
-	EXPECT_EQ(first_node::res_trailer, 1);
-	EXPECT_EQ(first_node::res_eom, 1);
+	EXPECT_EQ(first_node::res_trailer, 1U);
+	EXPECT_EQ(first_node::res_eom, 1U);
 }
 
 TEST_F(gzipfilter_test, normal_transfer)
@@ -176,8 +176,8 @@ TEST_F(gzipfilter_test, normal_transfer)
 
 	ASSERT_TRUE(first_node::response.is_initialized());
 	EXPECT_TRUE(first_node::response->has(http::hf_content_encoding, http::hv_gzip));
-	EXPECT_EQ(first_node::res_body, 1);
-	EXPECT_EQ(first_node::res_eom, 1);
+	EXPECT_EQ(first_node::res_body, 1U);
+	EXPECT_EQ(first_node::res_eom, 1U);
 	EXPECT_FALSE(first_node::err);
 
 	auto len = first_node::res_body_str.size();
@@ -217,9 +217,9 @@ TEST_F(gzipfilter_test, chunked_transfer)
 	ASSERT_TRUE(first_node::response.is_initialized());
 	EXPECT_TRUE(first_node::response->has("content-encoding", "gzip"));
 	EXPECT_FALSE(first_node::err);
-	EXPECT_GE(first_node::res_body, 1);
-	EXPECT_EQ(first_node::res_trailer, 1);
-	EXPECT_EQ(first_node::res_eom, 1);
+	EXPECT_GE(first_node::res_body, 1U);
+	EXPECT_EQ(first_node::res_trailer, 1U);
+	EXPECT_EQ(first_node::res_eom, 1U);
 
 	char buf[2048];
 	auto len = extract( first_node::res_body_str.data(), first_node::res_body_str.size(), buf, sizeof(buf));

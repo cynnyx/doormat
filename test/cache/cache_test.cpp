@@ -876,7 +876,7 @@ TEST_F(cache_test, read_and_ttl)
 
 TEST_F(cache_test, clear_all)
 {
-	auto total_size = 0;
+	auto total_size = 0ULL;
 	cache<fifo_policy> c(300000);
 	std::vector<std::string> keyvector;
 	auto& io = service::locator::service_pool().get_thread_io_service();
@@ -903,7 +903,7 @@ TEST_F(cache_test, clear_all)
 		{
 			ASSERT_FALSE(c.has(k));
 		}
-		ASSERT_EQ(c.size(), 0);
+		ASSERT_EQ(c.size(), 0U);
 		service::locator::service_pool().allow_graceful_termination();
 	});
 

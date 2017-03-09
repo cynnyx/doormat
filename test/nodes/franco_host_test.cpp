@@ -21,9 +21,9 @@ TEST_F(franco_host_test, not_filtering)
 	ch->on_request_finished();
 
 	EXPECT_TRUE(last_node::request.is_initialized());
-	EXPECT_EQ(last_node::req_body, 1);
-	EXPECT_EQ(last_node::req_trailer, 1);
-	EXPECT_EQ(last_node::req_eom, 1);
+	EXPECT_EQ(last_node::req_body, 1U);
+	EXPECT_EQ(last_node::req_trailer, 1U);
+	EXPECT_EQ(last_node::req_eom, 1U);
 }
 
 
@@ -96,7 +96,7 @@ TEST_F(franco_host_test, options)
 	// check the filtering
 	ASSERT_TRUE(first_node::response.is_initialized());
 	EXPECT_EQ(first_node::response->status_code(), 200);
-	EXPECT_EQ(first_node::response->content_len(), 0);
+	EXPECT_EQ(first_node::response->content_len(), 0U);
 	EXPECT_TRUE(first_node::response->has(http::hf_allow, "GET,OPTIONS"));
 }
 
@@ -118,6 +118,6 @@ TEST_F(franco_host_test, post)
 	// check the filtering
 	ASSERT_TRUE(first_node::response.is_initialized());
 	EXPECT_EQ(first_node::response->status_code(), 200);
-	EXPECT_EQ(first_node::response->content_len(), 0);
+	EXPECT_EQ(first_node::response->content_len(), 0U);
 
 }

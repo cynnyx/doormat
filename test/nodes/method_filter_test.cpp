@@ -23,9 +23,9 @@ TEST_F(method_filter_test, all_allowed_methods)
 		ch->on_request_trailer({}, {});
 		ch->on_request_finished();
 		EXPECT_TRUE(last_node::request.is_initialized());
-		EXPECT_EQ(last_node::req_body, 1);
-		EXPECT_EQ(last_node::req_trailer, 1);
-		EXPECT_EQ(last_node::req_eom, 1);
+		EXPECT_EQ(last_node::req_body, 1U);
+		EXPECT_EQ(last_node::req_trailer, 1U);
+		EXPECT_EQ(last_node::req_eom, 1U);
 		last_node::reset();
 	}
 }

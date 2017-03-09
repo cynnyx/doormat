@@ -41,7 +41,7 @@ TEST_F(size_filter_test, too_large_body_wrong_cl)
 	ch->on_request_body(fakebody.c_str());
 
 	EXPECT_TRUE(last_node::request.is_initialized());
-	EXPECT_EQ(last_node::req_body, 1);
+	EXPECT_EQ(last_node::req_body, 1U);
 	EXPECT_TRUE(first_node::err == INTERNAL_ERROR(errors::http_error_code::entity_too_large) )<<first_node::err;
 }
 

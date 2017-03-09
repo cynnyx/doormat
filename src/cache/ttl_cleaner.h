@@ -122,8 +122,8 @@ private:
 	void heap_remove(const unsigned int id, const clock::time_point expiry_time)
 	{
 		if(!heap_ptr || !heap_size) return;
-		int i = 0;
-		while((i < heap_size && heap(i).expiry_time != expiry_time) || heap(i).id != id) ++i;
+		unsigned int i = 0;
+		while((i < heap_size && heap(i).expiry_time != expiry_time) || heap(i).id != static_cast<int>(id)) ++i;
 		if(i != heap_size) {
 			remove_callback(heap(i).id);
 			heap_remove(i);
@@ -134,7 +134,8 @@ private:
 	{
 		if(beginning - end == 0) return -1;
 		if(beginning - end == 1) {
-			return (ordered_set(beginning).expiry_time == expiry_time && ordered_set(beginning).id == id) ? beginning : -1;
+			return (ordered_set(beginning).expiry_time == expiry_time
+					&& ordered_set(beginning).id == static_cast<int>(id)) ? beginning : -1;
 		}
 		auto middle = (beginning + end)/2;
 		int middle_search_off = 0;
@@ -166,9 +167,9 @@ private:
 
 		if(ordered_set(middle).deleted) return -1;
 
-		if(ordered_set(middle).expiry_time == expiry_time && ordered_set(middle).id == id) return middle;
+		if(ordered_set(middle).expiry_time == expiry_time && ordered_set(middle).id == static_cast<int>(id)) return middle;
 
-		if(ordered_set(middle).expiry_time >= expiry_time || ordered_set(middle).id >= id)
+		if(ordered_set(middle).expiry_time >= expiry_time || ordered_set(middle).id >= static_cast<int>(id))
 		{
 			return binary_search(id, expiry_time, beginning, middle);
 		}
@@ -195,8 +196,8 @@ public:
 	void merge() //warning: not in place merge. optimize later.
 	{
 		element *swapping_start = heap_ptr + heap_size;
-		int cur_ordered_pos = 0;
-		int cur_writing_pos = 0;
+		auto cur_ordered_pos = 0U;
+		auto cur_writing_pos = 0U;
 		while(heap_size && cur_ordered_pos < ordered_size)
 		{
 			element &min_ordered = ordered_set(cur_ordered_pos);
@@ -246,7 +247,8 @@ public:
 			ordered_set(ordered_size).id = id;
 			ordered_set(ordered_size).deleted = false;
 
-			if(ordered_size && expiry_time >= ordered_set(ordered_size-1).expiry_time && id >= ordered_set(ordered_size-1).id)
+			if(ordered_size && expiry_time >= ordered_set(ordered_size-1).expiry_time
+					&& static_cast<int>(id) >= ordered_set(ordered_size-1).id)
 			{
 				++ordered_size;
 				++ordered_virtual_size;
@@ -295,7 +297,7 @@ public:
 	{
 		for(size_t  i = 0; i < ordered_size; ++i)
 		{
-			if(ordered_set(i).id == id)
+			if(ordered_set(i).id == static_cast<int>(id))
 			{
 				ordered_set(i).deleted = true;
 				ordered_virtual_size--;
@@ -305,7 +307,7 @@ public:
 
 		for(size_t i = 0; i < heap_size; ++i)
 		{
-			if(heap(i).id == id)
+			if(heap(i).id == static_cast<int>(id))
 			{
 				heap_remove(i);
 				return;

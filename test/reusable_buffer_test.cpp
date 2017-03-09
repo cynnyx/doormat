@@ -4,7 +4,7 @@
 
 namespace
 {
-	static constexpr int rbsize{1000};
+	static constexpr auto rbsize{1000U};
 
 	TEST(reusablebuffer, produces)
 	{
@@ -27,7 +27,7 @@ namespace
 
 		//Attempt to recall any, should return empty
 		buf = rb.reserve();
-		EXPECT_EQ( boost::asio::buffer_size(buf), 0);
+		EXPECT_EQ( boost::asio::buffer_size(buf), 0U);
 
 		//Use none
 		EXPECT_EQ(ptr, rb.produce(0));
@@ -63,18 +63,18 @@ namespace
 
 		//Free a portion
 		used -= rb.consume(ptr+200);
-		EXPECT_EQ(rbsize - used, 200);
+		EXPECT_EQ(rbsize - used, 200U);
 
 		//Use some more
 		EXPECT_EQ(ptr, rb.produce(100));
 		used += 100;
 
 		//Try to free a portion that's already been freed
-		EXPECT_EQ(0, rb.consume(ptr+200));
+		EXPECT_EQ(0U, rb.consume(ptr+200));
 
 		//Free some for real
 		used -= rb.consume(ptr+400);
-		EXPECT_EQ(rbsize - used, 300);
+		EXPECT_EQ(rbsize - used, 300U);
 
 		//Check available mem
 		buf = rb.reserve();
@@ -86,18 +86,18 @@ namespace
 
 		//Check nothing's left
 		buf = rb.reserve();
-		EXPECT_EQ( boost::asio::buffer_size(buf), 0);
+		EXPECT_EQ( boost::asio::buffer_size(buf), 0U);
 
 		//Free all at once, shouldn't be possible
 		//(two parts are not logically contiguous)
-		EXPECT_EQ(600, rb.consume(ptr+rbsize));
-		EXPECT_EQ(400, rb.consume(ptr+400));
+		EXPECT_EQ(600U, rb.consume(ptr+rbsize));
+		EXPECT_EQ(400U, rb.consume(ptr+400));
 
 		//Use all
 		EXPECT_TRUE(rb.produce(rbsize));
 
 		//Check buf is now full
 		buf = rb.reserve();
-		EXPECT_EQ( boost::asio::buffer_size(buf), 0);
+		EXPECT_EQ( boost::asio::buffer_size(buf), 0U);
 	}
 }
