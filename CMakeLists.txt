@@ -43,7 +43,6 @@ set(PROJECT_ARCHIVE_OUTPUT_DIRECTORY lib/static)
 set(PROJECT_SOURCES src)
 set(PROJECT_UTILS utils)
 set(PROJECT_TESTS test)
-set(PROJECT_PERFORMANCE_TESTS test_performance)
 set(PROJECT_DEPS_DIR deps)
 set(PROJECT_DOCS docs)
 set(DOORMAT_COMMON_ARCHIVE_LIB doormat_common)
@@ -236,7 +235,6 @@ add_definitions(
 )
 add_subdirectory(${PROJECT_SOURCES})
 add_subdirectory(${PROJECT_TESTS})
-add_subdirectory(${PROJECT_PERFORMANCE_TESTS})
 
 #
 #QT Creator stuff

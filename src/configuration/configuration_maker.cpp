@@ -217,7 +217,6 @@ bool configuration_maker::cache_normalization_configuration(const json&js)
 			return false;
 		}
 
-		cw->normalization_rules.emplace_back(vhost, path, user_agent, cache_key);
 		notify_valid();
 	}
 	return true;

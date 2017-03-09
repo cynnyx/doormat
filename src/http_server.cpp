@@ -91,7 +91,6 @@ void http_server::start(io_service_pool::main_init_fn_t& main_init) noexcept
 			using namespace service;
 			locator::stats_manager().register_handler();
 // 			initializer::set_socket_pool(new network::magnet(1));
-			initializer::thread_local_socket_pool_initializer();
 
 			auto&& cw = locator::configuration();
 			auto il = new logging::inspector_log{ cw.get_log_path(), "inspector", cw.inspector_active() };

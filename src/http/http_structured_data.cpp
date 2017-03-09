@@ -111,18 +111,6 @@ void http_structured_data::filter( std::function<bool ( const header_t& ) >  pre
 	}
 }
 
-void http_structured_data::add_destination_header( const dstring& key )
-{
-	destination_headers.emplace_back( std::move(key) );
-}
-
-void http_structured_data::set_destination_header( const routing::abstract_destination_provider::address& addr )
-{
-	for( const auto& k : destination_headers )
-		if(addr.is_valid())
-			header(k, addr.ipv6().to_string().c_str());
-	destination_headers.clear();
-}
 
 void http_structured_data::chunked(bool val) noexcept
 {

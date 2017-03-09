@@ -10,7 +10,6 @@
 
 #include "../utils/doormat_types.h"
 #include "../utils/utils.h"
-#include "../board/abstract_destination_provider.h"
 #include "../http_parser/http_parser.h"
 
 namespace http
@@ -73,8 +72,8 @@ public:
 	const headers_map& headers() const noexcept { return _headers; }
 	std::size_t headers_count() const noexcept { return _headers.size(); }
 
-	void add_destination_header( const dstring& key );
-	void set_destination_header( const routing::abstract_destination_provider::address& );
+	//void add_destination_header( const dstring& key );
+	//void set_destination_header( const routing::abstract_destination_provider::address& );
 
 	bool has( const dstring& ) const noexcept;
 	bool has( std::function<bool ( const header_t& ) > ) const noexcept;

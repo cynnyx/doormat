@@ -2,8 +2,6 @@
 
 #include "../src/service_locator/service_initializer.h"
 #include "../src/chain_of_responsibility/chain_of_responsibility.h"
-#include "../src/errors/error_messages.h"
-#include "../src/network/socket_pool.h"
 
 #include <gtest/gtest.h>
 #include <boost/optional.hpp>

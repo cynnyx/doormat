@@ -86,21 +86,6 @@ public:
 	 */
 	static stats::stats_manager& stats_manager() noexcept;
 
-	/**
-	 * @brief destination_provider
-	 * @return
-	 */
-	static routing::abstract_destination_provider& destination_provider() noexcept;
-
-	/**
-	 * @brief filesystem_manager
-	 * @return
-	 */
-	static fs_manager_wrapper& fs_manager() noexcept;
-
-	static network::socket_factory& socket_pool() noexcept;
-	
-	static network::abstract_factory_of_socket_factory& socket_pool_factory() noexcept;
 };
 
 }

@@ -9,7 +9,6 @@
 #include <memory>
 
 #include "header_configuration.h"
-#include "cache_normalization_rule.h"
 #include "../IPV4Network.h"
 
 /**
@@ -80,7 +79,6 @@ class configuration_wrapper
 	uint8_t comp_level{0};
 	uint32_t comp_minsize{0};
 	std::vector<std::string> compressed_mime_types;
-	std::vector<cache_normalization_rule> normalization_rules;
 
 	std::string magnet_metadata_map{""};
 	std::string magnet_data_map{""};
@@ -122,19 +120,6 @@ public:
 	virtual uint32_t get_compression_minsize() const noexcept { return comp_minsize; }
 	virtual uint8_t get_max_connection_attempts() const noexcept { return max_connection_attempts; }
 	virtual size_t get_fd_limit() const noexcept { return fd_limit; }
-	virtual const std::vector<cache_normalization_rule>& get_cache_normalization_rules(){ return normalization_rules; }
-	virtual void set_normalization_rules(const std::vector<cache_normalization_rule>& rules)
-	{
-		normalization_rules.clear();
-		for(auto &&r: rules)
-		{
-			normalization_rules.push_back(r);
-		}
-	}
-
-	virtual bool magnet_enabled() { return magnet_data_map.size() || magnet_metadata_map.size(); }
-	virtual const std::string& get_magnet_data_map() const noexcept { return magnet_data_map; }
-	virtual const std::string& get_magnet_metadata_map() const noexcept { return magnet_metadata_map; }
 
 	certificates_iterator iterator() const;
 	void set_port_maybe(int32_t forced_port);

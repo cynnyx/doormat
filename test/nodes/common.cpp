@@ -185,7 +185,6 @@ void setup( configuration::configuration_wrapper* cw, logging::inspector_log* il
 	service::initializer::set_configuration(cw);
 	service::initializer::set_service_pool(new server::io_service_pool{ cw->get_thread_number() });
 	service::initializer::set_stats_manager(new stats::stats_manager{ cw->get_thread_number() });
-	service::initializer::set_destination_provider(new routing::board_map{});
 	service::initializer::set_access_log(new logging::access_log{ cw->get_log_path() + "access_logs", "access"});
 	if ( il == nullptr )
 	{
@@ -196,7 +195,6 @@ void setup( configuration::configuration_wrapper* cw, logging::inspector_log* il
 	}
 	else
 		service::initializer::set_inspector_log( il );
-	service::initializer::set_fs_manager(new fs_manager_wrapper{});
 }
 
 void teardown()
@@ -204,11 +202,9 @@ void teardown()
 	service::locator::service_pool().stop();
 	service::initializer::set_access_log(nullptr);
 	service::initializer::set_inspector_log(nullptr);
-	service::initializer::set_destination_provider(nullptr);
 	service::initializer::set_stats_manager(nullptr);
 	service::initializer::set_service_pool(nullptr);
 	service::initializer::set_configuration(nullptr);
-	service::initializer::set_fs_manager(nullptr);
 }
 
 void teardown( std::unique_ptr<node_interface>& chain )
@@ -220,12 +216,11 @@ void teardown( std::unique_ptr<node_interface>& chain )
 void init_thread_local()
 {
 	service::locator::stats_manager().register_handler();
-	service::initializer::set_socket_pool(new network::socket_pool(1));
 }
 
 void stop_thread_local()
 {
-	service::locator::socket_pool().stop();
+
 }
 
 }

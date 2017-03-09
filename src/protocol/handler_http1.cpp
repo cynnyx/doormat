@@ -11,8 +11,7 @@ namespace server
 {
 
 handler_http1::handler_http1(http::proto_version version)
-	: ne(*this)
-	, version{version}
+	: version{version}
 {
 	LOGINFO("HTTP1 selected");
 }
@@ -65,13 +64,13 @@ bool handler_http1::start() noexcept
 	auto fcb = [this](int error,bool&)
 	{
 		LOGTRACE("Codec failure handling");
-		http::proto_version pv = version;
+		/*http::proto_version pv = version;
 		if ( ! error_code_distruction && some_message_started( pv ) )
 		{
 			switch ( error )
 			{
 				case HPE_CB_url:
-					efa = errors::error_factory_async::error_response( ne,
+					errors::error_factory_async::error_response( ne,
 						static_cast<uint16_t>( errors::http_error_code::uri_too_long ), pv);
 					break;
 
@@ -93,7 +92,7 @@ bool handler_http1::start() noexcept
 				case HPE_INVALID_CHUNK_SIZE:
 				case HPE_INVALID_CONSTANT:
 				case HPE_INVALID_INTERNAL_STATE:
-					efa = errors::error_factory_async::error_response( ne,
+					errors::error_factory_async::error_response( ne,
 						static_cast<uint16_t>( errors::http_error_code::bad_request ), pv);
 					break;
 				case HPE_STRICT:
@@ -102,7 +101,8 @@ bool handler_http1::start() noexcept
 				default:
 					break;
 			}
-		}
+		}*/
+		//TODO: manage HTTP1 error.
 	};
 
 	decoder.register_callback(std::move(scb), std::move(hcb), std::move(bcb), std::move(tcb), std::move(ccb), std::move(fcb));
