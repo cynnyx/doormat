@@ -12,7 +12,7 @@ LDFLAGS_BAK=${LDFLAGS}
 trap 'export CPPFLAGS=${CPPFLAGS_BAK};export LDFLAGS=${LDFLAGS_BAK}; export VERBOSE=${VERBOSE_BAK};cd $START_DIR' EXIT
 
 # Parse args
-JOBS=8
+JOBS=$(nproc)
 USAGE="$0"
 USAGE="\n$USAGE [-j/--jobs num_jobs]"
 USAGE="\n$USAGE [-f/--force deps re-fetch/re-build]"
