@@ -14,7 +14,7 @@ matrix:
     addons:
       apt:
         sources: ['ubuntu-toolchain-r-test', 'llvm-toolchain-precise-3.8']
-        packages: ['clang-3.8', 'libboost-dev']
+        packages: ['clang-3.8', 'libboost1.60-dev']
     env: COMPILER=clang++-3.8
 
 notifications:
