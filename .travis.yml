@@ -7,14 +7,14 @@ matrix:
     addons:
       apt:
         sources: ['ubuntu-toolchain-r-test']
-        packages: ['g++-5']
+        packages: ['g++-5', 'libboost-dev']
     env: COMPILER=g++-5
   - os: linux
     compiler: clang
     addons:
       apt:
         sources: ['ubuntu-toolchain-r-test', 'llvm-toolchain-precise-3.8']
-        packages: ['clang-3.8']
+        packages: ['clang-3.8', 'libboost-dev']
     env: COMPILER=clang++-3.8
 
 notifications:
