@@ -24,6 +24,7 @@ notifications:
 
 install:
 - echo ${PATH}
+- ./travis.sh
 - cmake --version
 - export CXX=${COMPILER}
 - echo ${CXX}
