@@ -10,20 +10,6 @@ using namespace boost::asio::ip;
 namespace server
 {
 
-class http_server::reuse_port
-{
-	int val;
-
-public:
-	using protocol_type = boost::asio::ip::tcp::socket::protocol_type;
-
-	reuse_port(bool optval) : val(optval) {}
-	int level(protocol_type) const { return SOL_SOCKET; }
-	int name(protocol_type) const { return SO_REUSEPORT; }
-	const void* data(protocol_type) const { return &val; }
-	size_t size(protocol_type) const { return sizeof(val); }
-};
-
 void log_ssl_errors(const boost::system::error_code& ec)
 {
 	string err{" ("};

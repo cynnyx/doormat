@@ -24,11 +24,6 @@ using ssl_connector = connector<ssl_socket>;
 
 class http_server : private boost::noncopyable
 {
-	/**
-	 * the SO_REUSEPORT is not available in boost::asio
-	 * so we define it by ourselves.
-	 */
-	class reuse_port;
 	std::atomic_bool running{false};
 	size_t _backlog;
 	size_t _threads;
