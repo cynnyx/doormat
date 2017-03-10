@@ -328,7 +328,10 @@ dstring& dstring::append(const char* ndata, size_t len) noexcept
 			}
 
 			if(!_refcount || *_refcount)
+			{
+				--*_refcount;
 				_refcount = new uint(0);
+			}
 			else
 				delete[] _data;
 
