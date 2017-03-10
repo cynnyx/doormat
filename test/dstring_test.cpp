@@ -175,6 +175,22 @@ TEST(dstring, append)
 	EXPECT_EQ(std::string(d1),"abcdefghilmn");
 }
 
+TEST(dstring, append_immutable)
+{
+	auto d1 = dstring::make_immutable("abcd");
+	EXPECT_EQ(d1.size(), 4U);
+
+	dstring d2 = d1;
+	EXPECT_TRUE(d2 == d1);
+	EXPECT_TRUE(d2.cdata() == d1.cdata());
+
+	d2.append("ilmn",4);
+	EXPECT_FALSE(d2 == d1);
+	EXPECT_FALSE(d2.cdata() == d1.cdata());
+
+	EXPECT_EQ(std::string(d2),"abcdilmn");
+}
+
 TEST(dstring, append_insensitive)
 {
 	dstring d1{"aBcD",4, true};
