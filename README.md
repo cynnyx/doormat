@@ -3,6 +3,8 @@
 # Doormat
 Reverse Proxy supporting protocols such as HTTP 2.0 and HTTP 1.*
 
+[![Build Status](https://travis-ci.org/cynnyx/doormat.svg?branch=master)](https://travis-ci.org/cynnyx/doormat)
+
 # Contributors
 
 Tazio Ceri aka [tazio](https://github.com/tazio)<br/>
