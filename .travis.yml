@@ -6,15 +6,24 @@ matrix:
     compiler: gcc
     addons:
       apt:
-        sources: ['ubuntu-toolchain-r-test', 'boost-latest']
-        packages: ['g++-5', 'libboost1.54']
+        sources:
+          - ubuntu-toolchain-r-test
+          - boost-latest
+        packages:
+          - g++-5
+          - libboost1.54
     env: COMPILER=g++-5
   - os: linux
     compiler: clang
     addons:
       apt:
-        sources: ['ubuntu-toolchain-r-test', 'llvm-toolchain-precise-3.8']
-        packages: ['clang-3.8', 'libboost1.60-dev']
+        sources:
+          - ubuntu-toolchain-r-test
+          - llvm-toolchain-precise-3.8
+          - boost-latest
+        packages:
+          - clang-3.8
+          - libboost1.54
     env: COMPILER=clang++-3.8
 
 notifications:
@@ -30,7 +39,7 @@ install:
 - echo ${CXX}
 - ${CXX} --version
 - ${CXX} -v
-- ./utils/buildAll.sh
+- ./utils/buildAll.sh --jobs 2
 
 script:
 - mkdir -p build && cd build
