@@ -58,6 +58,7 @@ WORKING_DIR="$(pwd)/$(dirname "$0")"
 BUILD_DIR="${WORKING_DIR}/../build"
 
 # Must execute from the build folder
+mkdir -p ${BUILD_DIR}
 cd "${BUILD_DIR}" || (echo "fatal: Can't access build folder"; exit -1)
 echo "Cleaning build folder";
 rm -rf ./*
