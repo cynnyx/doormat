@@ -63,6 +63,7 @@ target_include_directories(
 	PRIVATE ${ZLIB_INCLUDE_DIRS}
 	PRIVATE ${SPDLOG_INCLUDE_DIR}
         PRIVATE ${UVW_INCLUDE_DIR}
+        PRIVATE ${UV_INCLUDE_DIR}
 )
 
 target_link_libraries(
@@ -75,6 +76,7 @@ target_link_libraries(
 	PRIVATE ${CYNNYPP_LIB}
 	PRIVATE ${CITYHASH_LIB}
 	PRIVATE ${ZLIB_LIBRARIES}
+        PRIVATE ${UV_SHARED_LIBRARY}
 )
 
 #
@@ -102,6 +104,7 @@ target_include_directories(
 	PRIVATE ${CITYHASH_INCLUDE_DIRS}
         PRIVATE ${SPDLOG_INCLUDE_DIR}
         PRIVATE ${UVW_INCLUDE_DIR}
+        PRIVATE ${UV_INCLUDE_DIR}
 )
 
 target_link_libraries(
@@ -114,6 +117,7 @@ target_link_libraries(
 	PRIVATE ${NGHTTP2_ASIO_LIB}
 	PRIVATE ${CYNNYPP_LIB}
 	PRIVATE ${CITYHASH_LIB}
+        PRIVATE ${UV_SHARED_LIBRARY}
 )
 
 

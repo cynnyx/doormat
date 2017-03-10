@@ -116,6 +116,7 @@ set(UVW_ROOT_DIR "${PROJECT_SOURCE_DIR}/${PROJECT_DEPS_DIR}/uvw")
 #context 
 find_package(Boost 1.54 COMPONENTS system thread log program_options regex filesystem REQUIRED )
 find_package(UVW REQUIRED)
+find_package(UV REQUIRED)
 find_package(OpenSSL 1.0.2 REQUIRED)
 find_package(Threads REQUIRED)
 find_package(NgHTTP2 REQUIRED)
