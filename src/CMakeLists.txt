@@ -11,16 +11,12 @@ set(SPDLOG_LIB "spdlog")
 
 # common sources: will be packed inside a static lib and linked against all executables
 set(DOORMAT_COMMON_SOURCES
-	board/board.cpp
-	board/board_map.cpp
-	configuration/configuration_wrapper.cpp
+		configuration/configuration_wrapper.cpp
 	configuration/header_configuration.cpp
 	constants.cpp
 	daemon.cpp
 	init.cpp
-	errors/error_factory_async.cpp
-	errors/error_messages.cpp
-	http/http_codec.cpp
+		http/http_codec.cpp
 	http/http_commons.cpp
 	http/http_structured_data.cpp
 	http/http_response.cpp
@@ -35,44 +31,21 @@ set(DOORMAT_COMMON_SOURCES
 	log/access_record.cpp
 	protocol/handler_factory.cpp
 	protocol/handler_http1.cpp
-	protocol/handler_http2.cpp
-	protocol/stream_handler.cpp
-	requests_manager/client_wrapper.cpp
-	requests_manager/header_filter.cpp
-	requests_manager/interreg_filter.cpp
-	requests_manager/error_file_provider.cpp
-	requests_manager/error_producer.cpp
-	requests_manager/method_filter.cpp
-	requests_manager/request_stats.cpp
-	requests_manager/sys_filter.cpp
-	requests_manager/id_header_adder.cpp
-	requests_manager/franco_host.cpp
-	requests_manager/configurable_header_filter.cpp
-	requests_manager/cache_manager/cache_manager.cpp
-	requests_manager/gzip_filter.cpp
-	stats/stats_manager.cpp
+		stats/stats_manager.cpp
 	service_locator/service_locator.cpp
-	utils/resource_reader.cpp
-	utils/dstring.cpp
+        utils/dstring.cpp
 	utils/dstring_factory.cpp
 	utils/sni_solver.cpp
 	utils/utils.cpp
 	utils/base64.cpp
 	utils/log_wrapper.cpp
-	errors/error_message_details.cpp
-	errors/internal_error.cpp
-	requests_manager/size_filter.cpp
-	fs/fs_manager_wrapper.cpp
-	http2/session.cpp
+		errors/internal_error.cpp
+		http2/session.cpp
 	http2/stream.cpp
 	http2/http2alloc.cpp
 	configuration/configuration_maker.cpp
-	configuration/cache_normalization_rule.cpp
-	network/socket_pool.cpp
-	network/magnet.cpp
-	log/inspector_serializer.cpp
-	requests_manager/cache_cleaner.cpp
-)
+		log/inspector_serializer.cpp
+		)
 
 #
 # ----------------- doormat_common archive library -------------------

@@ -1,27 +1,11 @@
 #include "handler_factory.h"
 #include "handler_http1.h"
-#include "handler_http2.h"
 #include "../http2/session.h"
 #include "../connector.h"
 #include "../utils/log_wrapper.h"
 #include "../chain_of_responsibility/node_interface.h"
 #include "../chain_of_responsibility/error_code.h"
 #include "../chain_of_responsibility/chain_of_responsibility.h"
-#include "../requests_manager/method_filter.h"
-#include "../requests_manager/error_producer.h"
-#include "../requests_manager/client_wrapper.h"
-#include "../requests_manager/date_setter.h"
-#include "../requests_manager/sys_filter.h"
-#include "../requests_manager/interreg_filter.h"
-#include "../requests_manager/error_file_provider.h"
-#include "../requests_manager/header_filter.h"
-#include "../requests_manager/franco_host.h"
-#include "../requests_manager/request_stats.h"
-#include "../requests_manager/id_header_adder.h"
-#include "../requests_manager/configurable_header_filter.h"
-#include "../requests_manager/gzip_filter.h"
-#include "../requests_manager/cache_manager/cache_manager.h"
-#include "../requests_manager/cache_cleaner.h"
 #include "../dummy_node.h"
 #include "../utils/likely.h"
 #include "../configuration/configuration_wrapper.h"
@@ -140,21 +124,11 @@ handler_interface* handler_factory::build_handler(handler_type type, http::proto
 	switch(type)
 	{
 		case ht_h1:
-		{
 			LOGDEBUG("HTTP1 selected");
 			return new handler_http1( proto );
-		}
 		case ht_h2:
-			if ( service::locator::configuration().http2_ng() )
-			{
-				LOGTRACE("HTTP2 NG selected");
-				return new http2::session();
-			}
-			else
-			{
-				LOGTRACE("HTTP2 old selected");
-				return new handler_http2();
-			}
+			LOGTRACE("HTTP2 NG selected");
+			return new http2::session();
 		case ht_unknown: return nullptr;
 	}
 	return nullptr;
@@ -183,21 +157,7 @@ void handler_interface::connector( connector_interface * conn )
 std::function<std::unique_ptr<node_interface>()> handler_interface::make_chain = []()
 {
 	return make_unique_chain<node_interface,
-		nodes::error_producer, //check efa; node per se seems ok
-		nodes::request_stats,
-		nodes::date_setter,
-		nodes::header_filter,
-		nodes::method_filter,
-		nodes::franco_host,
-		nodes::sys_filter,
-		nodes::cache_cleaner,
-		nodes::interreg_filter,
-		nodes::error_file_provider,
-		nodes::id_header_adder,
-		nodes::configurable_header_filter,
-		nodes::cache_manager,
-		nodes::gzip_filter,
-		nodes::client_wrapper>();
+		dummy_node>();
 };
 	
 

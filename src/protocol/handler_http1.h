@@ -3,7 +3,6 @@
 #include <memory>
 #include "../http/http_codec.h"
 #include "../http/http_structured_data.h"
-#include "../errors/error_factory_async.h"
 #include "../chain_of_responsibility/node_erased.h"
 #include "../log/access_record.h"
 
@@ -38,8 +37,6 @@ class handler_http1 : public handler_interface
 	bool error_happened = false;
 	http::http_codec decoder;
 	errors::error_code error_code_distruction;
-	node_erased ne;
-	std::shared_ptr<errors::error_factory_async> efa;
 	http::proto_version version{http::proto_version::UNSET};
 public:
 	handler_http1(http::proto_version version);

@@ -1,15 +1,12 @@
 #pragma once
 
 #include "service_locator.h"
-#include "../fs/fs_manager_wrapper.h"
 #include "../configuration/configuration_wrapper.h"
 #include "../configuration/configuration_parser.h"
 #include "../io_service_pool.h"
 #include "../log/log.h"
 #include "../log/inspector_serializer.h"
-#include "../board/board_map.h"
 #include "../stats/stats_manager.h"
-#include "../network/socket_factory.h"
 
 #include <thread>
 
@@ -46,36 +43,23 @@ public:
 		auto sp = new server::io_service_pool{ cw.get_thread_number() };
 		set_service_pool(sp);
 
-		auto fsmw = new fs_manager_wrapper();
-		set_fs_manager( fsmw );
-
 		auto sm = new stats::stats_manager{ cw.get_thread_number() };
 		set_stats_manager(sm);
 
-		auto dp = new routing::board_map{};
-		set_destination_provider(dp);
 
 		auto al = new logging::access_log{ cw.get_log_path(), "access"};
 		set_access_log(al);
 		
 		// Is missing socket pool factory
 	}
-	
-	static void thread_local_socket_pool_initializer()
-	{
-		auto factory = locator::_socket_pool_factory->get_socket_factory(2);
-		set_socket_pool( factory.release() );
-	}
+
 
 	static void terminate_services()
 	{
 		locator::_access_log.reset();
 		locator::_inspector_log.reset();
-		locator::_destination_provider.reset();
 		locator::_stats_manager.reset();
-		locator::_fsm.reset();
 		locator::_configuration.reset();
-		locator::_socket_pool.reset();
 	}
 
 	static void set_configuration(configuration::configuration_wrapper* a)
@@ -102,26 +86,7 @@ public:
 	{
 		locator::_stats_manager.reset(a);
 	}
-
-	static void set_destination_provider(routing::abstract_destination_provider* a)
-	{
-		locator::_destination_provider.reset(a);
-	}
-
-	static void set_fs_manager(fs_manager_wrapper* a)
-	{
-		locator::_fsm.reset(a);
-	}
-
-	static void set_socket_pool(network::socket_factory *sp)
-	{
-		locator::_socket_pool.reset(sp);
-	}
 	
-	static void set_socket_pool_factory(network::abstract_factory_of_socket_factory* afosf)
-	{
-		locator::_socket_pool_factory.reset( afosf );
-	}
 };
 
 }//service

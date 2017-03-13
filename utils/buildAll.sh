@@ -82,6 +82,16 @@ fi
 #export BOOST_ROOT=$BOOST_ROOT_DIR
 #echo "Boost is installed at ${BOOST_ROOT_DIR}"
 
+#Get UVW
+UVW_ROOT_DIR="${BUILD_DIR}/../deps/uvw"
+if [ ! -e "${UVW_ROOT_DIR}/src/uvw.hpp" ] || [ "x${FORCE}" == "xyes" ]; then
+	cd "${BUILD_DIR}/../deps"||exit
+	git submodule init uvw
+	git submodule update uvw
+	cd ${UVW_ROOT_DIR} || exit
+	./deps.sh
+fi
+
 # Get GTest
 GTEST_ROOT_DIR="${BUILD_DIR}/../deps/gtest/googletest"
 if [ ! -e "${GTEST_ROOT_DIR}/libgtest.a" ] || [ "x${FORCE}" == "xyes" ]; then

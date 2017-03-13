@@ -43,7 +43,6 @@ set(PROJECT_ARCHIVE_OUTPUT_DIRECTORY lib/static)
 set(PROJECT_SOURCES src)
 set(PROJECT_UTILS utils)
 set(PROJECT_TESTS test)
-set(PROJECT_PERFORMANCE_TESTS test_performance)
 set(PROJECT_DEPS_DIR deps)
 set(PROJECT_DOCS docs)
 set(DOORMAT_COMMON_ARCHIVE_LIB doormat_common)
@@ -113,8 +112,10 @@ set(CITYHASH_ROOT "${PROJECT_SOURCE_DIR}/${PROJECT_DEPS_DIR}/cityhash")
 set(Boost_USE_STLPORT ON)
 set(Boost_USE_MULTITHREADED ON)
 set(SPDLOG_ROOT "${PROJECT_SOURCE_DIR}/${PROJECT_DEPS_DIR}/spdlog")
+set(UVW_ROOT_DIR "${PROJECT_SOURCE_DIR}/${PROJECT_DEPS_DIR}/uvw")
 #context 
 find_package(Boost 1.54 COMPONENTS system thread log program_options regex filesystem REQUIRED )
+find_package(UVW REQUIRED)
 find_package(OpenSSL 1.0.2 REQUIRED)
 find_package(Threads REQUIRED)
 find_package(NgHTTP2 REQUIRED)
@@ -234,7 +235,6 @@ add_definitions(
 )
 add_subdirectory(${PROJECT_SOURCES})
 add_subdirectory(${PROJECT_TESTS})
-add_subdirectory(${PROJECT_PERFORMANCE_TESTS})
 
 #
 #QT Creator stuff

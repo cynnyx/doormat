@@ -9,7 +9,6 @@
 #include <memory>
 
 #include "header_configuration.h"
-#include "cache_normalization_rule.h"
 #include "../IPV4Network.h"
 
 /**
@@ -57,10 +56,8 @@ class configuration_wrapper
 	uint64_t board_timeout{ 26000L }; // Transaction timeout - board side
 	uint8_t max_connection_attempts{3};
 
-
 	void parse_network_file(const std::string&, std::list<network::IPV4Network>&);
 	bool http2_disabled{false};
-	bool http2_next{false};
 	bool inspector{false};
 	bool daemonize{false};
 	std::string daemon_path{""};
@@ -80,7 +77,6 @@ class configuration_wrapper
 	uint8_t comp_level{0};
 	uint32_t comp_minsize{0};
 	std::vector<std::string> compressed_mime_types;
-	std::vector<cache_normalization_rule> normalization_rules;
 
 	std::string magnet_metadata_map{""};
 	std::string magnet_data_map{""};
@@ -96,7 +92,6 @@ public:
 	virtual bool comp_mime_matcher(const std::string&) const noexcept;
 
 	virtual bool http2_is_disabled() const noexcept{ return http2_disabled; }
-	virtual bool http2_ng() const noexcept { return http2_next; }
 	virtual bool inspector_active() const noexcept { return inspector; }
 	virtual std::string get_error_filename( uint16_t code ) const;
 	virtual std::string get_route_map() const noexcept { return route_map; }
@@ -122,19 +117,6 @@ public:
 	virtual uint32_t get_compression_minsize() const noexcept { return comp_minsize; }
 	virtual uint8_t get_max_connection_attempts() const noexcept { return max_connection_attempts; }
 	virtual size_t get_fd_limit() const noexcept { return fd_limit; }
-	virtual const std::vector<cache_normalization_rule>& get_cache_normalization_rules(){ return normalization_rules; }
-	virtual void set_normalization_rules(const std::vector<cache_normalization_rule>& rules)
-	{
-		normalization_rules.clear();
-		for(auto &&r: rules)
-		{
-			normalization_rules.push_back(r);
-		}
-	}
-
-	virtual bool magnet_enabled() { return magnet_data_map.size() || magnet_metadata_map.size(); }
-	virtual const std::string& get_magnet_data_map() const noexcept { return magnet_data_map; }
-	virtual const std::string& get_magnet_metadata_map() const noexcept { return magnet_metadata_map; }
 
 	certificates_iterator iterator() const;
 	void set_port_maybe(int32_t forced_port);
