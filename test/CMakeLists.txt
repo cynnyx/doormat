@@ -25,6 +25,7 @@ set(DOORMAT_TESTCASES_SOURCES
 		mock_server/mock_server.cpp
 	network/communicator_test.cpp
 		nodes/common.cpp
+		endpoints/tree_test.cpp
 		)
 
 add_executable(${DOORMAT_TEST_EXECUTABLE} ${DOORMAT_TESTCASES_SOURCES})
