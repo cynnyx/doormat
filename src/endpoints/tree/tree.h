@@ -18,14 +18,14 @@ namespace endpoints {
 using generating_function_t = std::function<std::unique_ptr<node_interface>()>;
 class tree
 {
-
-
 public:
     tree(std::string label, char splitToken='/')
     : node_label{std::move(label)}, splitToken{splitToken}
     {};
 
-    void addChild(const std::string &path_pattern, generating_function_t gen);
+    void addPattern(const std::string &path_pattern, generating_function_t gen);
+
+    bool matches(const std::string &path) const;
 
    /* bool matches(const std::string &path) const;
 
@@ -34,6 +34,12 @@ public:
     std::unique_ptr<node_interface> get(http::http_request& req) const;
 */
 private:
+
+    bool matches(std::string::const_iterator path_it, std::string::const_iterator end) const;
+
+    bool wildcard_matches(std::string::const_iterator path_it, std::string::const_iterator end) const;
+
+    bool parameter_matches(std::string::const_iterator path_it, std::string::const_iterator end) const;
 
     void addChild(std::vector<std::string>::iterator begin, std::vector<std::string>::iterator cend, generating_function_t gen);
 
