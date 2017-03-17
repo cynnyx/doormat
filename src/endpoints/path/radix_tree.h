@@ -4,8 +4,6 @@
 #include <memory>
 #include <functional>
 #include <vector>
-#include <iostream>
-#include <algorithm>
 #include <experimental/optional>
 #include "../../chain_of_responsibility/node_interface.h"
 
@@ -16,10 +14,10 @@ namespace http {
 namespace endpoints {
 
 using generating_function_t = std::function<std::unique_ptr<node_interface>()>;
-class path_tree
+class radix_tree
 {
 public:
-    path_tree(std::string label, char splitToken='/')
+    radix_tree(std::string label, char splitToken='/')
     : node_label{std::move(label)}, splitToken{splitToken}
     {};
 
@@ -31,11 +29,11 @@ public:
 
 private:
 
-    std::experimental::optional<const path_tree*> matches(std::string::const_iterator path_it, std::string::const_iterator end) const;
+    std::experimental::optional<const radix_tree*> matches(std::string::const_iterator path_it, std::string::const_iterator end) const;
 
-    std::experimental::optional<const path_tree*> wildcard_matches(std::string::const_iterator path_it, std::string::const_iterator end) const;
+    std::experimental::optional<const radix_tree*> wildcard_matches(std::string::const_iterator path_it, std::string::const_iterator end) const;
 
-    std::experimental::optional<const path_tree*> parameter_matches(std::string::const_iterator path_it, std::string::const_iterator end) const;
+    std::experimental::optional<const radix_tree*> parameter_matches(std::string::const_iterator path_it, std::string::const_iterator end) const;
 
     void addChild(std::vector<std::string>::iterator begin, std::vector<std::string>::iterator cend, generating_function_t gen);
 
@@ -44,7 +42,7 @@ private:
 
     const std::string node_label;
     std::experimental::optional<generating_function_t> generating_function;
-    std::vector<std::unique_ptr<path_tree>> childs;
+    std::vector<std::unique_ptr<radix_tree>> childs;
     const char splitToken;
 
 };

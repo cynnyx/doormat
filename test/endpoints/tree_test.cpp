@@ -1,11 +1,11 @@
 #include <gtest/gtest.h>
-#include "../../src/endpoints/tree/path_tree.h"
+#include "../../src/endpoints/path/radix_tree.h"
 #include "../../src/chain_of_responsibility/node_interface.h"
 
 TEST(endpoints, duplicate_path_fails) {
     using namespace endpoints;
     int count = 0;
-    auto root = std::make_unique<path_tree>("");
+    auto root = std::make_unique<radix_tree>("");
     root->addPattern("/test/", [&count]()
     {
         ++count;
@@ -31,7 +31,7 @@ TEST(endpoints, duplicate_path_fails) {
 TEST(endpoints, duplicate_complex_path_fails) {
     using namespace endpoints;
     int count = 0;
-    auto root = std::make_unique<path_tree>("");
+    auto root = std::make_unique<radix_tree>("");
     root->addPattern("/test/*/ciaone/", [&count]()
     {
         ++count;
@@ -51,7 +51,7 @@ TEST(endpoints, duplicate_complex_path_fails) {
 
 TEST(endpoints, shortest_path_last_works) {
     using namespace endpoints;
-    auto root = std::make_unique<path_tree>("");
+    auto root = std::make_unique<radix_tree>("");
     root->addPattern("/prova/di/path/specifico", []()
     { return std::unique_ptr<node_interface>{nullptr}; });
     EXPECT_NO_THROW(root->addPattern("/prova/", []()
@@ -61,7 +61,7 @@ TEST(endpoints, shortest_path_last_works) {
 
 TEST(endpoints, append_path_works) {
     using namespace endpoints;
-    auto root = std::make_unique<path_tree>("");
+    auto root = std::make_unique<radix_tree>("");
     root->addPattern("/prova/di/path/specifico", []()
     { return std::unique_ptr<node_interface>{nullptr}; });
     EXPECT_NO_THROW(root->addPattern("/prova/di/path/ancora/piu/specifico", []()
@@ -70,14 +70,14 @@ TEST(endpoints, append_path_works) {
 
 TEST(endpoints, wildcard_matching) {
     using namespace endpoints;
-    auto root = std::make_unique<path_tree>("");
+    auto root = std::make_unique<radix_tree>("");
     root->addPattern("/ai/*", [](){ return std::unique_ptr<node_interface>{nullptr}; });
     EXPECT_TRUE(root->matches("/ai/http://prova.com/image.jpg?q=prova"));
 }
 
 TEST(endpoints, parameter_matching) {
     using namespace endpoints;
-    auto root = std::make_unique<path_tree>("");
+    auto root = std::make_unique<radix_tree>("");
     root->addPattern("/ai/{imgUrl}/saliency/something", [](){ return std::unique_ptr<node_interface>{nullptr}; });
     EXPECT_TRUE(root->matches("/ai/thisisafakeparameter/saliency/something"));
     EXPECT_FALSE(root->matches("/ai/thisisafakeparameter/ciao/ciccio"));
@@ -86,7 +86,7 @@ TEST(endpoints, parameter_matching) {
 }
 TEST(endpoints, more_specific_matching) {
     using namespace endpoints;
-    auto root = std::make_unique<path_tree>("");
+    auto root = std::make_unique<radix_tree>("");
     root->addPattern("/ai/*/prova", [](){ return std::unique_ptr<node_interface>{nullptr}; });
     EXPECT_FALSE(root->matches("/ai/ciaone"));
     EXPECT_TRUE(root->matches("/ai/ciaone/prova"));

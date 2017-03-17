@@ -1,12 +1,13 @@
-#include "path_tree.h"
+#include "radix_tree.h"
 #include <sstream>
 #include <string>
+#include <algorithm>
 
 namespace endpoints {
 
 generating_function_t default_function = [](){ return std::unique_ptr<node_interface>{nullptr};};
 
-void path_tree::addPattern(const std::string &path_pattern, generating_function_t gen)
+void radix_tree::addPattern(const std::string &path_pattern, generating_function_t gen)
 {
     if(!path_pattern.size()) throw std::invalid_argument{"Cannot insert empty pattern in tree."};
     if(node_label == "/" && path_pattern == "/") { //special case: root
@@ -23,7 +24,7 @@ void path_tree::addPattern(const std::string &path_pattern, generating_function_
     addChild(tokens.begin(), tokens.end(), gen);
 }
 
-void path_tree::addChild(std::vector<std::string>::iterator begin, std::vector<std::string>::iterator end, generating_function_t gen) {
+void radix_tree::addChild(std::vector<std::string>::iterator begin, std::vector<std::string>::iterator end, generating_function_t gen) {
     /** - We already match with the previous by inductive hypothesis. So we just have to move forward.*/
     if(begin == end)
     {
@@ -41,8 +42,8 @@ void path_tree::addChild(std::vector<std::string>::iterator begin, std::vector<s
     appendChild(begin, end, std::move(gen));
 }
 //we're sure that begin != end as appendChild is called by addPattern, which checks it in advance.
-void path_tree::appendChild(std::vector<std::string>::iterator begin, std::vector<std::string>::iterator end, generating_function_t gen) {
-    childs.push_back(std::make_unique<path_tree>(*begin, splitToken));
+void radix_tree::appendChild(std::vector<std::string>::iterator begin, std::vector<std::string>::iterator end, generating_function_t gen) {
+    childs.push_back(std::make_unique<radix_tree>(*begin, splitToken));
     ++begin;
     if(begin != end) {
         childs.back()->addChild(begin, end, std::move(gen));
@@ -51,13 +52,13 @@ void path_tree::appendChild(std::vector<std::string>::iterator begin, std::vecto
     }
 }
 
-bool path_tree::matches(const std::string &path) const
+bool radix_tree::matches(const std::string &path) const
 {   if(!path.size()) return true;
     return bool(matches(path.cbegin(), path.cend()));
 }
 
-std::experimental::optional<const path_tree*> path_tree::matches(std::string::const_iterator path_it, std::string::const_iterator end) const {
-    while(path_it !=  end && *path_it== '/') ++path_it;
+std::experimental::optional<const radix_tree*> radix_tree::matches(std::string::const_iterator path_it, std::string::const_iterator end) const {
+    while(path_it !=  end && *path_it== splitToken) ++path_it;
     if(node_label == "*") {
         return wildcard_matches(path_it, end);
     }
@@ -76,7 +77,7 @@ std::experimental::optional<const path_tree*> path_tree::matches(std::string::co
     if(label_iterator == node_label.end()) {
         //it matches, but only with a partial path. so it is as if it does not match :D
         if(path_iterator == end) {
-            return bool(generating_function) ? this : std::experimental::optional<const path_tree*>{};
+            return bool(generating_function) ? this : std::experimental::optional<const radix_tree*>{};
         }
         /* Path has not been consumed: demand it to the childs. */
         for(auto &&c : childs) {
@@ -85,38 +86,38 @@ std::experimental::optional<const path_tree*> path_tree::matches(std::string::co
         }
     }
 
-    return std::experimental::optional<const path_tree*>{};
+    return std::experimental::optional<const radix_tree*>{};
 
 }
 
 
 
-std::experimental::optional<const path_tree*> path_tree::wildcard_matches(std::string::const_iterator path_it, std::string::const_iterator end) const
+std::experimental::optional<const radix_tree*> radix_tree::wildcard_matches(std::string::const_iterator path_it, std::string::const_iterator end) const
 {
-    auto nextPathBegin = std::find(path_it, end, '/');
-    if(nextPathBegin == end) return bool(generating_function) ? this : std::experimental::optional<const path_tree*>{};
+    auto nextPathBegin = std::find(path_it, end, splitToken);
+    if(nextPathBegin == end) return bool(generating_function) ? this : std::experimental::optional<const radix_tree*>{};
 
     for(auto &&c: childs) {
         auto tptr = c->matches(nextPathBegin, end);
         if(bool(tptr)) return tptr;
     }
     //if none of the child matches, we match only if * is an available termination.
-    return bool(generating_function) ? this : std::experimental::optional<const path_tree*>{};
+    return bool(generating_function) ? this : std::experimental::optional<const radix_tree*>{};
 }
 
 
-std::experimental::optional<const path_tree*> path_tree::parameter_matches(std::string::const_iterator path_it, std::string::const_iterator end) const
+std::experimental::optional<const radix_tree*> radix_tree::parameter_matches(std::string::const_iterator path_it, std::string::const_iterator end) const
 {
-    auto nextPathBegin = std::find(path_it, end, '/');
-    if(nextPathBegin == end) return bool(generating_function) ? this : std::experimental::optional<const path_tree*>{}; //we matched with a parameter.
+    auto nextPathBegin = std::find(path_it, end, splitToken);
+    if(nextPathBegin == end) return bool(generating_function) ? this : std::experimental::optional<const radix_tree*>{}; //we matched with a parameter.
     for(auto &&c: childs) {
         auto tptr = c->matches(nextPathBegin, end);
         if(bool(tptr)) return tptr;
     }
-    return std::experimental::optional<const path_tree*>{};
+    return std::experimental::optional<const radix_tree*>{};
 }
 
-std::unique_ptr<node_interface> path_tree::get(const std::string &str) const
+std::unique_ptr<node_interface> radix_tree::get(const std::string &str) const
 {
     if(str.empty()) return nullptr;
     auto treeptr = matches(str.cbegin(), str.cend());
