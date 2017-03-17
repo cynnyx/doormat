@@ -67,3 +67,29 @@ TEST(endpoints, append_path_works) {
     EXPECT_NO_THROW(root->addPattern("/prova/di/path/ancora/piu/specifico", []()
     { return std::unique_ptr<node_interface>{nullptr}; }));
 }
+
+TEST(endpoints, wildcard_matching) {
+    using namespace endpoints;
+    auto root = std::make_unique<tree>("");
+    root->addPattern("/ai/*", [](){ return std::unique_ptr<node_interface>{nullptr}; });
+    EXPECT_TRUE(root->matches("/ai/http://prova.com/image.jpg?q=prova"));
+}
+
+TEST(endpoints, parameter_matching) {
+    using namespace endpoints;
+    auto root = std::make_unique<tree>("");
+    root->addPattern("/ai/{imgUrl}/saliency/something", [](){ return std::unique_ptr<node_interface>{nullptr}; });
+    EXPECT_TRUE(root->matches("/ai/thisisafakeparameter/saliency/something"));
+    EXPECT_FALSE(root->matches("/ai/thisisafakeparameter/ciao/ciccio"));
+    EXPECT_FALSE(root->matches("/ai/saluda/andonio"));
+    EXPECT_FALSE(root->matches("/ai/thisisafakeparameter/saliency/something/else"));
+}
+TEST(endpoints, more_specific_matching) {
+    using namespace endpoints;
+    auto root = std::make_unique<tree>("");
+    root->addPattern("/ai/*/prova", [](){ return std::unique_ptr<node_interface>{nullptr}; });
+    EXPECT_FALSE(root->matches("/ai/ciaone"));
+    EXPECT_TRUE(root->matches("/ai/ciaone/prova"));
+    EXPECT_FALSE(root->matches("/ai/saluda/andonio/prova"));
+    EXPECT_FALSE(root->matches("/ai/ciaone/prova/2"));
+}

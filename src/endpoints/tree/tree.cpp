@@ -48,38 +48,45 @@ void tree::appendChild(std::vector<std::string>::iterator begin, std::vector<std
     if(begin != end) {
         childs.back()->addChild(begin, end, std::move(gen));
     } else {
-        std::cout << "assigning generating function!" << std::endl;
         childs.back()->generating_function = std::experimental::optional<generating_function_t>{gen};
     }
 }
 
 bool tree::matches(const std::string &path) const
-{   if(node_label == "*") {
-        return wildcard_matches(path.cbegin(), path.cend());
+{   if(!path.size()) return true;
+    return matches(path.cbegin(), path.cend());
+}
+
+bool tree::matches(std::string::const_iterator path_it, std::string::const_iterator end) const {
+    while(path_it !=  end && *path_it== '/') ++path_it;
+    if(node_label == "*") {
+        return wildcard_matches(path_it, end);
     }
     if(node_label[0] == '{' && node_label[node_label.size()-1] == '}') {
-        return parameter_matches(path.cbegin(), path.cend());
+        return parameter_matches(path_it, end);
     }
 
     //word by word matching
     auto label_iterator = node_label.begin();
-    auto path_iterator = path.begin();
-    while(label_iterator != node_label.end() && path_iterator != path.end() && *path_iterator == *label_iterator) {
-        ++path_iterator;
-        ++label_iterator;
+    auto path_iterator = path_it;
+    while(label_iterator != node_label.end() && path_iterator != end && *path_iterator == *label_iterator) {
+
+        ++path_iterator; ++label_iterator;
     }
 
     if(label_iterator == node_label.end()) {
         //it matches, but only with a partial path. so it is as if it does not match :D
-        if(path_iterator == path.end()) return bool(generating_function);
+        if(path_iterator == end) return bool(generating_function);
         /* Path has not been consumed: demand it to the childs. */
         for(auto &&c : childs) {
-            if(c->matches(path_iterator, path.end())) return true;
+            if(c->matches(path_iterator, end)) return true;
         }
-
-        return false;
     }
+
+    return false;
+
 }
+
 
 
 bool tree::wildcard_matches(std::string::const_iterator path_it, std::string::const_iterator end) const
