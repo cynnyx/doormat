@@ -28,7 +28,6 @@ void tree::addChild(std::vector<std::string>::iterator begin, std::vector<std::s
     if(begin == end)
     {
         if(bool(generating_function)) throw std::invalid_argument{"trying to insert duplicated value in node with label " + node_label};
-        std::cout << "no terminal... it is not duplicated!" << std::endl;
         generating_function = std::experimental::optional<generating_function_t>{gen};
         return;
     }
