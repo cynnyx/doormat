@@ -27,19 +27,15 @@ public:
 
     bool matches(const std::string &path) const;
 
-   /* bool matches(const std::string &path) const;
+    std::unique_ptr<node_interface> get(const std::string& str) const;
 
-    bool matches(std::string::const_iterator begin, const std::string::const_iterator end) const;
-
-    std::unique_ptr<node_interface> get(http::http_request& req) const;
-*/
 private:
 
-    bool matches(std::string::const_iterator path_it, std::string::const_iterator end) const;
+    std::experimental::optional<const tree*> matches(std::string::const_iterator path_it, std::string::const_iterator end) const;
 
-    bool wildcard_matches(std::string::const_iterator path_it, std::string::const_iterator end) const;
+    std::experimental::optional<const tree*> wildcard_matches(std::string::const_iterator path_it, std::string::const_iterator end) const;
 
-    bool parameter_matches(std::string::const_iterator path_it, std::string::const_iterator end) const;
+    std::experimental::optional<const tree*> parameter_matches(std::string::const_iterator path_it, std::string::const_iterator end) const;
 
     void addChild(std::vector<std::string>::iterator begin, std::vector<std::string>::iterator cend, generating_function_t gen);
 

@@ -53,10 +53,10 @@ void tree::appendChild(std::vector<std::string>::iterator begin, std::vector<std
 
 bool tree::matches(const std::string &path) const
 {   if(!path.size()) return true;
-    return matches(path.cbegin(), path.cend());
+    return bool(matches(path.cbegin(), path.cend()));
 }
 
-bool tree::matches(std::string::const_iterator path_it, std::string::const_iterator end) const {
+std::experimental::optional<const tree*> tree::matches(std::string::const_iterator path_it, std::string::const_iterator end) const {
     while(path_it !=  end && *path_it== '/') ++path_it;
     if(node_label == "*") {
         return wildcard_matches(path_it, end);
@@ -75,40 +75,45 @@ bool tree::matches(std::string::const_iterator path_it, std::string::const_itera
 
     if(label_iterator == node_label.end()) {
         //it matches, but only with a partial path. so it is as if it does not match :D
-        if(path_iterator == end) return bool(generating_function);
+        if(path_iterator == end) {
+            return bool(generating_function) ? this : std::experimental::optional<const tree*>{};
+        }
         /* Path has not been consumed: demand it to the childs. */
         for(auto &&c : childs) {
-            if(c->matches(path_iterator, end)) return true;
+            auto tptr = c->matches(path_iterator, end);
+            if(bool(tptr)) return tptr;
         }
     }
 
-    return false;
+    return std::experimental::optional<const tree*>{};
 
 }
 
 
 
-bool tree::wildcard_matches(std::string::const_iterator path_it, std::string::const_iterator end) const
+std::experimental::optional<const tree*> tree::wildcard_matches(std::string::const_iterator path_it, std::string::const_iterator end) const
 {
     auto nextPathBegin = std::find(path_it, end, '/');
-    if(nextPathBegin == end) return bool(generating_function);
+    if(nextPathBegin == end) return bool(generating_function) ? this : std::experimental::optional<const tree*>{};
 
     for(auto &&c: childs) {
-        if(c->matches(nextPathBegin, end)) return true;
+        auto tptr = c->matches(nextPathBegin, end);
+        if(bool(tptr)) return tptr;
     }
     //if none of the child matches, we match only if * is an available termination.
-    return bool(generating_function);
+    return bool(generating_function) ? this : std::experimental::optional<const tree*>{};
 }
 
 
-bool tree::parameter_matches(std::string::const_iterator path_it, std::string::const_iterator end) const
+std::experimental::optional<const tree*> tree::parameter_matches(std::string::const_iterator path_it, std::string::const_iterator end) const
 {
     auto nextPathBegin = std::find(path_it, end, '/');
-    if(nextPathBegin == end) return bool(generating_function); //we matched with a parameter.
+    if(nextPathBegin == end) return bool(generating_function) ? this : std::experimental::optional<const tree*>{}; //we matched with a parameter.
     for(auto &&c: childs) {
-        if(c->matches(nextPathBegin, end)) return true;
+        auto tptr = c->matches(nextPathBegin, end);
+        if(bool(tptr)) return tptr;
     }
-    return false;
+    return std::experimental::optional<const tree*>{};
 }
 
 
