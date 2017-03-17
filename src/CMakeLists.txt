@@ -45,7 +45,7 @@ set(DOORMAT_COMMON_SOURCES
 	http2/http2alloc.cpp
 	configuration/configuration_maker.cpp
 		log/inspector_serializer.cpp
-		endpoints/tree/tree.cpp
+		endpoints/tree/path_tree.cpp
 		)
 
 #

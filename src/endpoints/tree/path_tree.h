@@ -16,10 +16,10 @@ namespace http {
 namespace endpoints {
 
 using generating_function_t = std::function<std::unique_ptr<node_interface>()>;
-class tree
+class path_tree
 {
 public:
-    tree(std::string label, char splitToken='/')
+    path_tree(std::string label, char splitToken='/')
     : node_label{std::move(label)}, splitToken{splitToken}
     {};
 
@@ -31,11 +31,11 @@ public:
 
 private:
 
-    std::experimental::optional<const tree*> matches(std::string::const_iterator path_it, std::string::const_iterator end) const;
+    std::experimental::optional<const path_tree*> matches(std::string::const_iterator path_it, std::string::const_iterator end) const;
 
-    std::experimental::optional<const tree*> wildcard_matches(std::string::const_iterator path_it, std::string::const_iterator end) const;
+    std::experimental::optional<const path_tree*> wildcard_matches(std::string::const_iterator path_it, std::string::const_iterator end) const;
 
-    std::experimental::optional<const tree*> parameter_matches(std::string::const_iterator path_it, std::string::const_iterator end) const;
+    std::experimental::optional<const path_tree*> parameter_matches(std::string::const_iterator path_it, std::string::const_iterator end) const;
 
     void addChild(std::vector<std::string>::iterator begin, std::vector<std::string>::iterator cend, generating_function_t gen);
 
@@ -44,7 +44,7 @@ private:
 
     const std::string node_label;
     std::experimental::optional<generating_function_t> generating_function;
-    std::vector<std::unique_ptr<tree>> childs;
+    std::vector<std::unique_ptr<path_tree>> childs;
     const char splitToken;
 
 };
