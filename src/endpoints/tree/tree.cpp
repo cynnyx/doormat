@@ -116,6 +116,16 @@ std::experimental::optional<const tree*> tree::parameter_matches(std::string::co
     return std::experimental::optional<const tree*>{};
 }
 
+std::unique_ptr<node_interface> tree::get(const std::string &str) const
+{
+    if(str.empty()) return nullptr;
+    auto treeptr = matches(str.cbegin(), str.cend());
+    if(bool(treeptr)) {
+        return treeptr.value()->generating_function.value()();
+    }
+    return nullptr;
+}
+
 
 
 }
