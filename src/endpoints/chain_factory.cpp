@@ -42,8 +42,10 @@ std::unique_ptr<node_interface> chain_factory::get_chain(const http::http_reques
         case http_method::HTTP_PUT: bucket = PUT_BUCKET; break;
         default: return nullptr;
     }
-    if(method_prefixes[bucket] == nullptr) return nullptr;
-    return method_prefixes[bucket]->get(std::string(original_request.path()));
+    if(method_prefixes[bucket] == nullptr) return fallback_logic();
+    auto selected = method_prefixes[bucket]->get(std::string(original_request.path()));
+    if(!selected) return fallback_logic();
+    return selected;
 }
 
 
