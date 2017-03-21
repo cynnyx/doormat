@@ -1,0 +1,23 @@
+#include <gtest/gtest.h>
+#include <functional>
+#include <memory>
+#include "../../src/endpoints/chain_factory.h"
+#include "../../src/http/http_request.h"
+
+
+TEST(chain_factory, get_endpoint) {
+    using namespace endpoints;
+    int fallback = 0;
+    int proper = 0;
+    auto cf = std::make_unique<chain_factory>([&fallback](){ ++fallback; return nullptr;});
+    http::http_request dummy_request{};
+    dummy_request.method(http_method::HTTP_GET);
+    dummy_request.path("/prova");
+    auto chain = cf->get_chain(dummy_request);
+    ASSERT_FALSE(chain);
+    ASSERT_EQ(fallback, 1);
+    cf->get("/prova", [&](){++proper; return nullptr;});
+    auto chain2 = cf->get_chain(dummy_request);
+    ASSERT_EQ(proper, 1);
+}
+

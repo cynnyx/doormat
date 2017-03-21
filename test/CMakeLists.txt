@@ -26,7 +26,9 @@ set(DOORMAT_TESTCASES_SOURCES
 	network/communicator_test.cpp
 	nodes/common.cpp
 	cloudiapooltest.cpp
-)
+	endpoints/tree_test.cpp
+	endpoints/chain_factory.cpp
+	)
 
 add_executable(${DOORMAT_TEST_EXECUTABLE} ${DOORMAT_TESTCASES_SOURCES})
 
