@@ -152,9 +152,10 @@ void cloudia_pool::stop()
 
 cloudia_pool::~cloudia_pool() = default;
 
-std::unique_ptr<socket_factory> cloudia_pool_factory::get_socket_factory( std::size_t size ) const
+std::unique_ptr<socket_factory<boost::asio::ip::tcp::socket>> 
+	cloudia_pool_factory::get_socket_factory( std::size_t size ) const
 {
-	return std::unique_ptr<socket_factory>{ new cloudia_pool() };
+	return std::unique_ptr<socket_factory<boost::asio::ip::tcp::socket>>{ new cloudia_pool() };
 }
 
 }

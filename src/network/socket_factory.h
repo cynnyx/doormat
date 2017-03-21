@@ -9,13 +9,13 @@
 
 namespace network
 {
-	
-class socket_factory
+
+template<class connection = boost::asio::ip::tcp::socket>
+class socket_factory : public std::enable_shared_from_this<socket_factory<connection>>
 {
 public:
 	virtual ~socket_factory() = default;
-	
-	using socket_type = boost::asio::ip::tcp::socket;
+	using socket_type = connection;
 	using socket_callback = std::function<void(std::unique_ptr<socket_type>)>;
 	using error_callback = std::function<void()>;
 // 	using socket_callback_representation = std::pair<socket_callback , std::chrono::system_clock::time_point>;
@@ -39,10 +39,11 @@ public:
 	virtual void stop() = 0;
 };
 
+template<class socket_type = boost::asio::ip::tcp::socket>
 class abstract_factory_of_socket_factory
 {
 public:
-	virtual std::unique_ptr<socket_factory> get_socket_factory( std::size_t size ) const = 0;
+	virtual std::unique_ptr<socket_factory<socket_type>> get_socket_factory( std::size_t size ) const = 0;
 	virtual ~abstract_factory_of_socket_factory() = default;
 };
 

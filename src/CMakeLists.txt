@@ -11,41 +11,45 @@ set(SPDLOG_LIB "spdlog")
 
 # common sources: will be packed inside a static lib and linked against all executables
 set(DOORMAT_COMMON_SOURCES
-		configuration/configuration_wrapper.cpp
-	configuration/header_configuration.cpp
-	constants.cpp
-	daemon.cpp
-	init.cpp
-		http/http_codec.cpp
-	http/http_commons.cpp
-	http/http_structured_data.cpp
-	http/http_response.cpp
-	http/http_request.cpp
-	http_parser/http_parser.c
-	http/peer.cpp
-	http_server.cpp
-	io_service_pool.cpp
-	IPV4Network.cpp
-	log/format.cpp
-	log/log.cpp
-	log/access_record.cpp
-	protocol/handler_factory.cpp
-	protocol/handler_http1.cpp
-		stats/stats_manager.cpp
-	service_locator/service_locator.cpp
-        utils/dstring.cpp
-	utils/dstring_factory.cpp
-	utils/sni_solver.cpp
-	utils/utils.cpp
-	utils/base64.cpp
-	utils/log_wrapper.cpp
-		errors/internal_error.cpp
-		http2/session.cpp
-	http2/stream.cpp
-	http2/http2alloc.cpp
-	configuration/configuration_maker.cpp
-		log/inspector_serializer.cpp
-		)
+    configuration/configuration_wrapper.cpp
+    configuration/header_configuration.cpp
+    constants.cpp
+    daemon.cpp
+    init.cpp
+    http/http_codec.cpp
+    http/http_commons.cpp
+    http/http_structured_data.cpp
+    http/http_response.cpp
+    http/http_request.cpp
+    http_parser/http_parser.c
+    http/peer.cpp
+    http_server.cpp
+    io_service_pool.cpp
+    IPV4Network.cpp
+    log/format.cpp
+    log/log.cpp
+    log/access_record.cpp
+    protocol/handler_factory.cpp
+    protocol/handler_http1.cpp
+    stats/stats_manager.cpp
+    service_locator/service_locator.cpp
+    utils/dstring.cpp
+    utils/dstring_factory.cpp
+    utils/sni_solver.cpp
+    utils/utils.cpp
+    utils/base64.cpp
+    utils/log_wrapper.cpp
+    errors/internal_error.cpp
+    http2/session.cpp
+    http2/stream.cpp
+    http2/http2alloc.cpp
+    configuration/configuration_maker.cpp
+    log/inspector_serializer.cpp
+    network/cloudia_pool.cpp
+    network/buffer.cpp
+    network/connector_clear.cpp
+    network/connector_ssl.cpp
+)
 
 #
 # ----------------- doormat_common archive library -------------------

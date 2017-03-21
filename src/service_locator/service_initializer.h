@@ -3,6 +3,7 @@
 #include "service_locator.h"
 #include "../configuration/configuration_wrapper.h"
 #include "../configuration/configuration_parser.h"
+#include "../network/cloudia_pool.h"
 #include "../io_service_pool.h"
 #include "../log/log.h"
 #include "../log/inspector_serializer.h"
@@ -46,11 +47,10 @@ public:
 		auto sm = new stats::stats_manager{ cw.get_thread_number() };
 		set_stats_manager(sm);
 
-
 		auto al = new logging::access_log{ cw.get_log_path(), "access"};
 		set_access_log(al);
 		
-		// Is missing socket pool factory
+		// Is missing socket pool factory of factory
 	}
 
 
@@ -87,6 +87,17 @@ public:
 		locator::_stats_manager.reset(a);
 	}
 	
+	template<class T = boost::asio::ip::tcp::socket>
+	static void set_socket_pool(network::socket_factory<T> *sp)
+	{
+			locator::_socket_pool<T>.reset(sp);
+	}
+
+	template<class T = boost::asio::ip::tcp::socket>
+	static void set_socket_pool_factory(network::abstract_factory_of_socket_factory<T>* afosf)
+	{
+			locator::_socket_pool_factory<T>.reset( afosf );
+	}
 };
 
 }//service

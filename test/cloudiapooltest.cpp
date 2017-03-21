@@ -44,7 +44,7 @@ TEST_F(cloudiapooltest, connection)
 	http::http_request req = make_request( http::proto_version::HTTP11, http_method::HTTP_GET, "www.google.it", "" );
 	req.urihost("www.google.it");
 	req.port("80");
-	cp->get_socket( req, [&ok, &ioservice] ( std::unique_ptr<network::socket_factory::socket_type> s) mutable 
+	cp->get_socket( req, [&ok, &ioservice] ( std::unique_ptr<network::socket_factory<boost::asio::ip::tcp::socket>::socket_type> s) mutable 
 	{
 		ASSERT_TRUE( static_cast<bool>( s ) );
 		ok = true;
@@ -66,7 +66,7 @@ TEST_F(cloudiapooltest, error)
 	http::http_request req = make_request( http::proto_version::HTTP11, http_method::HTTP_GET, "www.google.it.sgranarok", "" );
 	req.urihost("www.google.it.sgranarok");
 	req.port("666");
-	cp->get_socket( req, [&ioservice] ( std::unique_ptr<network::socket_factory::socket_type> s) mutable 
+	cp->get_socket( req, [&ioservice] ( std::unique_ptr<network::socket_factory<boost::asio::ip::tcp::socket>::socket_type> s) mutable 
 	{
 		ioservice.stop();
 		FAIL();

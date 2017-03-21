@@ -6,7 +6,7 @@ set(DOORMAT_TEST_EXECUTABLE doormattest)
 
 set(DOORMAT_TESTCASES_SOURCES
 	main.cpp
-        base64_test.cpp
+	base64_test.cpp
 	codec_test.cpp
 	configuration_parser_test.cpp
 	cor_test.cpp
@@ -19,13 +19,14 @@ set(DOORMAT_TESTCASES_SOURCES
 	ipv4matcher_test.cpp
 	log_test.cpp
 	reusable_buffer_test.cpp
-		stats_test.cpp
+	stats_test.cpp
 	testcommon.cpp
 	utils_test.cpp
-		mock_server/mock_server.cpp
+	mock_server/mock_server.cpp
 	network/communicator_test.cpp
-		nodes/common.cpp
-		)
+	nodes/common.cpp
+	cloudiapooltest.cpp
+)
 
 add_executable(${DOORMAT_TEST_EXECUTABLE} ${DOORMAT_TESTCASES_SOURCES})
 

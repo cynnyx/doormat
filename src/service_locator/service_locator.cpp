@@ -5,6 +5,7 @@
 #include "../log/inspector_serializer.h"
 #include "../stats/stats_manager.h"
 #include "../utils/log_wrapper.h"
+#include "../network/socket_factory.h"
 
 namespace service
 {

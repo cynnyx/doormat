@@ -1,6 +1,7 @@
 #include <gtest/gtest.h>
 #include "../src/service_locator/service_initializer.h"
 #include "../src/utils/json.hpp"
+#include "../src/network/cloudia_pool.h"
 
 #include <thread>
 #include <chrono>

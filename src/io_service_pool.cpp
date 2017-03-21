@@ -101,7 +101,7 @@ boost::asio::io_service& io_service_pool::get_thread_io_service() const
 {
 	// this is a workaround to link somehow a thread to a unique io_service
 	// but nobody assures that worker threads are associated to different io_service's;
-	// e.g. if we interleave a calla to get_thread_io_service() from the main thread
+	// e.g. if we interleave a call to get_thread_io_service() from the main thread
 	// before we have called it from within all the working threads, we will associate
 	// the first and the last working thread to the same io_services_[0]
 	static std::atomic_size_t thread_counter;

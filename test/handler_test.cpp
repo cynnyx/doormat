@@ -10,6 +10,7 @@
 #include "../src/connector.h"
 #include "../src/protocol/handler_factory.h"
 #include "../src/protocol/handler_http1.h"
+#include "../src/network/cloudia_pool.h"
 
 #include "../src/dummy_node.h"
 

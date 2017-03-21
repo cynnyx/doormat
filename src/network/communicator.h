@@ -17,11 +17,10 @@ namespace network
 
 /** \brief communicator class is responsible of managing the communication incoming and outgoing from other components */
 
+template<class socket_t = boost::asio::ip::tcp::socket>
 class communicator
 {
-
 public:
-	using socket_t = boost::asio::ip::tcp::socket;
 	using read_cb_t = std::function<void(const char *, size_t)>;
 	using error_cb_t = std::function<void(errors::error_code)>;
 	static constexpr size_t reusable_buffer_size = 8192;
@@ -206,8 +205,8 @@ private:
 		if(errcode.code() == 0)
 		{
 			errcode = ec;
-			boost::system::error_code ec;
-			if(socket) socket->shutdown(boost::asio::socket_base::shutdown_type::shutdown_both, ec);
+			boost::system::error_code bec;
+			if(socket) socket->shutdown(boost::asio::socket_base::shutdown_type::shutdown_both, bec);
 		}
 	}
 

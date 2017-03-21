@@ -9,10 +9,11 @@
 
 namespace network
 {
-	
+
+//Enable shared from this?
 // Ok, this can't be really a pool.
 // Missing TLS support
-class cloudia_pool: public socket_factory
+class cloudia_pool: public socket_factory<boost::asio::ip::tcp::socket>
 {
 	bool stopping{false};
 	std::unique_ptr<socket_type> _socket;
@@ -41,10 +42,10 @@ public:
 	void set_error( error_callback ec ) override { on_error_cb = ec; }
 };
 
-class cloudia_pool_factory : public abstract_factory_of_socket_factory
+class cloudia_pool_factory : public abstract_factory_of_socket_factory<boost::asio::ip::tcp::socket>
 {
 public:
-	std::unique_ptr<socket_factory> get_socket_factory( std::size_t size = 0 ) const override;
+	std::unique_ptr<socket_factory<boost::asio::ip::tcp::socket>> get_socket_factory( std::size_t size = 0 ) const override;
 };
 
 }

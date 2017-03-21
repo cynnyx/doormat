@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <boost/asio.hpp>
 
 namespace configuration
 {
@@ -33,7 +34,9 @@ class fs_manager_wrapper;
 
 namespace network
 {
+template<class T>
 class socket_factory;
+template<class T>
 class abstract_factory_of_socket_factory;
 }
 
@@ -48,12 +51,13 @@ class locator
 	static std::unique_ptr<server::io_service_pool> _service_pool;
 	static std::unique_ptr<logging::access_log> _access_log;
 	static thread_local std::unique_ptr<logging::inspector_log> _inspector_log;
-	static std::unique_ptr<routing::abstract_destination_provider> _destination_provider;
 	static std::unique_ptr<stats::stats_manager> _stats_manager;
 	static std::unique_ptr<fs_manager_wrapper> _fsm;
-	static thread_local std::unique_ptr<network::socket_factory> _socket_pool;
+	template<class T>
+	static thread_local std::unique_ptr<typename network::socket_factory<T>> _socket_pool;
 	// This factory must be thread safe
-	static std::unique_ptr<network::abstract_factory_of_socket_factory> _socket_pool_factory;
+	template<class T>
+	static std::unique_ptr<typename network::abstract_factory_of_socket_factory<T>> _socket_pool_factory;
 
 public:
 	/**
@@ -85,7 +89,26 @@ public:
 	 * @return
 	 */
 	static stats::stats_manager& stats_manager() noexcept;
+	
+	template<class T = boost::asio::ip::tcp::socket>
+	static network::socket_factory<T>& socket_pool() noexcept
+	{
+		assert(_socket_pool<T>);
+		return *_socket_pool<T>;
+	}
 
+	template<class T = boost::asio::ip::tcp::socket>
+	static network::abstract_factory_of_socket_factory<T>& socket_pool_factory() noexcept
+	{
+		assert(_socket_pool_factory<T>);
+		return *_socket_pool_factory<T>;
+	}
 };
+
+template<class T = boost::asio::ip::tcp::socket>
+std::unique_ptr<network::abstract_factory_of_socket_factory<T>> locator::_socket_pool_factory;
+
+template<class T = boost::asio::ip::tcp::socket>
+thread_local std::unique_ptr<network::socket_factory<T>> locator::_socket_pool;
 
 }

@@ -12,6 +12,7 @@
 #include "http_server.h"
 #include "utils/log_wrapper.h"
 #include "service_locator/service_initializer.h"
+#include "network/cloudia_pool.h"
 
 namespace doormat
 {
@@ -81,54 +82,38 @@ static void parse_opt(int argc, char** argv)
 
 	po::variables_map vm;
 
-// 	try
-// 	{
-		po::store( po::parse_command_line( argc, argv, desc ), vm );
-		//parameter parsing and management
-		if ( vm.count( "daemon") )
-			daemon_mode = true;
+	po::store( po::parse_command_line( argc, argv, desc ), vm );
+	//parameter parsing and management
+	if ( vm.count( "daemon") )
+		daemon_mode = true;
 
-		if ( vm.count( "config-file" ) )
-			configuration_file_path = vm["config-file"].as<std::string>();
+	if ( vm.count( "config-file" ) )
+		configuration_file_path = vm["config-file"].as<std::string>();
 
-		if ( vm.count( "log-level" ) )
-			log_level = vm["log-level"].as<std::string>();
+	if ( vm.count( "log-level" ) )
+		log_level = vm["log-level"].as<std::string>();
 
-		if ( vm.count("verbose") )
-			verbose_mode = true;
+	if ( vm.count("verbose") )
+		verbose_mode = true;
 
-		if( vm.count("check-config") )
-			check_configuration_mode = true;
+	if( vm.count("check-config") )
+		check_configuration_mode = true;
 
-		if ( vm.count( "help" ) )
-		{
-			std::cout << desc << std::endl;
-			exit(EXIT_SUCCESS);
-		}
-		if ( vm.count("version") )
-		{
-			std::cout << VERSION;
+	if ( vm.count( "help" ) )
+	{
+		std::cout << desc << std::endl;
+		exit(EXIT_SUCCESS);
+	}
+	if ( vm.count("version") )
+	{
+		std::cout << VERSION;
 #ifndef NDEBUG
-			std::cout<< " - DEBUG";
+		std::cout<< " - DEBUG";
 #endif
-			std::cout<<std::endl;
-			exit(EXIT_SUCCESS);
-		}
-		po::notify( vm );
-// 	}
-// // 	catch ( const boost::program_options::required_option& e )
-// 	{
-// 		//should never happen since we don't have compulsory arguments
-// 		std::cerr<<e.what()<<std::endl;
-// 		std::cout<<desc<<std::endl;
-// 		exit(EXIT_FAILURE);
-// 	}
-// 	catch ( const boost::program_options::error& e )
-// 	{
-// 		std::cerr<<e.what()<<std::endl;
-// 		std::cout<<desc<<std::endl;
-// 		exit(EXIT_FAILURE);
-// 	}
+		std::cout<<std::endl;
+		exit(EXIT_SUCCESS);
+	}
+	po::notify( vm );
 }
 
 int doormat( int argc, char** argv )
@@ -147,90 +132,71 @@ int doormat( int argc, char** argv )
 	if(check_configuration_mode)
 		exit(!valid_conf);
 
-// 	try
-// 	{
-		//Daemonize
-		if(daemon_mode)
-			becoming_deamon(service::locator::configuration().get_daemon_root());
+	//Daemonize
+	if(daemon_mode)
+		becoming_deamon(service::locator::configuration().get_daemon_root());
 
-		//Init logs
-		if(log_level.size())
-			service::locator::configuration().set_log_level(log_level);
-		log_wrapper::init(verbose_mode,
-			service::locator::configuration().get_log_level(), service::locator::configuration().get_log_path());
+	//Init logs
+	if(log_level.size())
+		service::locator::configuration().set_log_level(log_level);
+	log_wrapper::init(verbose_mode,
+		service::locator::configuration().get_log_level(), service::locator::configuration().get_log_path());
 
-		service::initializer::init_services();
+	service::initializer::init_services();
 
-		//Raise file descriptor limit
-		auto max_fd = service::locator::configuration().get_fd_limit();
-		if( max_fd != 0 )
-		{
-			rlimit fdl;
-			fdl.rlim_cur = max_fd;
-			fdl.rlim_max = max_fd;
+	//Raise file descriptor limit
+	auto max_fd = service::locator::configuration().get_fd_limit();
+	if( max_fd != 0 )
+	{
+		rlimit fdl;
+		fdl.rlim_cur = max_fd;
+		fdl.rlim_max = max_fd;
 
-			if( setrlimit(RLIMIT_NOFILE, &fdl) != 0 )
-				LOGERROR("Couldn't change file descriptor limit: ", strerror(errno));
-		}
-		//Store current value
-		else
-		{
-			rlimit fdl;
-			if( getrlimit(RLIMIT_NOFILE, &fdl) != 0 )
-				LOGERROR("Couldn't change file descriptor limit: ", strerror(errno));
+		if( setrlimit(RLIMIT_NOFILE, &fdl) != 0 )
+			LOGERROR("Couldn't change file descriptor limit: ", strerror(errno));
+	}
+	//Store current value
+	else
+	{
+		rlimit fdl;
+		if( getrlimit(RLIMIT_NOFILE, &fdl) != 0 )
+			LOGERROR("Couldn't change file descriptor limit: ", strerror(errno));
 
-			service::locator::configuration().set_fd_limit(fdl.rlim_cur);
-		}
+		service::locator::configuration().set_fd_limit(fdl.rlim_cur);
+	}
 
-		doormat_srv.reset(new server::http_server{});
+	doormat_srv.reset(new server::http_server{});
 
-		//Handle user fallback after successfull bind on 443 or 80
-		if(getuid() == 0)
-		{
-			auto usrPtr = getpwnam("doormat");
-			if(!usrPtr || setuid ( usrPtr->pw_uid ) < 0 )
-				LOGERROR("Setuid failed: ", errno,", continuing as root!");
-		}
+	//Handle user fallback after successfull bind on 443 or 80
+	if(getuid() == 0)
+	{
+		auto usrPtr = getpwnam("doormat");
+		if(!usrPtr || setuid ( usrPtr->pw_uid ) < 0 )
+			LOGERROR("Setuid failed: ", errno,", continuing as root!");
+	}
 
-		//Block signals before spawning threads
-		signals_handlers::block_all();
+	//Block signals before spawning threads
+	signals_handlers::block_all();
 
-		server::io_service_pool::main_init_fn_t main_init = []()
-		{
-			//Unblock signals for main thred only
-			signals_handlers::unblock_all();
-			service::locator::stats_manager().start();
-		};
+	server::io_service_pool::main_init_fn_t main_init = []()
+	{
+		//Unblock signals for main thred only
+		signals_handlers::unblock_all();
+		service::locator::stats_manager().start();
+	};
+	
+	//Main loop
+	doormat_srv->start(main_init);
 
+	//Stopping
+	doormat_srv->stop();
 
-		//Main loop
-		doormat_srv->start(main_init);
-
-		//Stopping
-		doormat_srv->stop();
-
-		rv = EXIT_SUCCESS;
-// 	}
-// 	catch(const cynny::cynnypp::filesystem::ErrorCode& e )
-// 	{
-// 		LOGERROR(e.what());
-// 	}
-// 	catch(const boost::system::error_code& e )
-// 	{
-// 		LOGERROR(e.message());
-// 	}
-// 	catch(int e)
-// 	{
-// 		LOGERROR(strerror(e));
-// 	}
+	rv = EXIT_SUCCESS;
 
 	//Stop services
 	service::initializer::terminate_services();
 
 	LOGDEBUG("Bye bye");
-
-	//Stop logs
-// 	boost::log::core::get()->remove_all_sinks();
 
 	if(daemon_mode)
 		stop_daemon();
