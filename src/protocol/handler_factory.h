@@ -60,10 +60,6 @@ public :
 
 	virtual void on_eom() = 0;
 	virtual void on_error(const int &) = 0;
-
-	static std::function<std::unique_ptr<node_interface>()> make_chain;
-	
-	static void chain_initializer( std::function<std::unique_ptr<node_interface>()> );
 };
 
 class handler_factory

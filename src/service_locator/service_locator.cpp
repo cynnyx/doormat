@@ -6,6 +6,7 @@
 #include "../stats/stats_manager.h"
 #include "../utils/log_wrapper.h"
 #include "../network/socket_factory.h"
+#include "../endpoints/chain_factory.h"
 
 namespace service
 {
@@ -15,6 +16,13 @@ std::unique_ptr<server::io_service_pool> locator::_service_pool;
 std::unique_ptr<logging::access_log> locator::_access_log;
 thread_local std::unique_ptr<logging::inspector_log> locator::_inspector_log;
 std::unique_ptr<stats::stats_manager> locator::_stats_manager;
+std::unique_ptr<endpoints::chain_factory> locator::chfac;
+
+endpoints::chain_factory& locator::chain_factory() noexcept
+{
+	assert(chfac);
+	return *chfac;
+}
 
 configuration::configuration_wrapper& locator::configuration() noexcept
 {

@@ -3,6 +3,7 @@
 #include <string>
 #include <memory>
 #include <exception>
+#include <functional>
 #include <boost/program_options.hpp>
 #include <boost/system/error_code.hpp>
 
@@ -12,10 +13,22 @@
 #include "http_server.h"
 #include "utils/log_wrapper.h"
 #include "service_locator/service_initializer.h"
+#include "chain_of_responsibility/chain_of_responsibility.h"
 #include "network/cloudia_pool.h"
+
+#include "endpoints/generator.h"
+#include "dummy_node.h"
 
 namespace doormat
 {
+
+namespace
+{
+static std::unique_ptr<node_interface> node_factory()
+{
+	return make_unique_chain<node_interface, dummy_node>();
+}
+}
 	
 std::unique_ptr<server::http_server> doormat_srv;
 
@@ -184,6 +197,9 @@ int doormat( int argc, char** argv )
 		signals_handlers::unblock_all();
 		service::locator::stats_manager().start();
 	};
+	
+	service::initializer::set_chain_factory( 
+		new endpoints::chain_factory( node_factory ) );
 	
 	//Main loop
 	doormat_srv->start(main_init);

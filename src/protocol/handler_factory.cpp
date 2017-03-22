@@ -153,17 +153,4 @@ void handler_interface::connector( connector_interface * conn )
 	if ( ! _connector )
 		on_connector_nulled();
 }
-
-std::function<std::unique_ptr<node_interface>()> handler_interface::make_chain = []()
-{
-	return make_unique_chain<node_interface,
-		dummy_node>();
-};
-	
-
-void handler_interface::chain_initializer( std::function<std::unique_ptr<node_interface>()> newfunc )
-{
-	make_chain = newfunc;
-}
-
 } //namespace

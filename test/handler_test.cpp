@@ -16,6 +16,11 @@
 
 namespace
 {
+	
+static std::unique_ptr<node_interface> node_factory()
+{
+	return make_unique_chain<node_interface, dummy_node>();
+}
 
 struct MockConnector : public server::connector_interface
 {
@@ -46,13 +51,16 @@ protected:
 		service::initializer::init_services();
 		service::initializer::set_inspector_log( new logging::inspector_log( "", "", false ) );
 		service::locator::configuration().set_thread_number(1);
+		
+		service::initializer::set_chain_factory( 
+			new endpoints::chain_factory( node_factory ) );
 
 		auto& ios = service::locator::service_pool().get_thread_io_service();
 		deadline.reset(new boost::asio::deadline_timer(ios));
-		server::handler_interface::make_chain = []()
-		{
-			return make_unique_chain<node_interface, dummy_node>();
-		};
+// 		server::handler_interface::make_chain = []()
+// 		{
+// 			return make_unique_chain<node_interface, dummy_node>();
+// 		};
 		keep_alive = new boost::asio::io_service::work(ios);
 	}
 

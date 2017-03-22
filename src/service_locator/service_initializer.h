@@ -8,6 +8,7 @@
 #include "../log/log.h"
 #include "../log/inspector_serializer.h"
 #include "../stats/stats_manager.h"
+#include "../endpoints/chain_factory.h"
 
 #include <thread>
 
@@ -85,6 +86,11 @@ public:
 	static void set_stats_manager(stats::stats_manager* a)
 	{
 		locator::_stats_manager.reset(a);
+	}
+	
+	static void set_chain_factory( endpoints::chain_factory* cf )
+	{
+		locator::chfac.reset( cf );
 	}
 	
 	template<class T = boost::asio::ip::tcp::socket>

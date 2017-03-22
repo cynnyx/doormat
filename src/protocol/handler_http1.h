@@ -62,7 +62,6 @@ private:
 		handler_http1 *enclosing = nullptr;
 		http::http_codec encoder;
 		logging::access_recorder access;
-
 	public:
 		// TODO this stuff must be private - they are public just because someone messed up the incapsulation
 		bool message_started{false};
@@ -71,14 +70,11 @@ private:
 		bool request_is_finished{false};
 		std::unique_ptr<node_interface> cor;
 
-		transaction_handler(std::unique_ptr<node_interface> managed_cor, handler_http1 *enclosing, bool ssl)
-			: data{ssl}
-			, enclosing{enclosing}
-			, cor{std::move(managed_cor)}
+		transaction_handler(/*std::unique_ptr<node_interface> managed_cor,*/ handler_http1 *enclosing, bool ssl)
+			: data{ssl}, enclosing{enclosing/*, cor{std::move(managed_cor) */}
 		{
 			// @todo This should be refactored
 			access.set_request_start();
-			callback_cor_initializer( cor, this );
 		}
 
 		~transaction_handler() noexcept

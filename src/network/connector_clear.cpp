@@ -15,7 +15,7 @@ connector_clear::connector_clear( const http::http_request &req, receiver& recv 
 	auto&& socket_factory = service::locator::socket_pool_factory<socket>().get_socket_factory(0);
 	socket_factory->get_socket( req, [self]
 		( std::unique_ptr<network::socket_factory<connector_clear::socket>::socket_type>&& st )
-		{ 
+		{
 			if ( st )
 			{
 				self->output.set_communicator( 

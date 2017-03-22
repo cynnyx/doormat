@@ -4,6 +4,7 @@
 #include "../utils/log_wrapper.h"
 #include "../log/inspector_serializer.h"
 #include "../service_locator/service_locator.h"
+#include "../endpoints/chain_factory.h"
 
 #include <typeinfo>
 
@@ -25,7 +26,7 @@ bool handler_http1::start() noexcept
 {
 	auto scb = [this](http::http_structured_data** data)
 	{
-		th.emplace_back(handler_interface::make_chain(), this, connector()->is_ssl() );
+		th.emplace_back(/*handler_interface::make_chain(),*/ this, connector()->is_ssl() );
 		*data = &(th.back().get_data());
 		(*data)->origin( find_origin() );
 	};
@@ -205,11 +206,14 @@ void handler_http1::on_error(const int&)
 	}
 }
 
-void handler_http1::transaction_handler::on_request_preamble(http::http_request&& message)
+void handler_http1::transaction_handler::on_request_preamble( http::http_request&& message )
 {
 	access.request(message);
 	if ( enclosing && enclosing->th.size() > 1 ) access.set_pipe( true );
 	LOGTRACE(this," on_request_preamble");
+	
+	cor = std::move ( service::locator::chain_factory().get_chain( message ) );
+	callback_cor_initializer( cor, this );
 	cor->on_request_preamble(std::move(message));
 }
 

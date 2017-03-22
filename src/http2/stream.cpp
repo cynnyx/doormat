@@ -7,7 +7,7 @@
 #include "../http/http_commons.h"
 #include "../service_locator/service_locator.h"
 #include "../protocol/handler_factory.h"
-
+#include "../endpoints/chain_factory.h"
 #include "../chain_of_responsibility/callback_initializer.h"
 #include "../log/log.h"
 #include "../log/inspector_serializer.h"
@@ -58,22 +58,23 @@ stream::stream( session* s,  std::function<void(stream*, session*)> des, std::in
 	request.channel( http::proto_version::HTTP20 );
 	request.origin( session_->find_origin() );
 
+	logger.set_request_start();
 	// Not all streams are supposed to send data - it would be better to have a
 	// lazy creation
-	auto cor = server::handler_interface::make_chain();
-	logger.set_request_start();
-	callback_cor_initializer<stream>( cor, this );
-	managed_chain = std::move( cor );
 }
 
 void stream::on_request_header_complete()
 {
 	logger.request( request );
 	LOGTRACE("stream headers complete!");
+
+	auto cor = service::locator::chain_factory().get_chain( request );
+	callback_cor_initializer<stream>( cor, this );
+	managed_chain = std::move( cor );
 	managed_chain->on_request_preamble( std::move( request ) );
 }
 
-void stream::on_request_header( http::http_structured_data::header_t&& h )
+void stream::on_request_header( http::http_request::header_t&& h )
 {
 	request.header( h.first, h.second );
 }

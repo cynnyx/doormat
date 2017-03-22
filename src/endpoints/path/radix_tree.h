@@ -5,46 +5,42 @@
 #include <functional>
 #include <vector>
 #include <experimental/optional>
-#include "../../chain_of_responsibility/node_interface.h"
 
-namespace http {
-    class http_request;
+#include "../generator.h"
+
+namespace http 
+{
+	class http_request;
 }
 
-namespace endpoints {
+namespace endpoints 
+{
 
-using generating_function_t = std::function<std::unique_ptr<node_interface>()>;
+
 class radix_tree
 {
 public:
-    radix_tree(std::string label, char splitToken='/')
-    : node_label{std::move(label)}, splitToken{splitToken}
-    {};
+	radix_tree(std::string label, char splitToken='/'): node_label{std::move(label)}, splitToken{splitToken}
+	{};
 
-    void addPattern(const std::string &path_pattern, generating_function_t gen);
-
-    bool matches(const std::string &path) const;
-
-    std::unique_ptr<node_interface> get(const std::string& str) const;
-
+	void addPattern(const std::string &path_pattern, generating_function_t gen);
+	bool matches(const std::string &path) const;
+	std::unique_ptr<node_interface> get(const std::string& str) const;
 private:
+	std::experimental::optional<const radix_tree*> matches(std::string::const_iterator path_it, std::string::const_iterator end) const;
 
-    std::experimental::optional<const radix_tree*> matches(std::string::const_iterator path_it, std::string::const_iterator end) const;
+	std::experimental::optional<const radix_tree*> wildcard_matches(std::string::const_iterator path_it, std::string::const_iterator end) const;
 
-    std::experimental::optional<const radix_tree*> wildcard_matches(std::string::const_iterator path_it, std::string::const_iterator end) const;
+	std::experimental::optional<const radix_tree*> parameter_matches(std::string::const_iterator path_it, std::string::const_iterator end) const;
 
-    std::experimental::optional<const radix_tree*> parameter_matches(std::string::const_iterator path_it, std::string::const_iterator end) const;
+	void addChild(std::vector<std::string>::iterator begin, std::vector<std::string>::iterator cend, generating_function_t gen);
 
-    void addChild(std::vector<std::string>::iterator begin, std::vector<std::string>::iterator cend, generating_function_t gen);
+	void appendChild(std::vector<std::string>::iterator begin, std::vector<std::string>::iterator end, generating_function_t gen);
 
-    void appendChild(std::vector<std::string>::iterator begin, std::vector<std::string>::iterator end, generating_function_t gen);
-    
-
-    const std::string node_label;
-    std::experimental::optional<generating_function_t> generating_function;
-    std::vector<std::unique_ptr<radix_tree>> childs;
-    const char splitToken;
-
+	const std::string node_label;
+	std::experimental::optional<generating_function_t> generating_function;
+	std::vector<std::unique_ptr<radix_tree>> childs;
+	const char splitToken;
 };
 
 }
