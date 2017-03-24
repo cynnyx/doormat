@@ -77,4 +77,22 @@ bool http_request::operator!=(const http_request&req) const
 	return ! ( *this == req );
 }
 
+void http_request::addParameter(std::string param_name, std::string param_value)
+{
+	_params.emplace(param_name, param_value);
+}
+
+bool http_request::hasParameter(const std::string &param_name)
+{
+    auto p = _params.find(param_name);
+    return p != _params.end();
+}
+
+const std::string& http_request::getParameter(const std::string &param_name)
+{
+    auto p = _params.find(param_name);
+    assert(p != _params.end());
+    return p->second;
+}
+
 }
