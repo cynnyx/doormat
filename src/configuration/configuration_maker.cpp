@@ -1,6 +1,10 @@
 #include "configuration_maker.h"
 #include "configuration_wrapper.h"
 
+#include <cynnypp/async_fs.hpp>
+
+using cynny::cynnypp::filesystem::exists;
+
 
 namespace configuration
 {
