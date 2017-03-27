@@ -12,6 +12,7 @@
 #include <boost/log/attributes/mutable_constant.hpp>
 #include <boost/date_time/posix_time/posix_time_types.hpp>
 #include <boost/log/sinks/text_file_backend.hpp>
+#include <spdlog/spdlog.h>
 #include <spdlog/sinks/file_sinks.h>
 
 namespace log_wrapper
