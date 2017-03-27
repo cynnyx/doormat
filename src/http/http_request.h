@@ -5,6 +5,7 @@
 #include "http_structured_data.h"
 
 #include <string>
+#include <unordered_map>
 
 namespace http
 {
@@ -63,6 +64,14 @@ public:
 
 	bool operator==(const http_request&req) const;
 	bool operator!=(const http_request&req) const;
+
+	void addParameter(std::string param_name, std::string param_value);
+
+    bool hasParameter(const std::string &param_name);
+
+    const std::string& getParameter(const std::string&param_name);
+
+
 private:
 	bool _ssl;
 	http_method _method;
@@ -73,6 +82,7 @@ private:
 	dstring _query;
 	dstring _fragment;
 	dstring _userinfo;
+	std::unordered_map<std::string, std::string> _params;
 };
 
 }

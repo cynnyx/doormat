@@ -61,21 +61,21 @@ void radix_tree::appendChild(std::vector<std::string>::iterator begin, std::vect
 		childs.back()->generating_function = std::experimental::optional<generating_function_t>{gen};
 }
 
-bool radix_tree::matches(const std::string &path) const
+bool radix_tree::matches(const std::string &path, http::http_request*r) const
 {   
 	if(!path.size()) return true;
-	return bool(matches(path.cbegin(), path.cend()));
+	return bool(matches(path.cbegin(), path.cend(), r));
 }
 
 std::experimental::optional<const radix_tree*> radix_tree::matches(std::string::const_iterator path_it, 
-	std::string::const_iterator end) const 
+	std::string::const_iterator end, http::http_request*r) const
 {
 	while(path_it !=  end && *path_it== splitToken) ++path_it;
 	if(node_label == "*")
-		return wildcard_matches(path_it, end);
+		return wildcard_matches(path_it, end, r);
 
 	if(node_label[0] == '{' && node_label[node_label.size()-1] == '}')
-		return parameter_matches(path_it, end);
+		return parameter_matches(path_it, end, r);
 
 	//word by word matching
 	auto label_iterator = node_label.begin();
@@ -94,7 +94,7 @@ std::experimental::optional<const radix_tree*> radix_tree::matches(std::string::
 		
 		for(auto &&c : childs) 
 		{
-			auto tptr = c->matches(path_iterator, end);
+			auto tptr = c->matches(path_iterator, end, r);
 			if(bool(tptr)) return tptr;
 		}
 	}
@@ -102,7 +102,7 @@ std::experimental::optional<const radix_tree*> radix_tree::matches(std::string::
 	return std::experimental::optional<const radix_tree*>{};
 }
 
-std::experimental::optional<const radix_tree*> radix_tree::wildcard_matches(std::string::const_iterator path_it, std::string::const_iterator end) const
+std::experimental::optional<const radix_tree*> radix_tree::wildcard_matches(std::string::const_iterator path_it, std::string::const_iterator end, http::http_request*r) const
 {
 	auto nextPathBegin = std::find(path_it, end, splitToken);
 	if ( nextPathBegin == end ) 
@@ -110,7 +110,7 @@ std::experimental::optional<const radix_tree*> radix_tree::wildcard_matches(std:
 
 	for(auto &&c: childs) 
 	{
-		auto tptr = c->matches(nextPathBegin, end);
+		auto tptr = c->matches(nextPathBegin, end, r);
 		if(bool(tptr)) return tptr;
 	}
 	//if none of the child matches, we match only if * is an available termination.
@@ -118,23 +118,30 @@ std::experimental::optional<const radix_tree*> radix_tree::wildcard_matches(std:
 }
 
 
-std::experimental::optional<const radix_tree*> radix_tree::parameter_matches(std::string::const_iterator path_it, std::string::const_iterator end) const
+std::experimental::optional<const radix_tree*> radix_tree::parameter_matches(std::string::const_iterator path_it, std::string::const_iterator end, http::http_request*r) const
 {
 	auto nextPathBegin = std::find(path_it, end, splitToken);
-	if(nextPathBegin == end) 
-		return bool(generating_function) ? this : std::experimental::optional<const radix_tree*>{}; //we matched with a parameter.
+	if(nextPathBegin == end) {
+		if(bool(generating_function)) {
+            if(r) r->addParameter(std::string{this->node_label.begin()+1, this->node_label.end()-1}, std::string(path_it, end));
+            return this;
+        } return std::experimental::optional<const radix_tree*>{}; //we matched with a parameter.
+    }
 	for(auto &&c: childs) 
 	{
-		auto tptr = c->matches(nextPathBegin, end);
-		if(bool(tptr)) return tptr;
+		auto tptr = c->matches(nextPathBegin, end, r);
+		if(bool(tptr)) {
+            if(r) r->addParameter(std::string{this->node_label.begin()+1, this->node_label.begin()-1}, std::string{path_it, nextPathBegin});
+            return tptr;
+        }
 	}
 	return std::experimental::optional<const radix_tree*>{};
 }
 
-std::unique_ptr<node_interface> radix_tree::get(const std::string &str) const
+std::unique_ptr<node_interface> radix_tree::get(const std::string &str, http::http_request *r) const
 {
 	if(str.empty()) return nullptr;
-	auto treeptr = matches(str.cbegin(), str.cend());
+	auto treeptr = matches(str.cbegin(), str.cend(), r);
 	if(bool(treeptr))
 		return treeptr.value()->generating_function.value()();
 	return nullptr;

@@ -18,6 +18,8 @@ public:
 
     std::unique_ptr<node_interface> get_chain(const http::http_request &original_request) const noexcept;
 
+    std::unique_ptr<node_interface> get_chain_and_params(http::http_request &original_request) const noexcept;
+
 private:
     std::array<std::unique_ptr<radix_tree>, 3> method_prefixes; //contains a different radix_tree for each of the endpoints.
     generating_function_t fallback_logic;
