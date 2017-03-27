@@ -114,7 +114,7 @@ set(Boost_USE_MULTITHREADED ON)
 set(SPDLOG_ROOT "${PROJECT_SOURCE_DIR}/${PROJECT_DEPS_DIR}/spdlog")
 set(UVW_ROOT_DIR "${PROJECT_SOURCE_DIR}/${PROJECT_DEPS_DIR}/uvw")
 #context 
-find_package(Boost 1.54 COMPONENTS system thread program_options regex filesystem REQUIRED )
+find_package(Boost 1.54 COMPONENTS system thread log program_options regex filesystem REQUIRED )
 find_package(UVW REQUIRED)
 find_package(OpenSSL 1.0.2 REQUIRED)
 find_package(Threads REQUIRED)
