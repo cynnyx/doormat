@@ -22,10 +22,12 @@ public:
 	internal_error( int32_t code, const char* source, const char* file, int32_t line ) noexcept:
 		code_(code), source_(source), file_(file), line_(line) {}
 
-	internal_error( const internal_error& e ) noexcept: code_(e.code_), source_(e.source_), file_(e.file_), line_(e.line_) { }
+	internal_error( const internal_error& e ) noexcept: 
+		code_(e.code_), source_(e.source_), file_(e.file_), line_(e.line_) { }
 	internal_error& operator=( const internal_error& e ) noexcept;
 
-	internal_error( internal_error&& e ) noexcept: code_(e.code_), source_(e.source_), file_(e.file_), line_(e.line_) { }
+	internal_error( internal_error&& e ) noexcept: 
+		code_(e.code_), source_(e.source_), file_(e.file_), line_(e.line_) { }
 	internal_error& operator=( internal_error&& e ) noexcept;
 
 	bool operator==( const internal_error& e ) noexcept { return code_ == e.code_; }

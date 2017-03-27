@@ -83,7 +83,6 @@ std::string to_string( http_error_code e )
 	return ret;
 }
 
-
 /**
  * @brief operator << simply call the \ref to_string function
  * and put the string into the output stream.
@@ -93,7 +92,6 @@ std::ostream& operator<<( std::ostream& os, http_error_code e )
 {
 	return os << to_string(e);
 }
-
 
 }
 

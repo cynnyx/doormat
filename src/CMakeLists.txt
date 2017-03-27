@@ -51,6 +51,7 @@ set(DOORMAT_COMMON_SOURCES
 	network/buffer.cpp
 	network/connector_clear.cpp
 	network/connector_ssl.cpp
+	client/client_wrapper.cpp
 	)
 
 #

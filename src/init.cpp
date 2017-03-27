@@ -18,6 +18,7 @@
 
 #include "endpoints/generator.h"
 #include "dummy_node.h"
+#include "client/client_wrapper.h"
 
 namespace doormat
 {
@@ -26,7 +27,7 @@ namespace
 {
 static std::unique_ptr<node_interface> node_factory()
 {
-	return make_unique_chain<node_interface, dummy_node>();
+	return make_unique_chain<node_interface, client::client_wrapper>();
 }
 }
 	
