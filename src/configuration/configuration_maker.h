@@ -8,7 +8,6 @@
 #include "../../deps/cynnypp/include/cynnypp/async_fs.hpp"
 #include "configuration_wrapper.h"
 
-using cynny::cynnypp::filesystem::exists;
 
 namespace configuration 
 {

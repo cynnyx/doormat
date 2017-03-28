@@ -12,6 +12,10 @@
 #define LOGERROR(...) log_wrapper::log_error(_SHORT_FILE_, __LINE__, __VA_ARGS__)
 #define LOGFATAL(...) log_wrapper::log_fatal(_SHORT_FILE_, __LINE__, __VA_ARGS__)
 
+namespace spdlog {
+	class logger;
+}
+
 namespace log_wrapper
 {
 

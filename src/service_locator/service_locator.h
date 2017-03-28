@@ -59,10 +59,10 @@ class locator
 	static std::unique_ptr<fs_manager_wrapper> _fsm;
 	static std::unique_ptr<endpoints::chain_factory> chfac;
 	// Warning - this is not to be used any more, if not as a cache.
-	template<class T>
+	template<class T = boost::asio::ip::tcp::socket>
 	static thread_local std::unique_ptr<typename network::socket_factory<T>> _socket_pool; 
 	// This factory must be thread safe
-	template<class T>
+	template<class T = boost::asio::ip::tcp::socket>
 	static std::unique_ptr<typename network::abstract_factory_of_socket_factory<T>> _socket_pool_factory;
 
 public:
@@ -113,10 +113,10 @@ public:
 	}
 };
 
-template<class T = boost::asio::ip::tcp::socket>
+template<class T>
 std::unique_ptr<network::abstract_factory_of_socket_factory<T>> locator::_socket_pool_factory;
 
-template<class T = boost::asio::ip::tcp::socket>
+template<class T>
 thread_local std::unique_ptr<network::socket_factory<T>> locator::_socket_pool;
 
 }
