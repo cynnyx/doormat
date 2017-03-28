@@ -5,7 +5,7 @@
 #include <boost/program_options.hpp>
 #include <boost/system/error_code.hpp>
 
-#include <cynnypp/async_fs.hpp>
+#include "../deps/cynnypp/include/cynnypp/async_fs.hpp"
 
 namespace doormat
 {

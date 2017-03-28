@@ -3,7 +3,7 @@
 #include <memory>
 #include <functional>
 #include <boost/asio.hpp>
-#include <openssl/ssl.h>
+#include "../../deps/openssl/include/openssl/ssl.h"
 
 #include "../http/http_commons.h"
 

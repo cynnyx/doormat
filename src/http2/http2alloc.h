@@ -5,8 +5,7 @@
 #include <cstring>
 #include <cstddef>
 
-#include <nghttp2/nghttp2.h>
-
+#include "../../deps/nghttp2/build/include/nghttp2/nghttp2.h"
 namespace http2
 {
 

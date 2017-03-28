@@ -1,7 +1,7 @@
 #pragma once
 
 #include <boost/log/trivial.hpp>
-#include <spdlog/spdlog.h>
+#include "../../deps/spdlog/include/spdlog/spdlog.h"
 #include "utils.h"
 
 #define _SHORT_FILE_ ({constexpr const char* const sf__ {log_wrapper::details::past_last_slash(__FILE__)}; sf__;})
