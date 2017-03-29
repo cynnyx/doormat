@@ -3,4 +3,10 @@
 
 #include "../../src/configuration/configuration_wrapper.h"
 
+namespace doormat {
+
+using configuration_wrapper = ::configuration::configuration_wrapper;
+
+}
+
 #endif // DOORMAT_CONFIGURATION_HPP_
