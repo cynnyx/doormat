@@ -11,14 +11,14 @@ namespace configuration
 
 
 
-const std::string configuration_maker::mandatory_keys[13]
+const std::vector<std::string> configuration_maker::mandatory_keys
 {
 	"certificates", "route_map", "privileged_addresses", "page_base", "port", "porth", "client_connection_timeout",
 	"board_connection_timeout",
 	"operation_timeout", "board_timeout", "log_path", "error_host", "error_files"
 };
 
-const std::string configuration_maker::allowed_keys[15]
+const std::vector<std::string> configuration_maker::allowed_keys
 {
 	"threads","interreg_address","request_size_limit","header_config","disable_http2",
 	"daemon", "inspector",
@@ -27,27 +27,28 @@ const std::string configuration_maker::allowed_keys[15]
 
 configuration_maker::configuration_maker(bool verbose) : cw{new configuration_wrapper()}, verbose{verbose}
 {
-	mandatory_inserted.reset();
+    mandatory_inserted.clear();
+	mandatory_inserted.resize(30, false);
 }
 
 bool configuration_maker::accept_setting(const json &setting)
 {
 	std::string key = setting.cbegin().key();
-	for (size_t i = 0; i < sizeof(mandatory_keys) / sizeof(std::string); ++i)
+	for (size_t i = 0; i < mandatory_keys.size(); ++i)
 	{
 		if (mandatory_keys[i] == key)
 		{
 			notify("mandatory key \"", key, "\" retrieved.");
 			if (add_configuration(key, setting.cbegin().value()))
 			{
-				mandatory_inserted.set(i);
+				mandatory_inserted[i] = true; 
 				return true;
 			}
 			throw std::logic_error{"configuration for key " + key + " is invalid."};
 		}
 	}
 
-	for (size_t i = 0; i < sizeof(allowed_keys) / sizeof(std::string); ++i)
+	for (size_t i = 0; i < allowed_keys.size(); ++i)
 	{
 		if (allowed_keys[i] == key)
 		{

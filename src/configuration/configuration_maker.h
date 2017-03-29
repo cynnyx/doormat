@@ -23,7 +23,11 @@ public:
 
 	bool is_configuration_valid() /* everything was inserted*/
 	{
-		return mandatory_inserted.count() == mandatory_inserted.size();
+        size_t mandatory_inserted_count{0};
+        for(const auto&&m: mandatory_inserted) { mandatory_inserted_count += m; }
+
+
+		return mandatory_inserted_count == mandatory_keys.size();
 	}
 
 	std::unique_ptr<configuration_wrapper> get_configuration()
@@ -33,7 +37,7 @@ public:
 			std::string missing_fields;
 			for(size_t i = 0; i < mandatory_inserted.size(); ++i)
 			{
-				if(mandatory_inserted.test(i) == false)
+				if(mandatory_inserted[i] == false)
 				{
 					missing_fields+=mandatory_keys[i]+" ";
 				}
@@ -59,11 +63,12 @@ private:
 		notify("found valid configuration for key ", current_key, "[OK]");
 	}
 
+protected:
 	//configuration_wrapper wrp;
-	const static std::string mandatory_keys[13];
-	const static std::string allowed_keys[15];
+	const static std::vector<std::string> mandatory_keys;
+	const static std::vector<std::string> allowed_keys;
 
-	std::bitset<sizeof(mandatory_keys)/sizeof(std::string)> mandatory_inserted;
+	std::vector<bool> mandatory_inserted; //fix this, it is a k
 	std::unique_ptr<configuration_wrapper> cw;
 	bool verbose;
 	const std::string *tabs{nullptr};
