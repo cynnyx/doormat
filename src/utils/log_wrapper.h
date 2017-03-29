@@ -3,7 +3,7 @@
 #include <boost/log/trivial.hpp>
 #include "utils.h"
 
-#define _SHORT_FILE_ ({constexpr const char* const sf__ {log_wrapper::details::past_last_slash(__FILE__)}; sf__;})
+#define _SHORT_FILE_ (log_wrapper::details::past_last_slash(__FILE__))
 #define LOGTRACE(...) log_wrapper::log_trace(_SHORT_FILE_, __LINE__, __VA_ARGS__)
 #define LOGDEBUG(...) log_wrapper::log_debug(_SHORT_FILE_, __LINE__, __VA_ARGS__)
 #define LOGINFO(...) log_wrapper::log_info(_SHORT_FILE_, __LINE__, __VA_ARGS__)
