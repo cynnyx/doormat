@@ -102,7 +102,7 @@ public:
 	template<class T = boost::asio::ip::tcp::socket>
 	static void set_socket_pool_factory(network::abstract_factory_of_socket_factory<T>* afosf)
 	{
-			locator::_socket_pool_factory<T>.reset( afosf );
+			locator::template _socket_pool_factory<T>.reset( afosf );
 	}
 };
 

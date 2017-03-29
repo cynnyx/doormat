@@ -19,6 +19,9 @@
 #include "endpoints/generator.h"
 #include "dummy_node.h"
 
+#include "../deps/cynnypp/include/cynnypp/async_fs.hpp"
+
+
 namespace doormat
 {
 
