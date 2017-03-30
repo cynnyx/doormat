@@ -14,12 +14,12 @@ namespace configuration
 class configuration_wrapper;
 
 
-class configuration_maker : public abstract_configuration_maker
+class doormat_proxy_configuration_maker : public abstract_configuration_maker
 {
 	using json = nlohmann::json;
 public:
-    configuration_maker(bool verbose); //dpme
-	configuration_maker(bool verbose, configuration_wrapper * cw); //done
+    doormat_proxy_configuration_maker(bool verbose); //dpme
+	doormat_proxy_configuration_maker(bool verbose, configuration_wrapper * cw); //done
 
 	bool is_configuration_valid() override /* everything was inserted*/
 	{
@@ -28,7 +28,7 @@ public:
         return mandatory_inserted_count == mandatory_keys.size();
 	}
 
-	virtual ~configuration_maker() = default;
+	virtual ~doormat_proxy_configuration_maker() = default;
 
 private:
 

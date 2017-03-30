@@ -4,7 +4,7 @@
 #include <string>
 #include <fstream>
 #include "../utils/json.hpp"
-#include "configuration_maker.h"
+#include "doormat_proxy_configuration_maker.h"
 
 class configuration_parser
 {
@@ -138,7 +138,7 @@ private:
 	bool verbose{false};
 	bool finished_successfully{false};
 	std::string tabs{};
-	configuration::configuration_maker maker;
+	configuration::doormat_proxy_configuration_maker maker;
 };
 
 
