@@ -17,6 +17,7 @@
 #include "network/cloudia_pool.h"
 
 #include "endpoints/generator.h"
+#include "endpoints/path/radix_tree.h"
 #include "dummy_node.h"
 
 #include "../deps/cynnypp/include/cynnypp/async_fs.hpp"

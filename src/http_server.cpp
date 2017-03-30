@@ -3,6 +3,7 @@
 #include "service_locator/service_initializer.h"
 #include "utils/log_wrapper.h"
 #include "network/cloudia_pool.h"
+#include "endpoints/path/radix_tree.h"
 
 using namespace std;
 using namespace boost::asio;

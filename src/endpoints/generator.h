@@ -3,7 +3,8 @@
 
 #include <functional>
 #include <memory>
-#include "../chain_of_responsibility/node_interface.h"
+
+class node_interface;
 
 namespace endpoints
 {

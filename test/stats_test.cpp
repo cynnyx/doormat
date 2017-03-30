@@ -2,6 +2,7 @@
 #include "../src/service_locator/service_initializer.h"
 #include "../src/utils/json.hpp"
 #include "../src/network/cloudia_pool.h"
+#include "../src/endpoints/path/radix_tree.h"
 
 #include <thread>
 #include <chrono>

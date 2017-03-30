@@ -1,4 +1,7 @@
 #include "chain_factory.h"
+#include "path/radix_tree.h"
+#include "../chain_of_responsibility/node_interface.h"
+
 #include <memory>
 
 namespace endpoints 
@@ -30,7 +33,7 @@ void chain_factory::put(const std::string &path, generating_function_t logic)
 	method_prefixes[PUT_BUCKET]->addPattern(path, std::move(logic));
 }
 
-std::unique_ptr<node_interface> chain_factory::get_chain(const http::http_request &original_request) const noexcept
+chain_factory::chain_ptr chain_factory::get_chain(const http::http_request &original_request) const noexcept
 {
 	int bucket;
 	switch (original_request.method_code()) 
@@ -47,7 +50,7 @@ std::unique_ptr<node_interface> chain_factory::get_chain(const http::http_reques
 	return selected;
 }
 
-std::unique_ptr<node_interface> chain_factory::get_chain_and_params(http::http_request &original_request) const noexcept
+chain_factory::chain_ptr chain_factory::get_chain_and_params(http::http_request &original_request) const noexcept
 {
 	int bucket;
 	switch (original_request.method_code())

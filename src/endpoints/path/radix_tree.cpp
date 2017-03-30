@@ -1,4 +1,6 @@
 #include "radix_tree.h"
+#include "../../chain_of_responsibility/node_interface.h"
+
 #include <sstream>
 #include <string>
 #include <algorithm>

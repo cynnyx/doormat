@@ -1,4 +1,5 @@
 #include "common.h"
+#include "../src/endpoints/path/radix_tree.h"
 
 namespace test_utils
 {

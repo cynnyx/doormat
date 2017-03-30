@@ -21,7 +21,7 @@ class radix_tree
 {
 public:
 	radix_tree(std::string label, char splitToken='/'): node_label{std::move(label)}, splitToken{splitToken}
-	{};
+	{}
 
 	void addPattern(const std::string &path_pattern, generating_function_t gen);
 	bool matches(const std::string &path, http::http_request*r=nullptr) const;

@@ -3,6 +3,7 @@
 #include "../src/log/inspector_serializer.h"
 #include "../src/service_locator/service_initializer.h"
 #include "../src/utils/log_wrapper.h"
+#include "../src/endpoints/path/radix_tree.h"
 #include "nodes/common.h"
 
 using namespace logging;

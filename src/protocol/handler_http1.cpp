@@ -5,6 +5,7 @@
 #include "../log/inspector_serializer.h"
 #include "../service_locator/service_locator.h"
 #include "../endpoints/chain_factory.h"
+#include "../endpoints/path/radix_tree.h"
 
 #include <typeinfo>
 
