@@ -2,14 +2,14 @@
 #include "configuration_wrapper.h"
 
 #include <cynnypp/async_fs.hpp>
+#include <algorithm>
+
 
 using cynny::cynnypp::filesystem::exists;
 
 
 namespace configuration
 {
-
-
 
 const std::vector<std::string> configuration_maker::mandatory_keys
 {
@@ -25,48 +25,18 @@ const std::vector<std::string> configuration_maker::allowed_keys
 	"log_level","cache", "gzip", "connection_attempts", "file_descriptor_limit", "cache_normalization", "magnet"
 };
 
-configuration_maker::configuration_maker(bool verbose) : cw{new configuration_wrapper()}, verbose{verbose}
+
+configuration_maker::configuration_maker(bool verbose, configuration_wrapper *cw) : abstract_configuration_maker{verbose, cw} {
+    mandatory_inserted.clear();
+    mandatory_inserted.resize(30, false);
+}
+
+
+configuration_maker::configuration_maker(bool verbose) : abstract_configuration_maker{verbose, new configuration_wrapper()}
 {
     mandatory_inserted.clear();
 	mandatory_inserted.resize(30, false);
 }
-
-bool configuration_maker::accept_setting(const json &setting)
-{
-	std::string key = setting.cbegin().key();
-	for (size_t i = 0; i < mandatory_keys.size(); ++i)
-	{
-		if (mandatory_keys[i] == key)
-		{
-			notify("mandatory key \"", key, "\" retrieved.");
-			if (add_configuration(key, setting.cbegin().value()))
-			{
-				mandatory_inserted[i] = true; 
-				return true;
-			}
-			throw std::logic_error{"configuration for key " + key + " is invalid."};
-		}
-	}
-
-	for (size_t i = 0; i < allowed_keys.size(); ++i)
-	{
-		if (allowed_keys[i] == key)
-		{
-			notify("allowed key \"", key, "\" retrieved.");
-			if (add_configuration(key, setting.cbegin().value()))
-			{
-				return true;
-			}
-			throw std::logic_error{"configuration for key " + key + " is invalid"};
-		}
-	}
-
-	notify("key \"", key, "\" not recognized as valid. please check your spelling.");
-
-	LOGDEBUG("[Configuration] unrecognized option ", key);
-	return false;
-}
-
 
 bool configuration_maker::add_configuration(const std::string &key, const json &js)
 {
@@ -109,65 +79,6 @@ bool configuration_maker::add_configuration(const std::string &key, const json &
 	if (key == "magnet") return magnet_configuration(js);
 
 	return false;
-}
-
-bool configuration_maker::is_number_integer(const json &js)
-{
-	if(!js.is_number_integer())
-	{
-		std::string js_rep = js;
-		notify("key \"", current_key, "\" expected as value an integer number. Provided ", js_rep, " instead");
-		return false;
-	}
-	return true;
-}
-
-
-bool configuration_maker::is_array(const json& js)
-{
-
-	if(!js.is_array())
-	{
-		std::string js_rep = js;
-		notify("key \"", current_key, "\" expected as value an array. Provided ", js_rep, " instead");
-		return false;
-	}
-	return true;
-}
-
-
-bool configuration_maker::is_object(const json &js)
-{
-	if(!js.is_object())
-	{
-		notify("key \"", current_key, "\" expected as value an object. Provided something different instead");
-		return false;
-	}
-	return true;
-}
-
-
-bool configuration_maker::is_boolean(const json &js)
-{
-	if(!js.is_boolean())
-	{
-		std::string js_rep = js;
-		notify("key \"", current_key, "\" expected as value a boolean. Provided ", js_rep, " instead");
-		return false;
-	}
-	return true;
-}
-
-
-bool configuration_maker::is_string(const json &js)
-{
-	if(!js.is_string())
-	{
-		std::string js_rep = js;
-		notify("key \"", current_key, "\" expected as value a string. Provided ", js_rep, " instead");
-		return false;
-	}
-	return true;
 }
 
 
@@ -661,6 +572,24 @@ bool configuration_maker::magnet_configuration(const json &js)
 
 }
 
+bool configuration_maker::is_mandatory(const std::string &str) {
+    auto el_iter = std::find(mandatory_keys.begin(), mandatory_keys.end(), str);
+    return el_iter != mandatory_keys.end();
+}
+
+void configuration_maker::set_mandatory(const std::string &key) {
+    auto el_iter = std::find(mandatory_keys.begin(), mandatory_keys.end(), key);
+    if(el_iter != mandatory_keys.end()) {
+        auto pos = std::distance(mandatory_keys.begin(), el_iter);
+        mandatory_inserted[pos] = true;
+    }
+}
+
+
+bool configuration_maker::is_allowed(const std::string &str) {
+    auto el_iter = std::find(allowed_keys.begin(), allowed_keys.end(), str);
+    return el_iter != allowed_keys.end();
+}
 
 
 }

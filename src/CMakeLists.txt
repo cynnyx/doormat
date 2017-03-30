@@ -44,6 +44,7 @@ set(DOORMAT_COMMON_SOURCES
 	http2/stream.cpp
 	http2/http2alloc.cpp
 	configuration/configuration_maker.cpp
+	configuration/abstract_configuration_maker.cpp
 	log/inspector_serializer.cpp
 	endpoints/path/radix_tree.cpp
 	endpoints/chain_factory.cpp

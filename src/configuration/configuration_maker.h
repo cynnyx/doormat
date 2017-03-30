@@ -3,87 +3,47 @@
 
 #include "../utils/json.hpp"
 #include "../utils/log_wrapper.h"
-#include <string>
-#include <bitset>
-#include "configuration_wrapper.h"
+#include "abstract_configuration_maker.h"
+#include <memory>
+#include <vector>
 
 
 namespace configuration 
 {
 
-class configuration_maker 
+class configuration_wrapper;
+
+
+class configuration_maker : public abstract_configuration_maker
 {
 	using json = nlohmann::json;
 public:
-	configuration_maker(bool verbose);
+    configuration_maker(bool verbose); //dpme
+	configuration_maker(bool verbose, configuration_wrapper * cw); //done
 
-	void set_tabs(const std::string &tabs) { this->tabs = &tabs; }
-
-	bool accept_setting(const json &setting);
-
-	bool is_configuration_valid() /* everything was inserted*/
+	bool is_configuration_valid() override /* everything was inserted*/
 	{
         size_t mandatory_inserted_count{0};
         for(const auto&&m: mandatory_inserted) { mandatory_inserted_count += m; }
-
-
-		return mandatory_inserted_count == mandatory_keys.size();
+        return mandatory_inserted_count == mandatory_keys.size();
 	}
 
-	std::unique_ptr<configuration_wrapper> get_configuration()
-	{
-		if(!is_configuration_valid())
-		{
-			std::string missing_fields;
-			for(size_t i = 0; i < mandatory_inserted.size(); ++i)
-			{
-				if(mandatory_inserted[i] == false)
-				{
-					missing_fields+=mandatory_keys[i]+" ";
-				}
-			}
-			throw std::logic_error{"Not all mandatory fields in configuration have been initialized. Missing fields are: " 
-				+ missing_fields};
-		}
-		return std::move(cw);
-	}
-
-	~configuration_maker() = default;
+	virtual ~configuration_maker() = default;
 
 private:
-	template<typename... Args>
-	void notify(Args&&... args)
-	{
-		if(!verbose) return;
-		std::cout << *tabs << "[CONFIGURATION MAKER] " << utils::stringify(std::forward<Args>(args)...) << std::endl;
-	}
 
-	void notify_valid()
-	{
-		notify("found valid configuration for key ", current_key, "[OK]");
-	}
+    bool is_mandatory(const std::string& str) override;
+    bool is_allowed(const std::string&str) override;
+    void set_mandatory(const std::string&key) override;
 
-protected:
 	//configuration_wrapper wrp;
 	const static std::vector<std::string> mandatory_keys;
 	const static std::vector<std::string> allowed_keys;
 
 	std::vector<bool> mandatory_inserted; //fix this, it is a k
-	std::unique_ptr<configuration_wrapper> cw;
 	bool verbose;
 	const std::string *tabs{nullptr};
-	std::string current_key{};
 
-	/** A little bit faster verifiers*/
-	bool is_number_integer(const json &js);
-
-	bool is_array(const json &js);
-
-	bool is_object(const json &js);
-
-	bool is_string(const json &js);
-
-	bool is_boolean(const json &js);
 
 	bool add_configuration(const std::string &key, const json &js);
 
