@@ -5,7 +5,7 @@
 
 namespace doormat {
 
-using http_server = ::server::http_server;
+using ::server::http_server;
 
 }
 

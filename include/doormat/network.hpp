@@ -6,8 +6,10 @@
 
 namespace doormat {
 
-using cloudia_pool = ::network::cloudia_pool;
-using cloudia_pool_factory = ::network::cloudia_pool_factory;
+using ::network::cloudia_pool;
+using ::network::cloudia_pool_factory;
+template<typename S>
+using abstract_factory_of_socket_factory = ::network::abstract_factory_of_socket_factory<S>;
 
 }
 

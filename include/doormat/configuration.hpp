@@ -5,7 +5,7 @@
 
 namespace doormat {
 
-using configuration_wrapper = ::configuration::configuration_wrapper;
+using ::configuration::configuration_wrapper;
 
 }
 

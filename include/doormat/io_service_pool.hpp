@@ -5,7 +5,7 @@
 
 namespace doormat {
 
-using io_service_pool = ::server::io_service_pool;
+using ::server::io_service_pool;
 
 }
 
