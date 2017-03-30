@@ -65,7 +65,7 @@ void configure_tls_context_easy(SSL_CTX *ctx)
 }
 
 
-void sni_solver::load_certificates()
+bool sni_solver::load_certificates()
 {
 	auto& configuration_wrapper = service::locator::configuration();
 	auto certificates_iterator = configuration_wrapper.iterator();
@@ -77,9 +77,11 @@ void sni_solver::load_certificates()
 
 	if(certificates_list.empty())
 	{
-		LOGFATAL("could not load any certificate. Shutting down");
-		throw std::invalid_argument("Invalid argument: could not load any certificate");
+		LOGWARN("could not load any certificate. HTTPS will not started.");
+		return false;
 	}
+
+	return true;
 }
 
 bool sni_solver::prepare_certificate( configuration::certificates_iterator& current_certificate )

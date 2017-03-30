@@ -46,7 +46,7 @@ public:
 
 	/** \brief loads all the certificates present in the certification file and then gets the server names later used for SNI
 	*/
-	void load_certificates();
+	bool load_certificates();
 
 	std::list<certificate>::iterator begin() { return certificates_list.begin(); }
 	std::list<certificate>::iterator end() { return certificates_list.end(); }

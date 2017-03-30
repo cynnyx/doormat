@@ -13,7 +13,7 @@ namespace configuration
 
 const std::vector<std::string> doormat_proxy_configuration_maker::mandatory_keys
 {
-	"certificates", "route_map", "privileged_addresses", "page_base", "port", "porth", "client_connection_timeout",
+	"route_map", "privileged_addresses", "page_base", "port", "porth", "client_connection_timeout",
 	"board_connection_timeout",
 	"operation_timeout", "board_timeout", "log_path", "error_host", "error_files"
 };
