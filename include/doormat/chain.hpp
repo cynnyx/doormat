@@ -2,9 +2,11 @@
 #define DOORMAT_CHAIN_HPP_
 
 #include "../../src/chain_of_responsibility/chain_of_responsibility.h"
+#include "../../src/endpoints/chain_factory.h"
 
 namespace doormat {
 
+using ::endpoints::chain_factory;
 template<typename T, typename S, typename... N>
 using chain = ::chain<T, S, N...>;
 
