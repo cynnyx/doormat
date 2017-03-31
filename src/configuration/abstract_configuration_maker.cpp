@@ -7,27 +7,30 @@ namespace configuration
 abstract_configuration_maker::abstract_configuration_maker(bool verbose, configuration_wrapper *cw) : verbose{verbose} , cw{cw} {}
 
 bool abstract_configuration_maker::accept_setting(const json &setting) {
+
     for(auto begin = setting.cbegin(); begin != setting.cend(); ++begin) {
         std::string key = begin.key();
         if(is_mandatory(key)) {
             notify("mandatory key \"", key, "\" retrieved.");
             if(add_configuration(key, begin.value())) {
                 set_mandatory(key);
-                return true;
+                continue;
             }
             throw std::logic_error{"configuration for key " + key + " is invalid."};
         }
         if(is_allowed(key)) {
             notify("allowed key \"", key, "\" retrieved.");
             if (add_configuration(key, begin.value())) {
-                return true;
+                continue;
             }
+
             throw std::logic_error{"configuration for key " + key + " is invalid"};
         }
         notify("key \"", key, "\" not recognized as valid. please check your spelling.");
         LOGDEBUG("[Configuration] unrecognized option ", key);
+        return false;
     }
-    return false;
+    return true;
 }
 
 bool abstract_configuration_maker::is_number_integer(const json &js)
