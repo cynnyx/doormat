@@ -11,6 +11,13 @@ namespace endpoints
 #define POST_BUCKET 1
 #define PUT_BUCKET 2
 
+chain_factory::chain_factory(generating_function_t fallback_logic) noexcept
+	: fallback_logic{std::move(fallback_logic)}
+{}
+
+chain_factory::~chain_factory() noexcept
+{}
+
 void chain_factory::get(const std::string &path, generating_function_t logic)
 {
 	if ( ! method_prefixes[GET_BUCKET] )

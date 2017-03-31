@@ -8,7 +8,6 @@
 #include "../service_locator/service_locator.h"
 #include "../protocol/handler_factory.h"
 #include "../endpoints/chain_factory.h"
-#include "../endpoints/path/radix_tree.h"
 #include "../chain_of_responsibility/callback_initializer.h"
 #include "../log/log.h"
 #include "../log/inspector_serializer.h"

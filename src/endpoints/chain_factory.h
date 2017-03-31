@@ -19,7 +19,9 @@ class chain_factory
 public:
 	using chain_ptr = std::unique_ptr<node_interface>;
 
-	chain_factory(generating_function_t fallback_logic) : fallback_logic{std::move(fallback_logic)} {}
+	chain_factory(generating_function_t fallback_logic) noexcept;
+	~chain_factory() noexcept;
+
     /** For now we will handle only these three methods.*/
     void get(const std::string &path, generating_function_t logic);
     void post(const std::string &path, generating_function_t logic);

@@ -6,7 +6,6 @@
 #include "../src/service_locator/service_locator.h"
 #include "../src/io_service_pool.h"
 #include "../src/network/cloudia_pool.h"
-#include "../src/endpoints/path/radix_tree.h"
 #include "testcommon.h"
 
 #include <iostream>

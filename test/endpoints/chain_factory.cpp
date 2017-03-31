@@ -2,7 +2,6 @@
 #include <functional>
 #include <memory>
 #include "../../src/endpoints/chain_factory.h"
-#include "../../src/endpoints/path/radix_tree.h"
 #include "../../src/http/http_request.h"
 #include "../../src/chain_of_responsibility/node_interface.h"
 

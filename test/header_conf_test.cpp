@@ -3,7 +3,6 @@
 #include "../src/service_locator/service_initializer.h"
 #include "../src/service_locator/service_locator.h"
 #include "../src/configuration/header_configuration.h"
-#include "../src/endpoints/path/radix_tree.h"
 
 using namespace configuration;
 

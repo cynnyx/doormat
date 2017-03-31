@@ -7,7 +7,6 @@
 #include "../utils/log_wrapper.h"
 #include "../network/socket_factory.h"
 #include "../endpoints/chain_factory.h"
-#include "../endpoints/path/radix_tree.h"
 
 namespace service
 {
