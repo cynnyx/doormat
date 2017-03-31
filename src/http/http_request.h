@@ -58,6 +58,7 @@ public:
 	void userinfo(const dstring& val) noexcept {_userinfo=val;}
 	const dstring& userinfo() const noexcept { return _userinfo; }
 
+	void ssl(bool v) noexcept { _ssl = v;}
 	bool ssl() const noexcept { return _ssl;}
 
 	dstring serialize() const noexcept;
@@ -70,8 +71,6 @@ public:
     bool hasParameter(const std::string &param_name);
 
     const std::string& getParameter(const std::string&param_name);
-
-
 private:
 	bool _ssl;
 	http_method _method;

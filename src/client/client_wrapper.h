@@ -13,6 +13,7 @@ class client_wrapper : public node_interface
 	class cw_receiver: public network::receiver
 	{
 		client_wrapper& cw;
+		bool dead{false};
 	public:
 		cw_receiver( client_wrapper& self ): cw(self){}
 		void on_header(http::http_response&& resp) noexcept override;
@@ -23,8 +24,8 @@ class client_wrapper : public node_interface
 		void stop() noexcept override;
 	};
 	
-	std::unique_ptr<cw_receiver> recv;
-	std::unique_ptr<network::connector> connection;
+	std::shared_ptr<network::receiver> recv;
+	std::shared_ptr<network::connector> connection;
 public:
 	using node_interface::node_interface;
 	
@@ -34,6 +35,7 @@ public:
 	void on_request_trailer(dstring&& k, dstring&& v);
 	void on_request_canceled(const errors::error_code &err);
 	void on_request_finished();
+	~client_wrapper();
 };
 
 }

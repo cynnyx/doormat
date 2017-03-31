@@ -59,4 +59,18 @@ private:
 	http::http_request http_message_protocol_copy;
 };
 
+class test_node : public node_interface
+{
+public:
+	using node_interface::node_interface;
+	void on_request_preamble(http::http_request&& msg)
+	{
+		msg.ssl(false);
+		msg.schema("http");
+		msg.urihost("localhost");
+		msg.port("2000");
+		node_interface::on_request_preamble( std::move( msg ) );
+	}
+};
+
 

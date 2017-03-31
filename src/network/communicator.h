@@ -3,6 +3,8 @@
 
 #include <boost/asio.hpp>
 #include <queue>
+#include <functional>
+#include <memory>
 #include "../chain_of_responsibility/error_code.h"
 #include "../utils/dstring.h"
 #include "../utils/log_wrapper.h"

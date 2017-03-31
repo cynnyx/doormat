@@ -3,6 +3,7 @@
 
 #include <memory>
 #include "connector.h"
+#include "socket_factory.h"
 #include "buffer.h"
 #include "../http/http_codec.h"
 
@@ -13,10 +14,17 @@ class connector_clear : public connector, public std::enable_shared_from_this<co
 {
 	using socket = boost::asio::ip::tcp::socket;
 	http::http_codec codec;
-	buffer<boost::asio::ip::tcp::socket> output;
+	buffer<socket> output;
+	http::http_response input;
+	std::unique_ptr<network::socket_factory<socket>> socket_ref;
+	errors::error_code errcode;
 	bool close_on_eom{false};
+	bool http_continue{false};
+	connector_clear( const http::http_request &reqx, std::shared_ptr<receiver>& recv );
+	void init() noexcept;
 public:
-	connector_clear( const http::http_request &req, receiver& recv );
+	static std::shared_ptr<connector_clear> make_connector_clear( const http::http_request &req, 
+		std::shared_ptr<receiver>& recv );
 	void send_body( dstring&& body ) noexcept override;
 	void send_trailer( dstring&&, dstring&&) noexcept override;
 	void send_eom() noexcept override;
@@ -26,6 +34,7 @@ public:
 	void on_eom() noexcept override;
 	void stop() noexcept override;
 	void on_error( int error ) noexcept override;
+	void on_response_continue() noexcept override;
 };
 
 }

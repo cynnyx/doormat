@@ -11,9 +11,12 @@ namespace network
 {
 
 template<class connection = boost::asio::ip::tcp::socket>
-class socket_factory : public std::enable_shared_from_this<socket_factory<connection>>
+class socket_factory //: public std::enable_shared_from_this<socket_factory<connection>>
 {
 public:
+	socket_factory() = default;
+	socket_factory( const socket_factory& ) = delete;
+	socket_factory& operator=( const socket_factory& ) = delete;
 	virtual ~socket_factory() = default;
 	using socket_type = connection;
 	using socket_callback = std::function<void(std::unique_ptr<socket_type>)>;

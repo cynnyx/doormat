@@ -27,7 +27,7 @@ namespace
 {
 static std::unique_ptr<node_interface> node_factory()
 {
-	return make_unique_chain<node_interface, client::client_wrapper>();
+	return make_unique_chain<node_interface, test_node, client::client_wrapper>();
 }
 }
 	

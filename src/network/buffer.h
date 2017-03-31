@@ -33,8 +33,7 @@ public:
 	}
 	~buffer()
 	{
-		assert( _communicator );
-		_communicator->stop();
+		if ( _communicator ) _communicator->stop();
 	}
 };
 

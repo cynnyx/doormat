@@ -13,9 +13,9 @@ class connector
 {
 protected:
 	const http::http_request & req_ref;
-	receiver& rec;
+	std::shared_ptr<receiver> rec;
 public:
-	connector( const http::http_request &req, receiver& rec_ ) noexcept: req_ref{req}, rec(rec_) {}
+	connector( const http::http_request &req, std::shared_ptr<receiver>& rec_ ) noexcept: req_ref{req}, rec{rec_} {}
 	virtual void send_body( dstring&& body ) noexcept = 0;
 	virtual void send_trailer( dstring&&, dstring&&) noexcept = 0;
 	virtual void send_eom() noexcept = 0;
@@ -25,6 +25,7 @@ public:
 	virtual void on_eom() noexcept = 0;
 	virtual void stop() noexcept = 0;
 	virtual void on_error( int error ) noexcept = 0;
+	virtual void on_response_continue() noexcept = 0;
 	virtual ~connector() = default;
 };
 
