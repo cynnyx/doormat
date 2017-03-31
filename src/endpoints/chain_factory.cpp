@@ -21,7 +21,7 @@ chain_factory::~chain_factory() noexcept
 void chain_factory::get(const std::string &path, generating_function_t logic)
 {
 	if ( ! method_prefixes[GET_BUCKET] )
-		method_prefixes[GET_BUCKET] = std::make_unique<radix_tree>("");
+		method_prefixes[GET_BUCKET] = std::make_unique<radix_tree<>>("");
 	method_prefixes[GET_BUCKET]->addPattern(path, std::move(logic));
 }
 
@@ -29,14 +29,14 @@ void chain_factory::get(const std::string &path, generating_function_t logic)
 void chain_factory::post(const std::string &path, generating_function_t logic)
 {
 	if ( ! method_prefixes[POST_BUCKET] )
-		method_prefixes[POST_BUCKET] = std::make_unique<radix_tree>("");
+		method_prefixes[POST_BUCKET] = std::make_unique<radix_tree<>>("");
 	method_prefixes[POST_BUCKET]->addPattern(path, std::move(logic));
 }
 
 void chain_factory::put(const std::string &path, generating_function_t logic)
 {
 	if ( ! method_prefixes[PUT_BUCKET] )
-		method_prefixes[PUT_BUCKET] = std::make_unique<radix_tree>("");
+		method_prefixes[PUT_BUCKET] = std::make_unique<radix_tree<>>("");
 	method_prefixes[PUT_BUCKET]->addPattern(path, std::move(logic));
 }
 

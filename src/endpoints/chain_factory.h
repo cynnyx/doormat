@@ -4,6 +4,7 @@
 #include <memory>
 
 #include "generator.h"
+#include "../../src/endpoints/path/radix_tree.h"
 
 namespace http {
 class http_request;
@@ -11,8 +12,6 @@ class http_request;
 
 namespace endpoints 
 {
-
-class radix_tree;
 	
 class chain_factory
 {
@@ -32,7 +31,7 @@ public:
 	chain_ptr get_chain_and_params(http::http_request &original_request) const noexcept;
 
 private:
-    std::array<std::unique_ptr<radix_tree>, 3> method_prefixes; //contains a different radix_tree for each of the endpoints.
+	std::array<std::unique_ptr<radix_tree<>>, 3> method_prefixes; //contains a different radix_tree for each of the endpoints.
     generating_function_t fallback_logic;
 };
 
