@@ -7,25 +7,26 @@ namespace configuration
 abstract_configuration_maker::abstract_configuration_maker(bool verbose, configuration_wrapper *cw) : verbose{verbose} , cw{cw} {}
 
 bool abstract_configuration_maker::accept_setting(const json &setting) {
-    std::string key = setting.cbegin().key();
-    if(is_mandatory(key)) {
-        notify("mandatory key \"", key, "\" retrieved.");
-        if(add_configuration(key, setting.cbegin().value())) {
-            set_mandatory(key);
-            return true;
+    for(auto begin = setting.cbegin(); begin != setting.cend(); ++begin) {
+        std::string key = begin.key();
+        if(is_mandatory(key)) {
+            notify("mandatory key \"", key, "\" retrieved.");
+            if(add_configuration(key, begin.value())) {
+                set_mandatory(key);
+                return true;
+            }
+            throw std::logic_error{"configuration for key " + key + " is invalid."};
         }
-        throw std::logic_error{"configuration for key " + key + " is invalid."};
-    }
-
-    if(is_allowed(key)) {
-        notify("allowed key \"", key, "\" retrieved.");
-        if (add_configuration(key, setting.cbegin().value())) {
-            return true;
+        if(is_allowed(key)) {
+            notify("allowed key \"", key, "\" retrieved.");
+            if (add_configuration(key, begin.value())) {
+                return true;
+            }
+            throw std::logic_error{"configuration for key " + key + " is invalid"};
         }
-        throw std::logic_error{"configuration for key " + key + " is invalid"};
+        notify("key \"", key, "\" not recognized as valid. please check your spelling.");
+        LOGDEBUG("[Configuration] unrecognized option ", key);
     }
-    notify("key \"", key, "\" not recognized as valid. please check your spelling.");
-    LOGDEBUG("[Configuration] unrecognized option ", key);
     return false;
 }
 

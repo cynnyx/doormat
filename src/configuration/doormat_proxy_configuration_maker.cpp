@@ -22,7 +22,7 @@ const std::vector<std::string> doormat_proxy_configuration_maker::allowed_keys
 {
 	"threads","interreg_address","request_size_limit","header_config","disable_http2",
 	"daemon", "inspector",
-	"log_level","cache", "gzip", "connection_attempts", "file_descriptor_limit", "cache_normalization", "magnet"
+	"log_level","cache", "gzip", "connection_attempts", "file_descriptor_limit", "cache_normalization", "magnet", "certificates"
 };
 
 
