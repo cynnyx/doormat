@@ -33,29 +33,21 @@ http_server::http_server()
 	, _read_timeout(boost::posix_time::milliseconds( service::locator::configuration().get_operation_timeout() ) )
 	, _connect_timeout( boost::posix_time::milliseconds(
 				service::locator::configuration().get_client_connection_timeout() ) )
+	, _ssl{sni.load_certificates()}
 {
-	sni.load_certificates();
-	_ssl_ctx = &(sni.begin()->context);
+	if(_ssl)
+	{
+		_ssl_ctx = &(sni.begin()->context);
 
-	for( auto&& iter = sni.begin(); iter != sni.end(); ++iter )
-		_handlers.register_protocol_selection_callbacks(iter->context.native_handle());
+		for( auto&& iter = sni.begin(); iter != sni.end(); ++iter )
+			_handlers.register_protocol_selection_callbacks(iter->context.native_handle());
 
-	auto port = service::locator::configuration().get_port();
+		auto port = service::locator::configuration().get_port();
+		listen_on(port, true );
+	}
+
 	auto porth = service::locator::configuration().get_port_h();
-
-	auto ec = listen_on(port, true );
-	if(ec)
-	{
-		LOGERROR("Error while listening on ", to_string(port));
-		throw ec;
-	}
-
-	ec = listen_on(porth);
-	if(ec)
-	{
-		LOGERROR("Error while listening on ", to_string(porth));
-		throw ec;
-	}
+	listen_on(porth);
 }
 
 void http_server::start(io_service_pool::main_init_fn_t& main_init) noexcept
@@ -194,7 +186,7 @@ tcp_acceptor http_server::make_acceptor(tcp::endpoint endpoint, boost::system::e
 	return acceptor;
 }
 
-boost::system::error_code http_server::listen_on(const uint16_t &port, bool ssl )
+void http_server::listen_on(const uint16_t &port, bool ssl )
 {
 	tcp::resolver resolver(service::locator::service_pool().get_io_service());
 	tcp::resolver::query query("0.0.0.0", to_string(port));
@@ -218,7 +210,13 @@ boost::system::error_code http_server::listen_on(const uint16_t &port, bool ssl 
 
 	if(!acceptors.empty())
 		ec.clear();
-	return ec;
+
+
+	if(ec)
+	{
+		LOGERROR("Error while listening on ", to_string(port));
+		throw ec;
+	}
 }
 
 }//namespace

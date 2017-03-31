@@ -35,6 +35,7 @@ class http_server : private boost::noncopyable
 
 	ssl_context* _ssl_ctx = nullptr; // a non-owner pointer
 	ssl_utils::sni_solver sni;
+	bool _ssl;
 
 	std::vector<tcp_acceptor> _acceptors;
 	std::vector<tcp_acceptor> _ssl_acceptors;
@@ -43,7 +44,7 @@ class http_server : private boost::noncopyable
 	void start_accept(ssl_context& , tcp_acceptor& );
 
 	tcp_acceptor make_acceptor(boost::asio::ip::tcp::endpoint endpoint, boost::system::error_code&);
-	boost::system::error_code listen_on( const uint16_t &port, bool ssl = false );
+	void listen_on( const uint16_t &port, bool ssl = false );
 
 public:
 	explicit http_server();

@@ -1,69 +1,44 @@
-#include "configuration_maker.h"
+#include "doormat_proxy_configuration_maker.h"
 #include "configuration_wrapper.h"
+
+#include <cynnypp/async_fs.hpp>
+#include <algorithm>
+
+
+using cynny::cynnypp::filesystem::exists;
 
 
 namespace configuration
 {
 
-
-
-const std::string configuration_maker::mandatory_keys[13]
+const std::vector<std::string> doormat_proxy_configuration_maker::mandatory_keys
 {
-	"certificates", "route_map", "privileged_addresses", "page_base", "port", "porth", "client_connection_timeout",
+	"route_map", "privileged_addresses", "page_base", "port", "porth", "client_connection_timeout",
 	"board_connection_timeout",
 	"operation_timeout", "board_timeout", "log_path", "error_host", "error_files"
 };
 
-const std::string configuration_maker::allowed_keys[15]
+const std::vector<std::string> doormat_proxy_configuration_maker::allowed_keys
 {
 	"threads","interreg_address","request_size_limit","header_config","disable_http2",
 	"daemon", "inspector",
-	"log_level","cache", "gzip", "connection_attempts", "file_descriptor_limit", "cache_normalization", "magnet"
+	"log_level","cache", "gzip", "connection_attempts", "file_descriptor_limit", "cache_normalization", "magnet", "certificates"
 };
 
-configuration_maker::configuration_maker(bool verbose) : cw{new configuration_wrapper()}, verbose{verbose}
-{
-	mandatory_inserted.reset();
-}
 
-bool configuration_maker::accept_setting(const json &setting)
-{
-	std::string key = setting.cbegin().key();
-	for (size_t i = 0; i < sizeof(mandatory_keys) / sizeof(std::string); ++i)
-	{
-		if (mandatory_keys[i] == key)
-		{
-			notify("mandatory key \"", key, "\" retrieved.");
-			if (add_configuration(key, setting.cbegin().value()))
-			{
-				mandatory_inserted.set(i);
-				return true;
-			}
-			throw std::logic_error{"configuration for key " + key + " is invalid."};
-		}
-	}
-
-	for (size_t i = 0; i < sizeof(allowed_keys) / sizeof(std::string); ++i)
-	{
-		if (allowed_keys[i] == key)
-		{
-			notify("allowed key \"", key, "\" retrieved.");
-			if (add_configuration(key, setting.cbegin().value()))
-			{
-				return true;
-			}
-			throw std::logic_error{"configuration for key " + key + " is invalid"};
-		}
-	}
-
-	notify("key \"", key, "\" not recognized as valid. please check your spelling.");
-
-	LOGDEBUG("[Configuration] unrecognized option ", key);
-	return false;
+doormat_proxy_configuration_maker::doormat_proxy_configuration_maker(bool verbose, configuration_wrapper *cw) : abstract_configuration_maker{verbose, cw} {
+    mandatory_inserted.clear();
+    mandatory_inserted.resize(30, false);
 }
 
 
-bool configuration_maker::add_configuration(const std::string &key, const json &js)
+doormat_proxy_configuration_maker::doormat_proxy_configuration_maker(bool verbose) : abstract_configuration_maker{verbose, new configuration_wrapper()}
+{
+    mandatory_inserted.clear();
+	mandatory_inserted.resize(30, false);
+}
+
+bool doormat_proxy_configuration_maker::add_configuration(const std::string &key, const json &js)
 {
 	/*"certificate", "route_map", "privileged_addresses", "page_base", "port", "porth", "connection_timeout",
 	"operation_timeout", "board_timeout", "log_path"
@@ -106,67 +81,8 @@ bool configuration_maker::add_configuration(const std::string &key, const json &
 	return false;
 }
 
-bool configuration_maker::is_number_integer(const json &js)
-{
-	if(!js.is_number_integer())
-	{
-		std::string js_rep = js;
-		notify("key \"", current_key, "\" expected as value an integer number. Provided ", js_rep, " instead");
-		return false;
-	}
-	return true;
-}
 
-
-bool configuration_maker::is_array(const json& js)
-{
-
-	if(!js.is_array())
-	{
-		std::string js_rep = js;
-		notify("key \"", current_key, "\" expected as value an array. Provided ", js_rep, " instead");
-		return false;
-	}
-	return true;
-}
-
-
-bool configuration_maker::is_object(const json &js)
-{
-	if(!js.is_object())
-	{
-		notify("key \"", current_key, "\" expected as value an object. Provided something different instead");
-		return false;
-	}
-	return true;
-}
-
-
-bool configuration_maker::is_boolean(const json &js)
-{
-	if(!js.is_boolean())
-	{
-		std::string js_rep = js;
-		notify("key \"", current_key, "\" expected as value a boolean. Provided ", js_rep, " instead");
-		return false;
-	}
-	return true;
-}
-
-
-bool configuration_maker::is_string(const json &js)
-{
-	if(!js.is_string())
-	{
-		std::string js_rep = js;
-		notify("key \"", current_key, "\" expected as value a string. Provided ", js_rep, " instead");
-		return false;
-	}
-	return true;
-}
-
-
-bool configuration_maker::cache_normalization_configuration(const json&js)
+bool doormat_proxy_configuration_maker::cache_normalization_configuration(const json&js)
 {
 	if(!is_array(js))
 		return false;
@@ -221,7 +137,7 @@ bool configuration_maker::cache_normalization_configuration(const json&js)
 	return true;
 }
 
-bool configuration_maker::operationtimeout_configuration(const json &js)
+bool doormat_proxy_configuration_maker::operationtimeout_configuration(const json &js)
 {
 
 	if(!is_number_integer(js)) return false;
@@ -231,7 +147,7 @@ bool configuration_maker::operationtimeout_configuration(const json &js)
 }
 
 
-bool configuration_maker::connectionattempts_configuration(const json &js)
+bool doormat_proxy_configuration_maker::connectionattempts_configuration(const json &js)
 {
 	if(!is_number_integer(js) || static_cast<int64_t>(js) >= 256)
 	{
@@ -245,7 +161,7 @@ bool configuration_maker::connectionattempts_configuration(const json &js)
 
 
 
-bool configuration_maker::certificate_configuration(const json &js)
+bool doormat_proxy_configuration_maker::certificate_configuration(const json &js)
 {
 	if (!is_array(js)) return false;
 	int default_count = 0;
@@ -320,7 +236,7 @@ bool configuration_maker::certificate_configuration(const json &js)
 	return true;
 }
 
-bool configuration_maker::routemap_configuration(const json &js)
+bool doormat_proxy_configuration_maker::routemap_configuration(const json &js)
 {
 	if (!is_string(js)) return false;
 	std::string route_map = js;
@@ -330,7 +246,7 @@ bool configuration_maker::routemap_configuration(const json &js)
 	return true;
 }
 
-bool configuration_maker::pa_configuration(const json &js)
+bool doormat_proxy_configuration_maker::pa_configuration(const json &js)
 {
 	if (!is_string(js)) return false;
 	std::string pa = js;
@@ -340,7 +256,7 @@ bool configuration_maker::pa_configuration(const json &js)
 	return true;
 }
 
-bool configuration_maker::pagebase_configuration(const json &js)
+bool doormat_proxy_configuration_maker::pagebase_configuration(const json &js)
 {
 	if (!is_string(js)) return false;
 	std::string pb = js;
@@ -350,7 +266,7 @@ bool configuration_maker::pagebase_configuration(const json &js)
 	return true;
 }
 
-bool configuration_maker::port_configuration(const json &js)
+bool doormat_proxy_configuration_maker::port_configuration(const json &js)
 {
 	if (!is_number_integer(js)) return false;
 	int port = js;
@@ -361,7 +277,7 @@ bool configuration_maker::port_configuration(const json &js)
 	return true;
 }
 
-bool configuration_maker::porth_configuration(const json &js)
+bool doormat_proxy_configuration_maker::porth_configuration(const json &js)
 {
 	if (!is_number_integer(js)) return false;
 	int port = js;
@@ -371,7 +287,7 @@ bool configuration_maker::porth_configuration(const json &js)
 	return true;
 }
 
-bool configuration_maker::cconnectiontimeout_configuration(const json &js)
+bool doormat_proxy_configuration_maker::cconnectiontimeout_configuration(const json &js)
 {
 	if (!is_number_integer(js)) return false;
 	long int timeout = js;
@@ -381,7 +297,7 @@ bool configuration_maker::cconnectiontimeout_configuration(const json &js)
 	return true;
 }
 
-bool configuration_maker::bconnectiontimeout_configuration(const json &js)
+bool doormat_proxy_configuration_maker::bconnectiontimeout_configuration(const json &js)
 {
 	if (!is_number_integer(js)) return false;
 	long int timeout = js;
@@ -391,7 +307,7 @@ bool configuration_maker::bconnectiontimeout_configuration(const json &js)
 	return true;
 }
 
-bool configuration_maker::boardtimeout_configuration(const json &js) {
+bool doormat_proxy_configuration_maker::boardtimeout_configuration(const json &js) {
 	if (!is_number_integer(js)) return false;
 	long int timeout = js;
 	if (timeout <= 0) throw std::logic_error{"invalid board timeout of" + std::to_string(timeout) + " seconds"};
@@ -400,7 +316,7 @@ bool configuration_maker::boardtimeout_configuration(const json &js) {
 	return true;
 }
 
-bool configuration_maker::logpath_configuration(const json &js)
+bool doormat_proxy_configuration_maker::logpath_configuration(const json &js)
 {
 	if (!is_string(js)) return false;
 	cw->log_path = js;
@@ -408,7 +324,7 @@ bool configuration_maker::logpath_configuration(const json &js)
 	return true;
 }
 
-bool configuration_maker::threads_configuration(const json &js)
+bool doormat_proxy_configuration_maker::threads_configuration(const json &js)
 {
 	if (!is_number_integer(js)) return false;
 	int threads = js;
@@ -419,7 +335,7 @@ bool configuration_maker::threads_configuration(const json &js)
 }
 
 
-bool configuration_maker::interregaddress_configuration(const json &js)
+bool doormat_proxy_configuration_maker::interregaddress_configuration(const json &js)
 {
 	if (!is_string(js)) return false;
 	std::string interregg_file = js;
@@ -429,7 +345,7 @@ bool configuration_maker::interregaddress_configuration(const json &js)
 	return true;
 }
 
-bool configuration_maker::rsizelimit_configuration(const json &js)
+bool doormat_proxy_configuration_maker::rsizelimit_configuration(const json &js)
 {
 	if (!is_number_integer(js)) return false;
 	long int limit = js;
@@ -438,7 +354,7 @@ bool configuration_maker::rsizelimit_configuration(const json &js)
 	return true;
 }
 
-bool configuration_maker::headerconfig_configuration(const json &js)
+bool doormat_proxy_configuration_maker::headerconfig_configuration(const json &js)
 {
 	if(!is_string(js)) return false;
 	std::string headerconfigfile = js;
@@ -448,7 +364,7 @@ bool configuration_maker::headerconfig_configuration(const json &js)
 	return true;
 }
 
-bool configuration_maker::inspector_active_configuration( const json& js )
+bool doormat_proxy_configuration_maker::inspector_active_configuration( const json& js )
 {
 	if(!is_boolean(js)) return false;
 	cw->inspector = js;
@@ -456,7 +372,7 @@ bool configuration_maker::inspector_active_configuration( const json& js )
 	return true;
 }
 
-bool configuration_maker::disablehttp2_configuration(const json &js)
+bool doormat_proxy_configuration_maker::disablehttp2_configuration(const json &js)
 {
 	if(!is_boolean(js)) return false;
 	cw->http2_disabled = js;
@@ -464,7 +380,7 @@ bool configuration_maker::disablehttp2_configuration(const json &js)
 	return true;
 }
 
-bool configuration_maker::daemon_configuration(const json &js)
+bool doormat_proxy_configuration_maker::daemon_configuration(const json &js)
 {
 	if(!is_string(js)) return false;
 	std::string daemon_path = js;
@@ -475,7 +391,7 @@ bool configuration_maker::daemon_configuration(const json &js)
 }
 
 
-bool configuration_maker::loglevel_configuration(const json &js)
+bool doormat_proxy_configuration_maker::loglevel_configuration(const json &js)
 {
 	if(!is_string(js)) return false;
 	std::string ll = js;
@@ -487,7 +403,7 @@ bool configuration_maker::loglevel_configuration(const json &js)
 }
 
 
-bool configuration_maker::cache_configuration(const json &js)
+bool doormat_proxy_configuration_maker::cache_configuration(const json &js)
 {
 	if(!is_object(js)) return false;
 
@@ -526,7 +442,7 @@ bool configuration_maker::cache_configuration(const json &js)
 
 
 
-bool configuration_maker::gzip_configuration(const json &js)
+bool doormat_proxy_configuration_maker::gzip_configuration(const json &js)
 {
 	if(!js.is_object()) return false;
 	int compression_level = -1;
@@ -576,7 +492,7 @@ bool configuration_maker::gzip_configuration(const json &js)
 }
 
 
-bool configuration_maker::errorhost_configuration(const json &js)
+bool doormat_proxy_configuration_maker::errorhost_configuration(const json &js)
 {
 	if(!is_string(js)) return false;
 	cw->error_host = js;
@@ -585,7 +501,7 @@ bool configuration_maker::errorhost_configuration(const json &js)
 }
 
 
-bool configuration_maker::errorfiles_configuration(const json &js)
+bool doormat_proxy_configuration_maker::errorfiles_configuration(const json &js)
 {
 	if(!is_array(js)) return false;
 	for(auto pair = js.cbegin(); pair != js.cend(); ++pair)
@@ -614,7 +530,7 @@ bool configuration_maker::errorfiles_configuration(const json &js)
 }
 
 
-bool configuration_maker::fd_configuration(const json &js)
+bool doormat_proxy_configuration_maker::fd_configuration(const json &js)
 {
 	if(!js.is_number_unsigned())
 	{
@@ -627,7 +543,7 @@ bool configuration_maker::fd_configuration(const json &js)
 	return true;
 }
 
-bool configuration_maker::magnet_configuration(const json &js)
+bool doormat_proxy_configuration_maker::magnet_configuration(const json &js)
 {
 	if(!js.is_object())
 	{
@@ -656,6 +572,24 @@ bool configuration_maker::magnet_configuration(const json &js)
 
 }
 
+bool doormat_proxy_configuration_maker::is_mandatory(const std::string &str) {
+    auto el_iter = std::find(mandatory_keys.begin(), mandatory_keys.end(), str);
+    return el_iter != mandatory_keys.end();
+}
+
+void doormat_proxy_configuration_maker::set_mandatory(const std::string &key) {
+    auto el_iter = std::find(mandatory_keys.begin(), mandatory_keys.end(), key);
+    if(el_iter != mandatory_keys.end()) {
+        auto pos = std::distance(mandatory_keys.begin(), el_iter);
+        mandatory_inserted[pos] = true;
+    }
+}
+
+
+bool doormat_proxy_configuration_maker::is_allowed(const std::string &str) {
+    auto el_iter = std::find(allowed_keys.begin(), allowed_keys.end(), str);
+    return el_iter != allowed_keys.end();
+}
 
 
 }

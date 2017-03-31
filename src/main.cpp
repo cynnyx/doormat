@@ -1,10 +1,11 @@
 #include <iostream>
 #include <cstring>
 
+#include "cynnypp/async_fs.hpp"
+
 #include "init.h"
 #include "utils/log_wrapper.h"
 #include "service_locator/service_initializer.h"
-
 #include "network/socket_factory.h"
 #include "network/cloudia_pool.h"
 

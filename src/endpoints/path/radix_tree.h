@@ -21,21 +21,25 @@ class radix_tree
 {
 public:
 	radix_tree(std::string label, char splitToken='/'): node_label{std::move(label)}, splitToken{splitToken}
-	{};
+	{}
 
 	void addPattern(const std::string &path_pattern, generating_function_t gen);
 	bool matches(const std::string &path, http::http_request*r=nullptr) const;
 	std::unique_ptr<node_interface> get(const std::string& str, http::http_request*r = nullptr) const;
 private:
-	std::experimental::optional<const radix_tree*> matches(std::string::const_iterator path_it, std::string::const_iterator end, http::http_request*r=nullptr) const;
+	using str_it = std::string::const_iterator;
+	using vec_it = std::vector<std::string>::iterator;
+	using optional_tree = std::experimental::optional<const radix_tree*>;
 
-	std::experimental::optional<const radix_tree*> wildcard_matches(std::string::const_iterator path_it, std::string::const_iterator end, http::http_request*r=nullptr) const;
+	optional_tree matches(str_it path_it, str_it end, http::http_request*r=nullptr) const;
 
-	std::experimental::optional<const radix_tree*> parameter_matches(std::string::const_iterator path_it, std::string::const_iterator end, http::http_request*r=nullptr) const;
+	optional_tree wildcard_matches(str_it path_it, str_it end, http::http_request*r=nullptr) const;
 
-	void addChild(std::vector<std::string>::iterator begin, std::vector<std::string>::iterator cend, generating_function_t gen);
+	optional_tree parameter_matches(str_it path_it, str_it end, http::http_request*r=nullptr) const;
 
-	void appendChild(std::vector<std::string>::iterator begin, std::vector<std::string>::iterator end, generating_function_t gen);
+	void addChild(vec_it begin, vec_it cend, generating_function_t gen);
+
+	void appendChild(vec_it begin, vec_it end, generating_function_t gen);
 
 	const std::string node_label;
 	std::experimental::optional<generating_function_t> generating_function;

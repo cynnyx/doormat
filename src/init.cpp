@@ -16,9 +16,11 @@
 #include "chain_of_responsibility/chain_of_responsibility.h"
 #include "network/cloudia_pool.h"
 
-#include "endpoints/generator.h"
 #include "dummy_node.h"
 #include "client/client_wrapper.h"
+
+#include "../deps/cynnypp/include/cynnypp/async_fs.hpp"
+
 
 namespace doormat
 {

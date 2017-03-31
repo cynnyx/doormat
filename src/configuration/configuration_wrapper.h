@@ -23,7 +23,7 @@ class certificates_iterator;
 
 class configuration_wrapper
 {
-	friend class configuration_maker;
+	friend class doormat_proxy_configuration_maker;
 	friend class certificates_iterator;
 
 	struct certificate_config
