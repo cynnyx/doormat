@@ -9,7 +9,6 @@
 #include <string>
 #include <algorithm>
 
-#include "../generator.h"
 #include "../../chain_of_responsibility/node_interface.h"
 
 namespace http 
@@ -21,23 +20,37 @@ namespace endpoints
 {
 
 
-template<typename G = generating_function_t>
+template<typename G>
 class radix_tree
 {
 public:
-	radix_tree(std::string label, char splitToken='/'): node_label{std::move(label)}, splitToken{splitToken}
+	radix_tree(std::string label, char splitToken='/', bool reverse = false)
+		: node_label{std::move(label)}
+		, splitToken{splitToken}
+		, rev{reverse}
 	{}
+
+	radix_tree(const radix_tree& t)
+		: node_label{t.node_label}
+		, generating_function{t.generating_function}
+		, splitToken{t.splitToken}
+		, rev{t.rev}
+	{
+		for(auto& ptr : childs)
+			childs.emplace_back(std::make_unique<radix_tree<G>>(*ptr));
+	}
 
 	void addPattern(const std::string &path_pattern, G gen)
 	{
 		if(!path_pattern.size())
 			throw std::invalid_argument{"Cannot insert empty pattern in tree."};
-		if(node_label == "/" && path_pattern == "/")
+		if(node_label == "/" && path_pattern == "/") // TODO: this seems pretty path-specific...
 		{
 			//special case: root
 			generating_function = std::experimental::optional<G>{gen};
 			return;
 		}
+
 		std::stringstream ss{path_pattern};
 		std::vector<std::string> tokens;
 		while(ss.good())
@@ -46,20 +59,23 @@ public:
 			std::getline(ss, tmp, splitToken);
 			if(tmp.size()) tokens.push_back(std::move(tmp));
 		}
+
 		addChild(tokens.begin(), tokens.end(), gen);
 	}
+
 	bool matches(const std::string &path, http::http_request*r=nullptr) const
 	{
 		if(!path.size()) return true;
 		return bool(matches(path.cbegin(), path.cend(), r));
 	}
-	std::unique_ptr<node_interface> get(const std::string& str, http::http_request*r = nullptr) const
+
+	typename G::result_type get(const std::string& str, http::http_request*r = nullptr) const
 	{
-		if(str.empty()) return nullptr;
+		if(str.empty()) return {};
 		auto treeptr = matches(str.cbegin(), str.cend(), r);
 		if(bool(treeptr))
 			return treeptr.value()->generating_function.value()();
-		return nullptr;
+		return {};
 	}
 private:
 	using str_it = std::string::const_iterator;
@@ -169,6 +185,7 @@ private:
 	std::experimental::optional<G> generating_function;
 	std::vector<std::unique_ptr<radix_tree<G>>> childs;
 	const char splitToken;
+	bool rev;
 };
 
 }

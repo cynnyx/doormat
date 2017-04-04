@@ -8,8 +8,12 @@ class node_interface;
 
 namespace endpoints
 {
+
+template<typename generator_t>
+class radix_tree;
 	
-using generating_function_t = std::function<std::unique_ptr<node_interface>()>;
+using chain_generator_t = std::function<std::unique_ptr<node_interface>()>;
+using tree_generator_t = std::function<radix_tree<chain_generator_t>*()>;
 
 	
 }
