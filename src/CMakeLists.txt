@@ -42,11 +42,10 @@ set(DOORMAT_COMMON_SOURCES
 	errors/internal_error.cpp
 	http2/session.cpp
 	http2/stream.cpp
-	http2/http2alloc.cpp
-		configuration/doormat_proxy_configuration_maker.cpp
+        http2/http2alloc.cpp
+        configuration/doormat_proxy_configuration_maker.cpp
 	configuration/abstract_configuration_maker.cpp
 	log/inspector_serializer.cpp
-	endpoints/path/radix_tree.cpp
 	endpoints/chain_factory.cpp
 	network/cloudia_pool.cpp
 	network/buffer.cpp
