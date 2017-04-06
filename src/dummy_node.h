@@ -27,6 +27,7 @@ struct dummy_node : public node_interface
 			{
 				if(!ec)
 				{
+					LOGERROR("Fast answer!");
 					http::http_response preamble;
 					preamble.protocol(http_message_protocol_copy.protocol_version());
 					//preamble.hostname(host);
@@ -48,6 +49,10 @@ struct dummy_node : public node_interface
 	{
 		LOGTRACE("dummy node got a chunk");
 	}
+	
+	void on_request_trailer(dstring&& k, dstring&& v) { }
+	void on_request_canceled(const errors::error_code &err) { }
+	void on_request_finished() { }
 
 	~dummy_node()
 	{

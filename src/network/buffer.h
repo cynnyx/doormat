@@ -31,6 +31,10 @@ public:
 		else
 			temporary.append( std::move( segment ) );
 	}
+	void stop() noexcept
+	{
+		if ( _communicator ) _communicator->stop();
+	}
 	~buffer()
 	{
 		if ( _communicator ) _communicator->stop();

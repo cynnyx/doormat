@@ -79,7 +79,8 @@ public:
 	 * */
 	void stop(bool force=false)
 	{
-		LOGTRACE("stopping", (int) waiting_count);
+		LOGTRACE("stopping ", (int) waiting_count);
+		if ( stopping ) return;
 		if(queue.empty() || force)
 		{
 			socket->close();
@@ -134,7 +135,7 @@ private:
 		socket->async_read_some(boost::asio::mutable_buffers_1(buf),
 			[this](const boost::system::error_code &ec, size_t size) mutable
 			{
-				LOGTRACE("readed ", size, " bytes");
+				LOGTRACE("read ", size, " bytes");
 				handle_timeout();
 				--waiting_count;
 				if(!ec)

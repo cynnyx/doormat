@@ -54,7 +54,6 @@ public:
 		// Is missing socket pool factory of factory
 	}
 
-
 	static void terminate_services()
 	{
 		locator::_access_log.reset();

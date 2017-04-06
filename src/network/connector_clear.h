@@ -35,6 +35,7 @@ public:
 	void stop() noexcept override;
 	void on_error( int error ) noexcept override;
 	void on_response_continue() noexcept override;
+	~connector_clear();
 };
 
 }

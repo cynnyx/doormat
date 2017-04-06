@@ -35,6 +35,7 @@ void client_wrapper::cw_receiver::on_error(int error) noexcept
 void client_wrapper::cw_receiver::stop() noexcept 
 {
 	dead = true;
+	
 }
 
 void client_wrapper::on_request_preamble(http::http_request && message)
@@ -80,8 +81,11 @@ void client_wrapper::on_request_finished()
 
 client_wrapper::~client_wrapper() 
 {
-	connection->stop();
-	recv->stop();
+	if ( connection )
+	{
+		connection->stop();
+		recv->stop();
+	}
 }
 
 }
