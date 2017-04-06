@@ -44,6 +44,7 @@ target_include_directories(
 	PRIVATE ${CITYHASH_INCLUDE_DIRS}
 	PRIVATE ${ZLIB_INCLUDE_DIRS}
 	PRIVATE ${SPDLOG_INCLUDE_DIR}
+        PRIVATE ${PROJECT_SOURCE_DIR}
 )
 
 target_link_libraries(
