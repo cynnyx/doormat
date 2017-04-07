@@ -19,30 +19,36 @@ void connector_clear::init() noexcept
 	
 	codec.register_callback( [self](http::http_structured_data** d)
 		{
+			LOGTRACE("started");
 			if ( self->http_continue ) { self->http_continue = false; self->input = http::http_response{}; }
 			*d = &(self->input);
 		}, [self]() //header_cb
 		{
+			LOGTRACE("header_cb");
 			if ( self->input.status_code() == 100 )
 				self->http_continue = true;
 			else
 				self->on_header( std::move( self->input ) );
 		}, [self](dstring body) //body
 		{
+			LOGTRACE("body_cb");
 			if ( ! self->http_continue ) self->on_body( std::move ( body ) );
 		}, [self](dstring key, dstring val) // trailer
 		{
+			LOGTRACE("trailer_cb");
 			if ( ! self->http_continue )self->on_trailer( std::move( key ), std::move( val ) );
 		}, [self]()
 		{
+			LOGTRACE("completion_cb");
 			if ( self->http_continue ) self->on_response_continue();
-			else {
-				LOGTRACE("CALLING STOP. WHY?");
+			else 
+			{
+				LOGTRACE("on eom cb");
 				self->on_eom();
-				self->stop();
 			}
 		}, [self]( int err, bool& fatal) // error
 		{
+			LOGTRACE("Error!");
 			switch(err)
 			{
 				case HPE_UNEXPECTED_CONTENT_LENGTH:
@@ -114,10 +120,12 @@ std::shared_ptr<connector_clear> connector_clear::make_connector_clear(
 
 connector_clear::connector_clear( const http::http_request &req, std::shared_ptr<receiver>& recv ): connector{req, recv}
 {
+	LOGTRACE("Built!");
 }
 
 void connector_clear::send_body( dstring&& body ) noexcept
 {
+	LOGTRACE(" Called ");
 	dstring enc_body = codec.encode_body( body );
 	output.write( std::move( enc_body ) );
 }
@@ -133,7 +141,7 @@ void connector_clear::send_eom() noexcept
 	// Really useful? HTTP 1 or 1.1?
 }
 
-void connector_clear::on_header(http::http_response && r ) noexcept 
+void connector_clear::on_header(http::http_response && r ) noexcept
 {
 	rec->on_header( std::move( r ) );
 }
@@ -149,6 +157,7 @@ void connector_clear::on_trailer(dstring&& key, dstring&& val) noexcept
 
 void connector_clear::on_eom() noexcept 
 {
+	LOGTRACE("ON_EOM");
 	rec->on_eom();
 	if ( close_on_eom )
 		stop();
@@ -156,12 +165,19 @@ void connector_clear::on_eom() noexcept
 
 void connector_clear::stop() noexcept
 {
+	LOGTRACE("Stopped!");
+	
 	// buffer will be stopped on destruction
 	rec->stop();
 }
 void connector_clear::on_error( int error ) noexcept 
 {
 	rec->on_error( error );
+}
+
+connector_clear::~connector_clear()
+{
+	LOGTRACE("Dead! XXXXXX");
 }
 
 }

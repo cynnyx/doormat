@@ -79,7 +79,8 @@ public:
 	 * */
 	void stop(bool force=false)
 	{
-		LOGTRACE("stopping", (int) waiting_count);
+		LOGTRACE("stopping ", (int) waiting_count);
+		if ( stopping ) return;
 		if(queue.empty() || force)
 		{
 			socket->close();
@@ -134,7 +135,7 @@ private:
 		socket->async_read_some(boost::asio::mutable_buffers_1(buf),
 			[this](const boost::system::error_code &ec, size_t size) mutable
 			{
-				LOGTRACE("readed ", size, " bytes");
+				LOGTRACE("read ", size, " bytes");
 				handle_timeout();
 				--waiting_count;
 				if(!ec)
@@ -175,12 +176,11 @@ private:
 		timeout.expires_from_now(board_timeout);
 		timeout.async_wait([this](const boost::system::error_code &ec)
 		{
-			//LOGTRACE("client_wrapper ",this," async wait cb:", ec.message());
 			--waiting_count;
 			LOGTRACE("timeout terminated with ec ", ec.message());
 			if(!ec || (ec  && ec != boost::system::errc::operation_canceled))
 			{
-				LOGTRACE("here we have an error!");
+				LOGERROR("here we have an error: ", ec.message());
 				set_error(INTERNAL_ERROR_LONG(errors::http_error_code::internal_server_error));
 			}
 			manage_termination();
