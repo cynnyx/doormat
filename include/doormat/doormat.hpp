@@ -10,5 +10,7 @@
 #include "server.hpp"
 #include "service.hpp"
 #include "stats.hpp"
+#include "client.hpp"
+#include "utils.hpp"
 
 #endif // DOORMAT_DOORMAT_HPP_

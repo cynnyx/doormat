@@ -36,7 +36,11 @@ void connector_clear::init() noexcept
 		}, [self]()
 		{
 			if ( self->http_continue ) self->on_response_continue();
-			else self->stop();
+			else {
+				LOGTRACE("CALLING STOP. WHY?");
+				self->on_eom();
+				self->stop();
+			}
 		}, [self]( int err, bool& fatal) // error
 		{
 			switch(err)
@@ -60,6 +64,7 @@ void connector_clear::init() noexcept
 		{
 			if ( st )
 			{
+				LOGTRACE("Connection established!");
 				self->output.set_communicator( 
 					std::unique_ptr<network::communicator<connector_clear::socket>>
 					{ 
@@ -77,10 +82,14 @@ void connector_clear::init() noexcept
 						} ) 
 					} );
 			}
-			else 
+			else {
+				LOGTRACE("Something was wrong! 1");
 				self->on_error(667);
+			}
 		}, [self]() mutable
 		{
+
+			LOGTRACE("Something was wrong! 2");
 			self->on_error(666);
 			self->stop();
 		} );
@@ -89,6 +98,8 @@ void connector_clear::init() noexcept
 	
 	// Select Http1 Encoder decoder
 	dstring msg = codec.encode_header( req_ref );
+    std::string msg_str = msg;
+    LOGTRACE("Writing to client", msg_str);
 	output.write( std::move( msg ) );
 	socket_ref = std::move( socket_factory ); // Needed or lifecycle goes nuts
 }

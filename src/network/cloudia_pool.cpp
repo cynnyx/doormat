@@ -25,9 +25,10 @@ void cloudia_pool::get_socket(const http::http_request& req, socket_callback sc,
 	
 	boost::system::error_code error;
 	handler->it = r.resolve( q, error );
-	if ( error )
+	if ( error ) {
+        LOGTRACE("Error in name resolution of", std::string{req.urihost()});
 		on_error();
-	else if ( handler->it != ip::tcp::resolver::iterator() )
+    } else if ( handler->it != ip::tcp::resolver::iterator() )
 	{
 		handler->init_socket();
 		handler->set_timeout();
@@ -104,6 +105,7 @@ void cloudia_pool::connection_handler::handle_connect( const boost::asio::ip::tc
 				self->_deadline.cancel( ec2 );
 				if ( ec2 ) LOGERROR( "Error cancelling timer? " );
 	// 			socket_ptr->lowest_layer().set_option(boost::asio::ip::tcp::no_delay(true));
+				LOGTRACE("Retrieved a socket!");
 				cb( std::move( self->_socket ) );
 			}
 		}
@@ -122,9 +124,10 @@ void cloudia_pool::get_socket(socket_callback sc )
 	using namespace std;
 	
 	handler->on_socket = sc;
-	if ( handler->it == ip::tcp::resolver::iterator() ) 
-		on_error();
-	else
+	if ( handler->it == ip::tcp::resolver::iterator() )  {
+		LOGTRACE("COULD NOT RESOLVE REMOTE HOST!");
+        on_error();
+    } else
 	{
 		handler->init_socket();
 		handler->set_timeout();

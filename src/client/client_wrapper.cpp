@@ -1,4 +1,5 @@
 #include "client_wrapper.h"
+#include <iostream>
 
 #include "../network/connector_clear.h"
 #include "../utils/log_wrapper.h"
@@ -9,6 +10,7 @@ namespace client
 	
 void client_wrapper::cw_receiver::on_eom() noexcept
 {
+   LOGTRACE("received on_eom from the receiver");
 	if ( ! dead ) cw.on_end_of_message();
 }
 
@@ -39,6 +41,7 @@ void client_wrapper::cw_receiver::stop() noexcept
 
 void client_wrapper::on_request_preamble(http::http_request && message)
 {
+	LOGTRACE("Client wrapper: preamble!");
 	if ( ! message.ssl() )
 	{
 		recv.reset( new cw_receiver( *this) );
@@ -46,6 +49,7 @@ void client_wrapper::on_request_preamble(http::http_request && message)
 		/// this should be another request - that we should take
 		/// not the same as message
 		connection = network::connector_clear::make_connector_clear( message, recv );
+        LOGTRACE("established connection?");
 	}
 	else
 	{
