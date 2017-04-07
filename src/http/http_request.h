@@ -40,7 +40,12 @@ public:
 	void schema(const dstring& val) noexcept { _schema = val; }
 	const dstring& schema() const noexcept { return _schema; }
 
-	void urihost(const dstring& val) noexcept { _urihost = val;}
+    template<typename DS>
+    void urihost(DS&& val) noexcept
+    {
+        static_assert(std::is_convertible<DS, dstring>::value, "Must be dstring-convertible");
+        _urihost = std::forward<DS>(val);
+    }
 	const dstring& urihost() const noexcept { return _urihost; }
 
 	void port(const dstring& val) noexcept {_port=val;}
