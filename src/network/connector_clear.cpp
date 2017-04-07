@@ -41,10 +41,10 @@ void connector_clear::init() noexcept
 		{
 			LOGTRACE("completion_cb");
 			if ( self->http_continue ) self->on_response_continue();
-			else {
-				LOGTRACE("CALLING STOP. WHY?");
+			else 
+			{
+				LOGTRACE("on eom cb");
 				self->on_eom();
-				self->stop();
 			}
 		}, [self]( int err, bool& fatal) // error
 		{
