@@ -25,10 +25,12 @@ void cloudia_pool::get_socket(const http::http_request& req, socket_callback sc,
 	
 	boost::system::error_code error;
 	handler->it = r.resolve( q, error );
-	if ( error ) {
+	if ( error ) 
+	{
         LOGTRACE("Error in name resolution of", std::string{req.urihost()});
 		on_error();
-    } else if ( handler->it != ip::tcp::resolver::iterator() )
+    }
+    else if ( handler->it != ip::tcp::resolver::iterator() )
 	{
 		handler->init_socket();
 		handler->set_timeout();
@@ -56,7 +58,7 @@ void cloudia_pool::connection_handler::retry( socket_callback cb)
 	if ( ! cp_p || cp_p->stopping ) return;
 	if ( it == ip::tcp::resolver::iterator() ) return;
 	
-	if ( it != ip::tcp::resolver::iterator() ) 
+	if ( ++it != ip::tcp::resolver::iterator() ) 
 		handle_connect( *it, cb );
 	else
 		cp_p->on_error();
