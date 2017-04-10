@@ -45,7 +45,7 @@ private:
 	const std::string *tabs{nullptr};
 
 
-	bool add_configuration(const std::string &key, const json &js);
+    bool add_configuration(const std::string &key, const json &js) override;
 
 	bool certificate_configuration(const json &js);
 

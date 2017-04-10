@@ -212,7 +212,7 @@ void handler_http1::transaction_handler::on_request_preamble( http::http_request
 	if ( enclosing && enclosing->th.size() > 1 ) access.set_pipe( true );
 	LOGTRACE(this," on_request_preamble");
 	
-	cor = std::move ( service::locator::chain_factory().get_chain( message ) );
+    cor = std::move ( service::locator::chain_factory().get_chain_and_params( message ) );
 	callback_cor_initializer( cor, this );
 	cor->on_request_preamble(std::move(message));
 }

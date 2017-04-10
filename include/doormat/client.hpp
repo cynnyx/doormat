@@ -2,4 +2,4 @@
 
 namespace doormat {
     using ::client::client_wrapper;
-};
+}

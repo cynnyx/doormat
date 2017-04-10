@@ -4,7 +4,7 @@
 #include <functional>
 #include <memory>
 
-class node_interface;
+struct node_interface;
 
 namespace endpoints
 {

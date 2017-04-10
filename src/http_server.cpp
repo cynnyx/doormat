@@ -127,7 +127,7 @@ void http_server::start_accept(ssl_context& ssl_ctx, tcp_acceptor& acceptor)
 					}
 				}
 
-				LOGERROR(this," asynch accept failed:", ec.message());
+				LOGERROR(this," async accept failed:", ec.message());
 				if(ec.category() == boost::asio::error::get_ssl_category())
 					log_ssl_errors(ec);
 			};
@@ -161,7 +161,7 @@ void http_server::start_accept(tcp_acceptor& acceptor)
 			auto h = _handlers.build_handler(ht_h1);
 			conn->handler( h );
 			conn->start();
-			return;
+			return start_accept(acceptor);
 		}
 		else LOGERROR(ec.message());
 
