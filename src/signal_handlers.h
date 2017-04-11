@@ -10,7 +10,7 @@
 namespace signals_handlers
 {
 
-static void set(int sig, __sighandler_t handler)
+inline void set(int sig, __sighandler_t handler)
 {
 	struct sigaction act0;
 	memset (&act0, '\0', sizeof(act0));
@@ -20,7 +20,7 @@ static void set(int sig, __sighandler_t handler)
 		throw errno;
 }
 
-static void block_all()
+inline void block_all()
 {
 	sigset_t mask;
 	sigfillset(&mask);
@@ -28,7 +28,7 @@ static void block_all()
 		throw errno;
 }
 
-static void unblock_all()
+inline void unblock_all()
 {
 	sigset_t mask;
 	sigemptyset(&mask);
