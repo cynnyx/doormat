@@ -95,7 +95,7 @@ std::string request_generator(const http_method method, const std::string& conte
 {
 	//HEADERs
 	std::string req(http_method_str(method));
-	req.append(" http://localhost:2000/path HTTP/1.1")
+	req.append(" /path HTTP/1.1")
 		.append(http::crlf)
 		.append("connection: close")
 		.append(http::crlf);
