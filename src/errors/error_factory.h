@@ -26,9 +26,12 @@ public:
 
     void produce_error_response(header_callback_t hcb, body_callback_t bcb, trailer_callback_t tcb, eom_callback_t ecb) {
         http::http_response res;
-        res.status(static_cast<uint16_t>(ec), "HTTP Error: code "+static_cast<uint16_t>(ec));
+        std::string errmsg = errors::to_string(ec);
+        res.status(static_cast<uint16_t>(ec), dstring{errmsg.data(), errmsg.size()});
         res.protocol(pv);
+        res.content_len(errmsg.size()); 
         hcb(std::move(res));
+        bcb(dstring{errmsg.data(), errmsg.size()});
         ecb();
         return;
     }
