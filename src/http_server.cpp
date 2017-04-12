@@ -50,7 +50,8 @@ http_server::http_server()
 	listen_on(porth);
 }
 
-void http_server::start(io_service_pool::main_init_fn_t& main_init) noexcept
+void http_server::start(io_service_pool::main_init_fn_t main_init,
+                        io_service_pool::thread_init_fn_t thread_init) noexcept
 {
 	if(!running)
 	{
@@ -65,7 +66,7 @@ void http_server::start(io_service_pool::main_init_fn_t& main_init) noexcept
 			start_accept(*_ssl_ctx , acceptor);
 		}
 
-		auto thread_init = [](boost::asio::io_service& ios)
+        auto thread_init_local = [ti=std::move(thread_init)](boost::asio::io_service& ios)
 		{
 			using namespace service;
 			locator::stats_manager().register_handler();
@@ -74,12 +75,14 @@ void http_server::start(io_service_pool::main_init_fn_t& main_init) noexcept
 			auto&& cw = locator::configuration();
 			auto il = new logging::inspector_log{ cw.get_log_path(), "inspector", cw.inspector_active() };
 			initializer::set_inspector_log(il);
+            if(ti)
+                ti(ios);
 		};
 
 		LOGINFO("Starting doormat on ports ", service::locator::configuration().get_port(),",",
 				service::locator::configuration().get_port_h(),", with ", _threads, " threads");
 
-		service::locator::service_pool().run(thread_init, main_init);
+        service::locator::service_pool().run(std::move(thread_init_local), std::move(main_init));
 	}
 }
 
