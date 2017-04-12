@@ -72,3 +72,29 @@ TEST(chain_factory, get_with_hosts) {
 	EXPECT_EQ(proper, 1);
 }
 
+
+TEST(chain_factory, multiple_hosts) {
+    using namespace endpoints;
+    int fallback{0}, proper1{0}, proper2{0};
+	auto chain_maker1 = [&](){ ++proper1; return std::make_unique<dummy_node>(); };
+    auto chain_maker2 = [&](){ ++proper2; return std::make_unique<dummy_node>(); };
+	auto cf = std::make_unique<chain_factory>([&fallback](){ ++fallback; return nullptr;});
+    http::http_request dummy_request1{}, dummy_request2{};
+    dummy_request1.method(http_method::HTTP_GET);
+    dummy_request1.hostname("ciao.org");
+    dummy_request1.path("/plain/aaaaaaaaaaaa");
+
+    dummy_request2.method(http_method::HTTP_GET);
+    dummy_request2.hostname("ciao.org");
+    dummy_request2.path("/ai/aaaaaaaa");
+
+	cf->get("*", "/plain/{url}", chain_maker1);
+	EXPECT_NO_THROW(cf->get("*", "/ai/{url}", chain_maker2));
+
+    auto ch1 = cf->get_chain(dummy_request1);
+    auto ch2 = cf->get_chain(dummy_request2);
+    EXPECT_TRUE(ch1); EXPECT_TRUE(ch2);
+    EXPECT_EQ(fallback, 0);
+    EXPECT_EQ(proper1, 1);
+    EXPECT_EQ(proper2, 1);
+}
