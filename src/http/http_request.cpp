@@ -11,22 +11,24 @@ namespace http
 	};
 #undef YY
 
+
 dstring http_request::serialize() const noexcept
 {
 	dstring msg;
 	msg.append(method()).append(http::space);
 
-	if(_schema)
+	bool supports_full_paths = protocol_version() == http::proto_version::HTTP20 || protocol_version() == http::proto_version::HTTP11;
+	if(_schema && supports_full_paths)
 		msg.append(_schema).append("://");
 
 	//TODO: DRM-207 userinfo not yet supported
 	//if(_userinfo.valid())
 	//	chunks.push_back(_userinfo);
 
-	if(_urihost)
+	if(_urihost && supports_full_paths)
 		msg.append(_urihost);
 
-	if(_port)
+	if(_port && supports_full_paths)
 		msg.append(http::colon).append(_port);
 
 	if(_path)
@@ -77,9 +79,14 @@ bool http_request::operator!=(const http_request&req) const
 	return ! ( *this == req );
 }
 
-void http_request::addParameter(std::string param_name, std::string param_value)
+void http_request::setParameter(const std::string& param_name, const std::string& param_value)
 {
-	_params.emplace(param_name, param_value);
+    _params[param_name] = param_value;
+}
+
+void http::http_request::removeParameter(const std::string& name)
+{
+    _params.erase(name);
 }
 
 bool http_request::hasParameter(const std::string &param_name)

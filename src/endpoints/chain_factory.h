@@ -5,7 +5,6 @@
 
 #include "generator.h"
 #include "../../src/endpoints/path/radix_tree.h"
-
 namespace http {
 class http_request;
 }
@@ -82,9 +81,7 @@ private:
 		auto path_tree = host_trees[bucket]->get(host.empty() ? "*" : host);
 		if(!path_tree)
 			return fallback_logic();
-
 		auto selected = details::get_helper<with_params, R>::get(path_tree, req);
-
 		if(!selected)
 			return fallback_logic();
 

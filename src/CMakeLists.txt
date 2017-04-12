@@ -52,6 +52,8 @@ set(DOORMAT_COMMON_SOURCES
 	network/connector_clear.cpp
 	network/connector_ssl.cpp
 	client/client_wrapper.cpp
+	errors/error_factory.cpp
+	requests_manager/error_producer.cpp
 	)
 
 #

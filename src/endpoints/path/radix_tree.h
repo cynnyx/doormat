@@ -148,7 +148,6 @@ private:
 					  "wrong type");
 
 		while(beg != end && *beg == split_token) ++beg;
-
 		if(node_label == "*")
 			return wildcard_matches(beg, end, r);
 
@@ -210,7 +209,7 @@ private:
 		auto nextPathBegin = std::find(path_it, end, split_token);
 		if(nextPathBegin == end) {
 			if(bool(generating_function)) {
-				if(r) r->addParameter(std::string{node_label.begin()+1, node_label.end()-1}, details::from_iterators(path_it, end));
+                if(r) r->setParameter(std::string{node_label.begin()+1, node_label.end()-1}, details::from_iterators(path_it, end));
 				return this;
 			} return radix_tree::optional_tree{}; //we matched with a parameter.
 		}
@@ -218,7 +217,7 @@ private:
 		{
 			auto tptr = c->matches(nextPathBegin, end, r);
 			if(bool(tptr)) {
-				if(r) r->addParameter(std::string{node_label.begin()+1, node_label.end()-1}, details::from_iterators(path_it, nextPathBegin));
+                if(r) r->setParameter(std::string{node_label.begin()+1, node_label.end()-1}, details::from_iterators(path_it, nextPathBegin));
 				return tptr;
 			}
 		}

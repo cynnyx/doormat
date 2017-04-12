@@ -23,6 +23,7 @@ enum class http_error_code : uint16_t
 	length_required = 411,
 	entity_too_large = 413,
 	uri_too_long = 414,
+	unsupported_media_type = 415,
 	unprocessable_entity = 422,
 	internal_server_error = 500,
 	bad_gateway = 502,

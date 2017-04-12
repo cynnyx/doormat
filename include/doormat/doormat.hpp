@@ -12,5 +12,6 @@
 #include "stats.hpp"
 #include "client.hpp"
 #include "utils.hpp"
+#include "errors.hpp"
 
 #endif // DOORMAT_DOORMAT_HPP_

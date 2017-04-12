@@ -71,10 +71,9 @@ public:
 	bool operator==(const http_request&req) const;
 	bool operator!=(const http_request&req) const;
 
-	void addParameter(std::string param_name, std::string param_value);
-
+    void setParameter(const std::string& param_name, const std::string& param_value);
+    void removeParameter(const std::string& name);
     bool hasParameter(const std::string &param_name);
-
     const std::string& getParameter(const std::string&param_name);
 private:
 	bool _ssl;

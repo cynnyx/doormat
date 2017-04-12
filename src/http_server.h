@@ -48,7 +48,8 @@ class http_server : private boost::noncopyable
 
 public:
 	explicit http_server();
-	void start(io_service_pool::main_init_fn_t& main_init) noexcept;
+    void start(io_service_pool::main_init_fn_t main_init,
+                io_service_pool::thread_init_fn_t thread_init = {}) noexcept;
 	void stop() noexcept;
 
 };
