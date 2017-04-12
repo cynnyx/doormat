@@ -29,7 +29,7 @@ public:
         std::string errmsg = errors::to_string(ec);
         res.status(static_cast<uint16_t>(ec), dstring{errmsg.data(), errmsg.size()});
         res.protocol(pv);
-        res.content_len(errmsg.size()); 
+        res.content_len(errmsg.size());
         hcb(std::move(res));
         bcb(dstring{errmsg.data(), errmsg.size()});
         ecb();

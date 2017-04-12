@@ -148,7 +148,6 @@ private:
 					  "wrong type");
 
 		while(beg != end && *beg == split_token) ++beg;
-
 		if(node_label == "*")
 			return wildcard_matches(beg, end, r);
 

@@ -60,7 +60,7 @@ void chain_factory::addPattern(chain_factory::method m, const std::string& host,
 	if(host_trees[m]->matches(host)) {
 		auto ptr = host_trees[m]->get(host);
 		if(ptr != nullptr)
-			return ptr->addPattern(host, std::move(logic));
+			return ptr->addPattern(path, std::move(logic));
 	}
 
 	radix_tree<chain_generator_t, '/', false> tree;

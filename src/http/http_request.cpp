@@ -11,6 +11,7 @@ namespace http
 	};
 #undef YY
 
+
 dstring http_request::serialize() const noexcept
 {
 	dstring msg;
