@@ -5,7 +5,7 @@
 #include <ostream>
 #include <string>
 #include <cassert>
-
+#include <iostream>
 namespace errors
 {
 
@@ -77,8 +77,21 @@ std::string to_string( http_error_code e )
 	case http_error_code::entity_too_large:
 		ret = "entity too large";
 		break;
+    case http_error_code::not_found:
+        ret = "not found";
+        break;
+    case http_error_code::length_required:
+        ret = "length required";
+        break;
+    case http_error_code::uri_too_long:
+        ret = "URI too long!";
+        break;
+    case http_error_code::unsupported_media_type:
+        ret = "Unsupported media type.";
+        break;
 	default:
-		assert(0);
+		ret = "Unknown error";
+        break;
 	}
 
 	return ret;
