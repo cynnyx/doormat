@@ -243,7 +243,8 @@ void handler_http1::transaction_handler::on_request_canceled(const errors::error
 {
 	LOGTRACE(this," transaction_handler::on_request_canceled");
 	access.cancel();
-	cor->on_request_canceled(ec);
+	if(cor)
+		cor->on_request_canceled(ec);
 }
 
 void handler_http1::do_write()
