@@ -126,10 +126,12 @@ void cloudia_pool::get_socket(socket_callback sc )
 	using namespace std;
 	
 	handler->on_socket = sc;
-	if ( handler->it == ip::tcp::resolver::iterator() )  {
+	if ( handler->it == ip::tcp::resolver::iterator() )
+	{
 		LOGTRACE("COULD NOT RESOLVE REMOTE HOST!");
         on_error();
-    } else
+    }
+    else
 	{
 		handler->init_socket();
 		handler->set_timeout();
