@@ -111,12 +111,12 @@ struct filelogger_base
 
 	~filelogger_base() noexcept
 	{
+		// detach sinks from the core, otherwise they will go on logging...
+		boost::log::core::get()->remove_sink(log_frtnd_);
+		
 		/* ensure that sinks are flushed (couldn't find in the
 		 * documentation that sinks are flushed at destruction time) */
 		log_frtnd_->flush();
-
-		// detach sinks from the core, otherwise they will go on logging...
-		boost::log::core::get()->remove_sink(log_frtnd_);
 	}
 
 	void flush()
