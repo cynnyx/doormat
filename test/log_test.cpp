@@ -8,6 +8,7 @@
 #include "cynnypp/async_fs.hpp"
 
 #include "../src/log/log.h"
+#include "../src/log/access_record.h"
 #include "../src/log/format.h"
 #include "../src/utils/date.h"
 
@@ -35,18 +36,18 @@ namespace
 // I've been forced to implement this factory method due to a bug in gcc 6.2.1 (only under Arch!!!)
 // aggregate initialization was not working on access_record with -std=c++11 flag (working with c++14)
 logging::access_record make_access_record(dstring remote_addr,
-										  dstring remote_user,
-										  dstring req,
-										  uint16_t status,
-										  size_t body_bytes_sent,
-										  dstring referer,
-										  dstring user_agent,
-										  logging::access_record::clock::time_point start,
-										  logging::access_record::clock::time_point end,
-										  bool pipe,
-										  size_t req_length,
-										  dstring x_debug_cyn_ip,
-										  dstring host)
+	dstring remote_user,
+	dstring req,
+	uint16_t status,
+	size_t body_bytes_sent,
+	dstring referer,
+	dstring user_agent,
+	logging::access_record::clock::time_point start,
+	logging::access_record::clock::time_point end,
+	bool pipe,
+	size_t req_length,
+	dstring x_debug_cyn_ip,
+	dstring host)
 {
 	logging::access_record ret;
 	ret.remote_addr = remote_addr;
@@ -253,7 +254,7 @@ TEST(Log, Access)
 	{
 		using std::chrono::milliseconds;
 
-		logging::access_log al(".", dir_name);
+		logging::access_log_c al(".", dir_name);
 		al.log(ar1);
 		al.log(ar2);
 		al.log(ar3);

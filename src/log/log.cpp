@@ -1,5 +1,6 @@
 #include "log.h"
 #include "format.h"
+#include "access_record.h"
 #include "../constants.h"
 #include "../service_locator/service_locator.h"
 #include "../configuration/configuration_wrapper.h"
@@ -54,6 +55,26 @@ static constexpr const char* dot = ".";
 
 namespace logging
 {
+	
+// enum class severity : uint8_t
+// {
+// 	trace8,
+// 	trace7,
+// 	trace6,
+// 	trace5,
+// 	trace4,
+// 	trace3,
+// 	trace2,
+// 	trace1,
+// 	debug,
+// 	info,
+// 	notice,
+// 	warn,
+// 	error,
+// 	crit,
+// 	alert,
+// 	emerg
+// };
 
 BOOST_LOG_ATTRIBUTE_KEYWORD(timestamp_attribute, "TimeStamp", std::string)
 
@@ -140,7 +161,7 @@ struct filelogger_base
 // access log class implementation
 // -----------------------------------------------------------------------------------
 
-class access_log::impl : public filelogger_base
+class access_log_c::impl : public filelogger_base
 {
 public:
 	impl(const std::string& log_dir, const std::string& file_prefix);
@@ -155,7 +176,7 @@ private:
 	static const std::string channel_name;
 };
 
-access_log::impl::impl(const std::string& log_dir, const std::string& file_prefix)
+access_log_c::impl::impl(const std::string& log_dir, const std::string& file_prefix)
 	: filelogger_base{log_dir, file_prefix, channel_name}
 {
 	using namespace boost::log;
@@ -183,7 +204,7 @@ access_log::impl::impl(const std::string& log_dir, const std::string& file_prefi
 	);
 }
 
-void access_log::impl::log(const access_record& r)
+void access_log_c::impl::log(const access_record& r)
 {
 	static thread_local boost::log::sources::channel_logger<std::string> logger_{boost::log::keywords::channel = channel_name};
 	static thread_local boost::log::attributes::mutable_constant<std::string> hostname_attr{""};
@@ -250,81 +271,81 @@ void access_log::impl::log(const access_record& r)
 	BOOST_LOG(logger_);
 }
 
-std::ostream& operator<<(std::ostream& os, severity level)
-{
-	switch(level)
-	{
-	case severity::emerg:
-		os << "emerg";
-		break;
-	case severity::alert:
-		os << "alert";
-		break;
-	case severity::crit:
-		os << "crit";
-		break;
-	case severity::error:
-		os << "error";
-		break;
-	case severity::warn:
-		os << "warn";
-		break;
-	case severity::notice:
-		os << "notice";
-		break;
-	case severity::info:
-		os << "info";
-		break;
-	case severity::debug:
-		os << "debug";
-		break;
-	case severity::trace1:
-		os << "trace1";
-		break;
-	case severity::trace2:
-		os << "trace2";
-		break;
-	case severity::trace3:
-		os << "trace3";
-		break;
-	case severity::trace4:
-		os << "trace4";
-		break;
-	case severity::trace5:
-		os << "trace5";
-		break;
-	case severity::trace6:
-		os << "trace6";
-		break;
-	case severity::trace7:
-		os << "trace7";
-		break;
-	case severity::trace8:
-		os << "trace8";
-		break;
-	}
-
-	return os;
-}
+// std::ostream& operator<<(std::ostream& os, severity level)
+// {
+// 	switch(level)
+// 	{
+// 	case severity::emerg:
+// 		os << "emerg";
+// 		break;
+// 	case severity::alert:
+// 		os << "alert";
+// 		break;
+// 	case severity::crit:
+// 		os << "crit";
+// 		break;
+// 	case severity::error:
+// 		os << "error";
+// 		break;
+// 	case severity::warn:
+// 		os << "warn";
+// 		break;
+// 	case severity::notice:
+// 		os << "notice";
+// 		break;
+// 	case severity::info:
+// 		os << "info";
+// 		break;
+// 	case severity::debug:
+// 		os << "debug";
+// 		break;
+// 	case severity::trace1:
+// 		os << "trace1";
+// 		break;
+// 	case severity::trace2:
+// 		os << "trace2";
+// 		break;
+// 	case severity::trace3:
+// 		os << "trace3";
+// 		break;
+// 	case severity::trace4:
+// 		os << "trace4";
+// 		break;
+// 	case severity::trace5:
+// 		os << "trace5";
+// 		break;
+// 	case severity::trace6:
+// 		os << "trace6";
+// 		break;
+// 	case severity::trace7:
+// 		os << "trace7";
+// 		break;
+// 	case severity::trace8:
+// 		os << "trace8";
+// 		break;
+// 	}
+// 
+// 	return os;
+// }
 
 // ----- static vars initialization
-const std::string access_log::impl::channel_name = "access";
+const std::string access_log_c::impl::channel_name = "access";
 
 // *************************** access log ********************************
-access_log::access_log(const std::string& log_dir, const std::string& file_prefix)
+access_log_c::access_log_c(const std::string& log_dir, const std::string& file_prefix)
 	: pImpl{new impl{log_dir, file_prefix}}
 {}
 
-void access_log::log(const access_record& r) noexcept
+void access_log_c::log(const access_record& r) noexcept
 {
 	pImpl->log(r);
 }
 
-void access_log::flush()
+void access_log_c::flush()
 {
 	pImpl->flush();
 }
 
-access_log::~access_log() {}
+access_log_c::~access_log_c() {}
 
 }

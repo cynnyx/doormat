@@ -29,7 +29,7 @@ public:
 
 		if(verbose && parser.parser_finished_successfully())
 		{
-			std::cout << std::endl << std::endl;
+	// 		 		std::cout << std::endl << std::endl;
 			std::cout << "================================================================================" << std::endl;
 			std::cout << "                          CONFIGURATION IS VALID                                " << std::endl;
 			std::cout << "================================================================================" << std::endl;
@@ -48,7 +48,7 @@ public:
 		auto sm = new stats::stats_manager{ cw.get_thread_number() };
 		set_stats_manager(sm);
 
-		auto al = new logging::access_log{ cw.get_log_path(), "access"};
+		auto al = new logging::access_log_c{ cw.get_log_path(), "access"};
 		set_access_log(al);
 		
 		// Is missing socket pool factory of factory

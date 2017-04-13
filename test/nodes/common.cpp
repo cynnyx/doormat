@@ -188,7 +188,7 @@ void setup( configuration::configuration_wrapper* cw, logging::inspector_log* il
 	service::initializer::set_configuration(cw);
 	service::initializer::set_service_pool(new server::io_service_pool{ cw->get_thread_number() });
 	service::initializer::set_stats_manager(new stats::stats_manager{ cw->get_thread_number() });
-	service::initializer::set_access_log(new logging::access_log{ cw->get_log_path() + "access_logs", "access"});
+	service::initializer::set_access_log(new logging::access_log_c{ cw->get_log_path() + "access_logs", "access"});
 	if ( il == nullptr )
 	{
 		service::initializer::set_inspector_log
