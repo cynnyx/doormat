@@ -148,20 +148,21 @@ int doormat( int argc, char** argv )
 	if(check_configuration_mode)
 		exit(!valid_conf);
 
+	auto& cw = service::locator::configuration();
 	//Daemonize
 	if(daemon_mode)
-		becoming_deamon(service::locator::configuration().get_daemon_root());
+		becoming_deamon(cw.get_daemon_root());
 
 	//Init logs
 	if(log_level.size())
-		service::locator::configuration().set_log_level(log_level);
-	log_wrapper::init(verbose_mode,
-		service::locator::configuration().get_log_level(), service::locator::configuration().get_log_path());
+		cw.set_log_level(log_level);
+	log_wrapper::init(verbose_mode, cw.get_log_level(), cw.get_log_path());
 
 	service::initializer::init_services();
+	service::initializer::set_access_log( new logging::access_log_c{ cw.get_log_path(), "access"} );
 
 	//Raise file descriptor limit
-	auto max_fd = service::locator::configuration().get_fd_limit();
+	auto max_fd = cw.get_fd_limit();
 	if( max_fd != 0 )
 	{
 		rlimit fdl;
