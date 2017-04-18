@@ -11,7 +11,6 @@
 namespace network
 {
 
-//Enable shared from this?
 // Ok, this can't be really a pool.
 // Missing TLS support
 class cloudia_pool: public socket_factory<boost::asio::ip::tcp::socket>
@@ -24,6 +23,7 @@ class cloudia_pool: public socket_factory<boost::asio::ip::tcp::socket>
 		error_callback on_error_cb;
 		socket_callback on_socket;
 		boost::asio::deadline_timer _deadline;
+		bool deadline_timer_cancelled{false};
 		boost::asio::ip::tcp::resolver::iterator it;
 		
 		connection_handler( cloudia_pool* out );

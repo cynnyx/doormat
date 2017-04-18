@@ -90,7 +90,10 @@ public:
 		set_error(INTERNAL_ERROR(1)); //fixme: stopped from remote, for the moment it is 500;
 	}
 
-	~communicator() = default;
+	~communicator()
+	{
+		LOGTRACE("Gone! XXXX");
+	}
 private:
 	/** \brief performs an actual write on the socket
 	 * */
@@ -103,7 +106,8 @@ private:
 		schedule_timeout(); //renews the deadline, since we had another event.
 		++waiting_count;
 		LOGTRACE("write of size ", queue.front().size(), " has been scheduled");
-		boost::asio::async_write(*socket, boost::asio::buffer(queue.front().cdata(), queue.front().size()), [this](const boost::system::error_code &ec, size_t size)
+		boost::asio::async_write(*socket, boost::asio::buffer(queue.front().cdata(), queue.front().size()), 
+			[this](const boost::system::error_code &ec, size_t size)
 		{
 			LOGTRACE("wrote ", size, "bytes with return status ", ec.message());
 			queue.pop();

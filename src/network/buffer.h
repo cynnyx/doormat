@@ -37,6 +37,7 @@ public:
 	}
 	~buffer()
 	{
+		LOGTRACE("Gone! XXXX");
 		if ( _communicator ) _communicator->stop();
 	}
 };

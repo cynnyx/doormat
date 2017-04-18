@@ -10,7 +10,7 @@ namespace client
 	
 void client_wrapper::cw_receiver::on_eom() noexcept
 {
-   LOGTRACE("received on_eom from the receiver");
+	LOGTRACE("received on_eom from the receiver");
 	if ( ! dead ) cw.on_end_of_message();
 }
 
@@ -37,7 +37,6 @@ void client_wrapper::cw_receiver::on_error(int error) noexcept
 void client_wrapper::cw_receiver::stop() noexcept 
 {
 	dead = true;
-	
 }
 
 void client_wrapper::on_request_preamble(http::http_request && message)
@@ -85,6 +84,7 @@ void client_wrapper::on_request_finished()
 
 client_wrapper::~client_wrapper() 
 {
+	LOGTRACE("Gone! XXXX");
 	if ( connection )
 	{
 		connection->stop();

@@ -43,11 +43,19 @@ cloudia_pool::connection_handler::connection_handler( cloudia_pool* out ): cp_p{
 
 void cloudia_pool::on_error()
 {
+	LOGTRACE("Error for cloudia!");
 	stopping = true;
 	if ( handler->on_error_cb )
 		handler->on_error_cb();
 	else if ( handler->on_socket )
 		handler->on_socket( std::unique_ptr<socket_type>{} );
+	
+	if ( ! handler->deadline_timer_cancelled )
+	{
+		boost::system::error_code ec2;
+		handler->_deadline.cancel( ec2 );
+		handler->deadline_timer_cancelled = true;
+	}
 }
 
 
@@ -56,7 +64,7 @@ void cloudia_pool::connection_handler::retry( socket_callback cb)
 	using namespace boost::asio;
 	
 	if ( ! cp_p || cp_p->stopping ) return;
-	if ( it == ip::tcp::resolver::iterator() ) return;
+	if ( it == ip::tcp::resolver::iterator() ) return cp_p->on_error();
 	
 	if ( ++it != ip::tcp::resolver::iterator() ) 
 		handle_connect( *it, cb );
@@ -77,12 +85,17 @@ void cloudia_pool::connection_handler::handle_connect( const boost::asio::ip::tc
 	_socket->async_connect( endpoint,
 		[cb, self](const boost::system::error_code &ec) mutable
 	{
+		LOGTRACE("Connected?");
 		if ( self->cp_p == nullptr )
 		{
 			LOGERROR("Gone!");
 			self->_socket->close();
-			boost::system::error_code ec2;
-			self->_deadline.cancel( ec2 );
+			if ( ! self->deadline_timer_cancelled )
+			{
+				boost::system::error_code ec2;
+				self->_deadline.cancel( ec2 );
+				self->deadline_timer_cancelled = true;
+			}
 		}
 		else if ( ! self->_socket->is_open() )
 		{
@@ -96,6 +109,13 @@ void cloudia_pool::connection_handler::handle_connect( const boost::asio::ip::tc
 		}
 		else
 		{
+			if ( ! self->deadline_timer_cancelled )
+			{
+				boost::system::error_code ec2;
+				self->_deadline.cancel( ec2 );
+				self->deadline_timer_cancelled = true;
+				if ( ec2 ) LOGERROR( "Error cancelling timer? " );
+			}
 			if ( self->cp_p->stopping )
 			{
 				self->_socket->close();
@@ -103,9 +123,6 @@ void cloudia_pool::connection_handler::handle_connect( const boost::asio::ip::tc
 			}
 			else
 			{
-				boost::system::error_code ec2;
-				self->_deadline.cancel( ec2 );
-				if ( ec2 ) LOGERROR( "Error cancelling timer? " );
 	// 			socket_ptr->lowest_layer().set_option(boost::asio::ip::tcp::no_delay(true));
 				LOGTRACE("Retrieved a socket!");
 				cb( std::move( self->_socket ) );
@@ -146,6 +163,7 @@ void cloudia_pool::connection_handler::set_timeout()
 	auto self = shared_from_this();
 	_deadline.async_wait([self](const boost::system::error_code &ec) mutable
 	{
+		LOGTRACE("Connection deadline hit");
 		if ( !ec ) 
 		{
 			boost::system::error_code ec2;
@@ -166,6 +184,7 @@ bool cloudia_pool::set_destination( const std::string& ip, std::uint16_t port_, 
 
 void cloudia_pool::stop()
 {
+	LOGTRACE("Stop!");
 	stopping = true;
 }
 
@@ -173,6 +192,7 @@ cloudia_pool::~cloudia_pool()
 {
 	if ( handler )
 		handler->cp_p = nullptr;
+	LOGTRACE("Gone! XXXX");
 }
 
 std::unique_ptr<socket_factory<boost::asio::ip::tcp::socket>>
