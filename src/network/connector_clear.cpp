@@ -71,20 +71,25 @@ void connector_clear::init() noexcept
 			if ( st )
 			{
 				LOGTRACE("Connection established!");
-				self->output.set_communicator( 
+				std::weak_ptr<connector_clear> w_self = self;
+				self->output.set_communicator(
 					std::unique_ptr<network::communicator<connector_clear::socket>>
-					{ 
-						new communicator<>(std::move(st), [self](const char *data, size_t size)
+					{
+						new communicator<>(std::move(st), [w_self](const char *data, size_t size)
 						{
-							if ( ! self->codec.decode( data, size ) )
+							if ( w_self.expired() ) return;
+							auto s_self = w_self.lock();
+							if ( ! s_self->codec.decode( data, size ) )
 							{
-								self->on_error( INTERNAL_ERROR_LONG( errors::http_error_code::internal_server_error ) );
-								self->stop();
+								s_self->on_error( INTERNAL_ERROR_LONG( errors::http_error_code::internal_server_error ) );
+								s_self->stop();
 							}
-						}, [self] ( errors::error_code errc ) 
-						{ 
-							self->on_error( errc );
-							self->stop();
+						}, [w_self] ( errors::error_code errc ) 
+						{
+							if ( w_self.expired() ) return;
+							auto s_self = w_self.lock();
+							s_self->on_error( errc );
+							s_self->stop();
 						} ) 
 					} );
 			}
