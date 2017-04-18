@@ -10,6 +10,12 @@
 namespace network
 {
 
+/**
+ * How to investigate the life cycle of a shared from this?
+ * 
+ * First: in init, a breakpoint. Take the address of the control block.
+ * Second: put a watch point there and see who is sharing that.
+ */
 class connector_clear : public connector, public std::enable_shared_from_this<connector_clear>
 {
 	using socket = boost::asio::ip::tcp::socket;

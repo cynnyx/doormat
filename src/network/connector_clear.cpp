@@ -17,49 +17,49 @@ void connector_clear::init() noexcept
 {
 	auto self = shared_from_this();
 	
-	codec.register_callback( [self](http::http_structured_data** d)
+	codec.register_callback( [this](http::http_structured_data** d)
 		{
 			LOGTRACE("started");
-			if ( self->http_continue ) { self->http_continue = false; self->input = http::http_response{}; }
-			*d = &(self->input);
-		}, [self]() //header_cb
+			if ( http_continue ) { http_continue = false; input = http::http_response{}; }
+			*d = &input;
+		}, [this]() //header_cb
 		{
 			LOGTRACE("header_cb");
-			if ( self->input.status_code() == 100 )
-				self->http_continue = true;
+			if ( input.status_code() == 100 )
+				http_continue = true;
 			else
-				self->on_header( std::move( self->input ) );
-		}, [self](dstring body) //body
+				on_header( std::move( input ) );
+		}, [this](dstring body) //body
 		{
 			LOGTRACE("body_cb");
-			if ( ! self->http_continue ) self->on_body( std::move ( body ) );
-		}, [self](dstring key, dstring val) // trailer
+			if ( ! http_continue ) on_body( std::move ( body ) );
+		}, [this](dstring key, dstring val) // trailer
 		{
 			LOGTRACE("trailer_cb");
-			if ( ! self->http_continue )self->on_trailer( std::move( key ), std::move( val ) );
-		}, [self]()
+			if ( ! http_continue )on_trailer( std::move( key ), std::move( val ) );
+		}, [this]()
 		{
 			LOGTRACE("completion_cb");
-			if ( self->http_continue ) self->on_response_continue();
+			if ( http_continue ) on_response_continue();
 			else 
 			{
 				LOGTRACE("on eom cb");
-				self->on_eom();
+				on_eom();
 			}
-		}, [self]( int err, bool& fatal) // error
+		}, [this]( int err, bool& fatal) // error
 		{
 			LOGTRACE("Error!");
 			switch(err)
 			{
 				case HPE_UNEXPECTED_CONTENT_LENGTH:
 					fatal = false;
-					self->codec.ingnore_content_len();
+					codec.ingnore_content_len();
 					break;
 				default:
 					fatal = true;
 			}
-			self->errcode = INTERNAL_ERROR_LONG(errors::http_error_code::internal_server_error); // do it better
-			self->stop();
+			errcode = INTERNAL_ERROR_LONG(errors::http_error_code::internal_server_error); // do it better
+			stop();
 		});
 	
  	auto&& socket_factory = 
@@ -88,13 +88,14 @@ void connector_clear::init() noexcept
 						} ) 
 					} );
 			}
-			else {
+			else
+			{
 				LOGTRACE("Something was wrong! 1");
 				self->on_error(667);
+				self->stop();
 			}
-		}, [self]() mutable
+		}, [self]() //mutable
 		{
-
 			LOGTRACE("Something was wrong! 2");
 			self->on_error(666);
 			self->stop();
@@ -172,12 +173,13 @@ void connector_clear::stop() noexcept
 }
 void connector_clear::on_error( int error ) noexcept 
 {
+	LOGERROR("ERROR!");
 	rec->on_error( error );
 }
 
 connector_clear::~connector_clear()
 {
-	LOGTRACE("Dead! XXXXXX");
+	LOGTRACE("Gone! XXXX");
 }
 
 }
