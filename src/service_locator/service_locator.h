@@ -97,13 +97,7 @@ public:
 	static stats::stats_manager& stats_manager() noexcept;
 	
 	static endpoints::chain_factory& chain_factory() noexcept;
-	
-	template<class T = boost::asio::ip::tcp::socket>
-	static network::socket_factory<T>& socket_pool() noexcept
-	{
-		assert(_socket_pool<T>);
-		return *_socket_pool<T>;
-	}
+
 
 	template<class T = boost::asio::ip::tcp::socket>
 	static network::abstract_factory_of_socket_factory<T>& socket_pool_factory() noexcept
@@ -115,8 +109,4 @@ public:
 
 template<class T>
 std::unique_ptr<network::abstract_factory_of_socket_factory<T>> locator::_socket_pool_factory;
-
-template<class T>
-thread_local std::unique_ptr<network::socket_factory<T>> locator::_socket_pool;
-
 }

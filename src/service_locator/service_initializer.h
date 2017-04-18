@@ -92,12 +92,6 @@ public:
 	{
 		locator::chfac.reset( cf );
 	}
-	
-	template<class T = boost::asio::ip::tcp::socket>
-	static void set_socket_pool(network::socket_factory<T> *sp)
-	{
-			locator::_socket_pool<T>.reset(sp);
-	}
 
 	template<class T = boost::asio::ip::tcp::socket>
 	static void set_socket_pool_factory(network::abstract_factory_of_socket_factory<T>* afosf)
