@@ -51,10 +51,11 @@ set(DOORMAT_COMMON_SOURCES
 	network/buffer.cpp
 	network/connector_clear.cpp
 	network/connector_ssl.cpp
-        network/dns_communicator_factory.cpp
+	network/dns_communicator_factory.cpp
 	client/client_wrapper.cpp
 	errors/error_factory.cpp
 	requests_manager/error_producer.cpp
+	requests_manager/client_wrapper.cpp
 	)
 
 #

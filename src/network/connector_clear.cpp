@@ -62,16 +62,18 @@ void connector_clear::init() noexcept
 			stop();
 		});
 	
- 	auto&& socket_factory = 
+ 	socket_ref = 
 		service::locator::socket_pool_factory<socket>().get_socket_factory(0);
 
-	socket_factory->get_socket( req_ref, [self]
+	std::weak_ptr<connector_clear> w_self = self;
+	socket_ref->get_socket( req_ref, [w_self]
 		( std::unique_ptr<network::socket_factory<connector_clear::socket>::socket_type>&& st )
 		{
+			if ( w_self.expired() ) return;
+			auto self = w_self.lock();
 			if ( st )
 			{
 				LOGTRACE("Connection established!");
-				std::weak_ptr<connector_clear> w_self = self;
 				self->output.set_communicator(
 					std::unique_ptr<network::communicator<connector_clear::socket>>
 					{
@@ -99,8 +101,10 @@ void connector_clear::init() noexcept
 				self->on_error(667);
 				self->stop();
 			}
-		}, [self]() //mutable
+		}, [w_self]() //mutable
 		{
+			if ( w_self.expired() ) return;
+			auto self = w_self.lock();
 			LOGTRACE("Something was wrong! 2");
 			self->on_error(666);
 			self->stop();
@@ -113,7 +117,7 @@ void connector_clear::init() noexcept
     std::string msg_str = msg;
     LOGTRACE("Writing to client", msg_str);
 	output.write( std::move( msg ) );
-	socket_ref = std::move( socket_factory ); // Needed or lifecycle goes nuts
+	//socket_ref = std::move( socket_factory ); // Needed or lifecycle goes nuts
 }
 
 std::shared_ptr<connector_clear> connector_clear::make_connector_clear( 
@@ -137,7 +141,7 @@ void connector_clear::send_body( dstring&& body ) noexcept
 }
 
 void connector_clear::send_trailer( dstring&& key, dstring&& val ) noexcept
-{
+{	
 	dstring enc_trailer = codec.encode_trailer( key, val );
 	output.write( std::move( enc_trailer ) );
 }

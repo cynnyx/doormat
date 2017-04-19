@@ -17,7 +17,8 @@
 #include "network/cloudia_pool.h"
 
 #include "dummy_node.h"
-#include "client/client_wrapper.h"
+// #include "client/client_wrapper.h"
+#include "requests_manager/client_wrapper.h"
 
 #include "../deps/cynnypp/include/cynnypp/async_fs.hpp"
 
@@ -29,7 +30,7 @@ namespace
 {
 static std::unique_ptr<node_interface> node_factory()
 {
-	return make_unique_chain<node_interface, /*dummy_node,*/ test_node, client::client_wrapper>();
+	return make_unique_chain<node_interface, /*dummy_node,*/ test_node, nodes::client_wrapper>();
 }
 }
 	
