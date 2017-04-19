@@ -22,12 +22,13 @@ class communicator_interface
 public:
     using read_cb_t = std::function<void(const char *, size_t)>;
     using error_cb_t = std::function<void(errors::error_code)>;
-    communicator_interface(read_cb_t read_callback, error_cb_t error_callback) :
-            read_callback{std::move(read_callback)},
-            error_callback{std::move(error_callback)}
-    {}
+    communicator_interface() = default;
 
-
+    void set_callbacks(read_cb_t rcb, error_cb_t ecb)
+    {
+        read_callback = std::move(rcb);
+        error_callback = std::move(ecb);
+    }
     virtual void write(dstring &&)=0;
     virtual void start()=0;
     virtual void stop(bool force=false)=0;
@@ -54,14 +55,21 @@ public:
 	 * \param read_callback the callback used to communicate that something has been read from remote
 	 * \param error_callback the callback used to communicate that an error has occurred
 	 * \param timeout_ms the milliseconds before operations are considered timed out.
-	 *
+	 * todo destroy this, it is useless.
 	 * */
 	communicator(std::shared_ptr<socket_t> s, read_cb_t read_callback, error_cb_t error_callback, int64_t timeout_ms) :
-		communicator_interface{std::move(read_callback), std::move(error_callback)}, socket{std::move(s)},
+		communicator_interface{}, socket{std::move(s)},
 		timeout_ms{timeout_ms}, timeout{service::locator::service_pool().get_thread_io_service()}
 	{
 		assert(socket);
+        set_callbacks(std::move(read_callback), std::move(error_callback));
 	}
+
+
+    communicator(std::shared_ptr<socket_t> s, int64_t timeout_ms) :
+        communicator_interface{}, socket{std::move(s)}, timeout_ms{timeout_ms},
+        timeout{service::locator::service_pool().get_thread_io_service()}
+    {}
 
 	communicator(const communicator& c) = delete;
 

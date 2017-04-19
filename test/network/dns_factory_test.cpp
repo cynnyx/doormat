@@ -32,7 +32,30 @@ TEST_F(dns_factory_test, connect_http)
     request.setParameter("port", "8454");
     int count{0};
     m.start([&count](){++count; if(count == 2) service::locator::service_pool().stop(); }, true);
-    f.get_connector(request, [&count](auto s){ ++count; if(count == 2) service::locator::service_pool().stop();  }, [](auto s){ FAIL() << "Failed with error code" << s;  });
+    f.get_connector(request, [&count](auto s){
+        ASSERT_TRUE(bool(s));
+        ++count;
+        if(count == 2)
+            service::locator::service_pool().stop();
+
+    }, [](auto s){ FAIL() << "Failed with error code" << s;  });
     service::locator::service_pool().run();
     ASSERT_EQ(count, 2);
+}
+
+TEST_F(dns_factory_test, fail_connect)
+{
+    network::dns_connector_factory f;
+    http::http_request request;
+    request.setParameter("hostname", "localhost");
+    request.setParameter("port", "8454");
+    int count{0};
+    f.get_connector(request, [&count](auto s){
+        FAIL() << "Should not be able to connect to invalid port.";
+    }, [&count](auto s){
+        service::locator::service_pool().stop();
+        ++count;
+    });
+    service::locator::service_pool().run();
+    ASSERT_EQ(count, 1);
 }

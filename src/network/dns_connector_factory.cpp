@@ -58,6 +58,7 @@ namespace network {
         connect_timer->async_wait([socket, connect_timer](const boost::system::error_code &ec){
             if(!ec) socket->cancel();
         });
+        ++it;
         socket->async_connect(endpoint,
                               [this, it = std::move(it), socket, connector_cb = std::move(connector_cb), error_cb = std::move(error_cb), connect_timer]
                               (const boost::system::error_code &ec)
@@ -65,9 +66,14 @@ namespace network {
                                   connect_timer->cancel();
                                   if(ec)
                                   {
+                                      LOGERROR(ec.message());
                                       return endpoint_connect(std::move(it), std::move(socket), std::move(connector_cb), std::move(error_cb));
                                   }
-                                  return connector_cb(nullptr);
+                                  return connector_cb(
+                                          std::unique_ptr<communicator_interface>(
+                                                  new communicator<>(socket, service::locator::configuration().get_board_timeout())
+                                          )
+                                  );
                               });
 
     }
