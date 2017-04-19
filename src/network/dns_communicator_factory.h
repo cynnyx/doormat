@@ -1,17 +1,17 @@
 #ifndef DOORMAT_DNS_CONNECTOR_FACTORY_H
 #define DOORMAT_DNS_CONNECTOR_FACTORY_H
 
-#include "connector_factory.h"
+#include "communicator_factory.h"
 #include <boost/asio.hpp>
 namespace network
 {
 
-class dns_connector_factory : public connector_factory
+class dns_communicator_factory : public communicator_factory
 {
 public:
     void get_connector(const http::http_request &, connector_callback_t, error_callback_t) override;
     void stop() override { stopping = true; };
-    virtual ~dns_connector_factory() = default;
+    virtual ~dns_communicator_factory() = default;
 
 private:
     void dns_resolver(const http::http_request &req, connector_callback_t, error_callback_t);

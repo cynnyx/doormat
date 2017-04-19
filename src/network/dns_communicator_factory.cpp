@@ -1,4 +1,4 @@
-#include "dns_connector_factory.h"
+#include "dns_communicator_factory.h"
 #include "../http/http_request.h"
 #include "../io_service_pool.h"
 #include "communicator.h"
@@ -6,7 +6,7 @@
 #include <iostream>
 namespace network {
 
-    void dns_connector_factory::get_connector(const http::http_request &req, connector_callback_t connector_cb, error_callback_t error_cb)
+    void dns_communicator_factory::get_connector(const http::http_request &req, connector_callback_t connector_cb, error_callback_t error_cb)
     {
         if(stopping) return error_cb(1);
 
@@ -16,7 +16,7 @@ namespace network {
     }
 
 
-    void dns_connector_factory::dns_resolver(const http::http_request &req, connector_callback_t connector_cb, error_callback_t error_cb)
+    void dns_communicator_factory::dns_resolver(const http::http_request &req, connector_callback_t connector_cb, error_callback_t error_cb)
     {
         auto&& io = service::locator::service_pool().get_thread_io_service();
         std::shared_ptr<boost::asio::ip::tcp::resolver> r = std::make_shared<boost::asio::ip::tcp::resolver>(io);
@@ -48,7 +48,7 @@ namespace network {
     }
 
 
-    void dns_connector_factory::endpoint_connect(boost::asio::ip::tcp::resolver::iterator it, std::shared_ptr<boost::asio::ip::tcp::socket> socket, connector_callback_t connector_cb, error_callback_t error_cb)
+    void dns_communicator_factory::endpoint_connect(boost::asio::ip::tcp::resolver::iterator it, std::shared_ptr<boost::asio::ip::tcp::socket> socket, connector_callback_t connector_cb, error_callback_t error_cb)
     {
         if(it == boost::asio::ip::tcp::resolver::iterator() || stopping) //finished
             return error_cb(3);

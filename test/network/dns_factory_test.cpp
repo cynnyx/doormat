@@ -3,7 +3,7 @@
 #include "../src/service_locator/service_locator.h"
 #include "../src/io_service_pool.h"
 #include "../src/network/communicator.h"
-#include "../src/network/dns_connector_factory.h"
+#include "src/network/dns_communicator_factory.h"
 #include "../mock_server/mock_server.h"
 #include "testcommon.h"
 struct dns_factory_test: public ::testing::Test
@@ -26,7 +26,7 @@ struct dns_factory_test: public ::testing::Test
 TEST_F(dns_factory_test, connect_http)
 {
     mock_server m;
-    network::dns_connector_factory f;
+    network::dns_communicator_factory f;
     http::http_request request;
     request.setParameter("hostname", "localhost");
     request.setParameter("port", "8454");
@@ -45,7 +45,7 @@ TEST_F(dns_factory_test, connect_http)
 
 TEST_F(dns_factory_test, fail_connect)
 {
-    network::dns_connector_factory f;
+    network::dns_communicator_factory f;
     http::http_request request;
     request.setParameter("hostname", "localhost");
     request.setParameter("port", "8454");

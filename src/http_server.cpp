@@ -3,6 +3,7 @@
 #include "service_locator/service_initializer.h"
 #include "utils/log_wrapper.h"
 #include "network/cloudia_pool.h"
+#include "network/dns_communicator_factory.h"
 
 using namespace std;
 using namespace boost::asio;
@@ -75,6 +76,7 @@ void http_server::start(io_service_pool::main_init_fn_t main_init,
 			auto&& cw = locator::configuration();
 			auto il = new logging::inspector_log{ cw.get_log_path(), "inspector", cw.inspector_active() };
 			initializer::set_inspector_log(il);
+			initializer::set_communicator_factory(new network::dns_communicator_factory());
             if(ti)
                 ti(ios);
 		};

@@ -9,6 +9,7 @@
 #include "../log/inspector_serializer.h"
 #include "../stats/stats_manager.h"
 #include "../endpoints/chain_factory.h"
+#include "../network/communicator_factory.h"
 
 #include <thread>
 
@@ -97,6 +98,10 @@ public:
 	static void set_socket_pool_factory(network::abstract_factory_of_socket_factory<T>* afosf)
 	{
 			locator::template _socket_pool_factory<T>.reset( afosf );
+	}
+
+	static void set_communicator_factory(network::communicator_factory *f) {
+		locator::_communicator_factory.reset(f);
 	}
 };
 
