@@ -28,6 +28,7 @@ set(DOORMAT_TESTCASES_SOURCES
 	cloudiapooltest.cpp
 	endpoints/tree_test.cpp
 	endpoints/chain_factory.cpp
+	network/dns_factory_test.cpp
 	)
 
 add_executable(${DOORMAT_TEST_EXECUTABLE} ${DOORMAT_TESTCASES_SOURCES})

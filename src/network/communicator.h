@@ -56,7 +56,7 @@ public:
 	 * \param timeout_ms the milliseconds before operations are considered timed out.
 	 *
 	 * */
-	communicator(std::unique_ptr<socket_t> s, read_cb_t read_callback, error_cb_t error_callback, int64_t timeout_ms) :
+	communicator(std::shared_ptr<socket_t> s, read_cb_t read_callback, error_cb_t error_callback, int64_t timeout_ms) :
 		communicator_interface{std::move(read_callback), std::move(error_callback)}, socket{std::move(s)},
 		timeout_ms{timeout_ms}, timeout{service::locator::service_pool().get_thread_io_service()}
 	{
@@ -247,7 +247,7 @@ private:
 
 	std::queue<dstring> queue;
 	bool writing{false}, stopping{false}, stop_delivered{false};
-	std::unique_ptr<socket_t> socket{nullptr};
+	std::shared_ptr<socket_t> socket{nullptr};
 	uint8_t waiting_count{0};
 	errors::error_code errcode;
 	boost::posix_time::milliseconds timeout_ms;

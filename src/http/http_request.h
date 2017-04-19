@@ -73,8 +73,8 @@ public:
 
     void setParameter(const std::string& param_name, const std::string& param_value);
     void removeParameter(const std::string& name);
-    bool hasParameter(const std::string &param_name);
-    const std::string& getParameter(const std::string&param_name);
+    bool hasParameter(const std::string &param_name) const;
+    const std::string& getParameter(const std::string&param_name) const;
 private:
 	bool _ssl;
 	http_method _method;

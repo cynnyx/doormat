@@ -89,13 +89,13 @@ void http::http_request::removeParameter(const std::string& name)
     _params.erase(name);
 }
 
-bool http_request::hasParameter(const std::string &param_name)
+bool http_request::hasParameter(const std::string &param_name) const
 {
     auto p = _params.find(param_name);
     return p != _params.end();
 }
 
-const std::string& http_request::getParameter(const std::string &param_name)
+const std::string& http_request::getParameter(const std::string &param_name) const
 {
     auto p = _params.find(param_name);
     assert(p != _params.end());
