@@ -2,8 +2,8 @@
 #include "../src/service_locator/service_initializer.h"
 #include "../src/service_locator/service_locator.h"
 #include "../src/io_service_pool.h"
-#include "../src/network/communicator.h"
-#include "src/network/dns_communicator_factory.h"
+#include "src/network/communicator/communicator.h"
+#include "src/network/communicator/dns_communicator_factory.h"
 #include "../mock_server/mock_server.h"
 #include "testcommon.h"
 struct dns_factory_test: public ::testing::Test

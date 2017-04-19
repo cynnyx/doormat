@@ -7,7 +7,7 @@
 #include "../utils/log_wrapper.h"
 #include "../network/socket_factory.h"
 #include "../endpoints/chain_factory.h"
-#include "../network/communicator_factory.h"
+#include "../network/communicator/communicator_factory.h"
 
 namespace service
 {

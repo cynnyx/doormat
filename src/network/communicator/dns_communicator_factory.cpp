@@ -1,8 +1,8 @@
 #include "dns_communicator_factory.h"
-#include "../http/http_request.h"
-#include "../io_service_pool.h"
+#include "../../http/http_request.h"
+#include "../../io_service_pool.h"
 #include "communicator.h"
-#include "../service_locator/service_locator.h"
+#include "../../service_locator/service_locator.h"
 #include <iostream>
 namespace network {
 

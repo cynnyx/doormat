@@ -1,5 +1,5 @@
 #include "connector_clear.h"
-#include "communicator.h"
+#include "communicator/communicator.h"
 #include "../service_locator/service_locator.h"
 #include "cloudia_pool.h"
 #include "buffer.h"

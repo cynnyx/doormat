@@ -6,6 +6,7 @@
 #include "../utils/log_wrapper.h"
 #include "../constants.h"
 #include "../http/http_commons.h"
+#include "../network/communicator/communicator_factory.h"
 #include <limits>
 
 namespace nodes
@@ -111,52 +112,23 @@ client_wrapper::~client_wrapper()
 	LOGTRACE("client_wrapper ",this," destructor");
 }
 
-void client_wrapper::connect()
-{
-	if( ++connection_attempts > service::locator::configuration().get_max_connection_attempts() )
-	{
-		LOGDEBUG("client wrapper", this, " failed to contact 3 different destinations in a row; returning error 500");
-		errcode = INTERNAL_ERROR_LONG(errors::http_error_code::service_unavailable);
-		//on_error(errcode);
-		stop();
-		termination_handler();
-		return;
-	}
-	++waiting_count;
-	LOGTRACE("client wrapper ", this, " asking for a socket");
-	factory->get_socket(local_request, [this](std::unique_ptr<boost::asio::ip::tcp::socket> socket)
-	{
-		--waiting_count;
-		if(!socket)
-		{
-			LOGDEBUG("failed to get socket at attempt ", connection_attempts);
-			return connect();
-		}
-		LOGTRACE("client wrapper ", this, " successfully retrieved a socket.");
-		on_connect(std::move(socket));
-	});
-	return;
-}
-
 void client_wrapper::on_request_preamble(http::http_request&& preamble)
 {
 	LOGTRACE("client_wrapper ",this," on_request_preamble");
-// 	custom_addr = preamble.has(http::hf_cyn_dest);
-// 	if(custom_addr)
-// 	{
-// 		addr = get_custom_address(preamble);
-// 	}
 	start = std::chrono::high_resolution_clock::now();
 	local_request = std::move(preamble);
-	factory = service::locator::socket_pool_factory().get_socket_factory(0);
-	connect();
+	service::locator::communicator_factory().get_connector(local_request, [this](std::shared_ptr<network::communicator_interface> ci){
+		write_proxy.set_communicator(ci);
+	}, [this](auto e){
+
+	});
 	write_proxy.enqueue_for_write(codec.encode_header(local_request));
 }
 
 
 void client_wrapper::on_connect(std::unique_ptr<boost::asio::ip::tcp::socket> socket)
 {
-	assert(socket);
+	/*assert(socket);
 	//create a new communicator and give it to the write_proxy.
 	++waiting_count;
 	auto communicator = new network::communicator<>(std::move(socket), [this](const char *data, size_t size)
@@ -175,7 +147,7 @@ void client_wrapper::on_connect(std::unique_ptr<boost::asio::ip::tcp::socket> so
 		termination_handler();
 	});
 	write_proxy.set_communicator(communicator);
-	return;
+	return;*/
 }
 
 void client_wrapper::on_request_body(dstring&& chunk)

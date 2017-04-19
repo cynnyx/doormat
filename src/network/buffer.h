@@ -1,7 +1,7 @@
 #ifndef BUFFER_H
 #define BUFFER_H
 
-#include "communicator.h"
+#include "communicator/communicator.h"
 #include "../utils/reusable_buffer.h"
 #include "../utils/dstring.h"
 

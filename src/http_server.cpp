@@ -3,7 +3,7 @@
 #include "service_locator/service_initializer.h"
 #include "utils/log_wrapper.h"
 #include "network/cloudia_pool.h"
-#include "network/dns_communicator_factory.h"
+#include "network/communicator/dns_communicator_factory.h"
 
 using namespace std;
 using namespace boost::asio;

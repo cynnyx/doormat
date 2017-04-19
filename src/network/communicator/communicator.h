@@ -5,14 +5,14 @@
 #include <queue>
 #include <functional>
 #include <memory>
-#include "../chain_of_responsibility/error_code.h"
-#include "../utils/dstring.h"
-#include "../utils/log_wrapper.h"
-#include "../errors/error_codes.h"
-#include "../utils/reusable_buffer.h"
-#include "../service_locator/service_locator.h"
-#include "../io_service_pool.h"
-#include "../configuration/configuration_wrapper.h"
+#include "../../chain_of_responsibility/error_code.h"
+#include "../../utils/dstring.h"
+#include "../../utils/log_wrapper.h"
+#include "../../errors/error_codes.h"
+#include "../../utils/reusable_buffer.h"
+#include "../../service_locator/service_locator.h"
+#include "../../io_service_pool.h"
+#include "../../configuration/configuration_wrapper.h"
 
 namespace network
 {

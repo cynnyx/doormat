@@ -8,7 +8,7 @@
 #include "../errors/error_codes.h"
 #include "../log/access_record.h"
 #include "../utils/reusable_buffer.h"
-#include "../network/communicator.h"
+#include "../network/communicator/communicator.h"
 #include "../network/cloudia_pool.h"
 
 #include <chrono>
@@ -54,7 +54,7 @@ private:
 	class communicator_proxy
 	{
 		//todo: replace with optional as soon as possible.
-		std::unique_ptr<network::communicator<>> _communicator{nullptr};
+		std::shared_ptr<network::communicator_interface> _communicator{nullptr};
 		dstring temporary_string;
 	public:
 		void enqueue_for_write(dstring d)
@@ -65,10 +65,10 @@ private:
 				temporary_string.append(d);
 		}
 
-		void set_communicator(network::communicator<> *comm)
+		void set_communicator(std::shared_ptr<network::communicator_interface> comm)
 		{
 			assert(!_communicator);
-			_communicator = std::unique_ptr<network::communicator<>>{comm};
+			_communicator = comm;
 			_communicator->start();
 			if(temporary_string.size())
 				_communicator->write( std::move(temporary_string) );
