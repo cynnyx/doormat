@@ -17,29 +17,58 @@
 namespace network
 {
 
-/** \brief communicator class is responsible of managing the communication incoming and outgoing from other components */
-
-template<class socket_t = boost::asio::ip::tcp::socket>
-class communicator
+class communicator_interface
 {
 public:
-	using read_cb_t = std::function<void(const char *, size_t)>;
-	using error_cb_t = std::function<void(errors::error_code)>;
-	static constexpr size_t reusable_buffer_size = 8192;
+    using read_cb_t = std::function<void(const char *, size_t)>;
+    using error_cb_t = std::function<void(errors::error_code)>;
+    communicator_interface(read_cb_t read_callback, error_cb_t error_callback) :
+            read_callback{std::move(read_callback)},
+            error_callback{std::move(error_callback)}
+    {}
 
-	communicator(std::unique_ptr<socket_t> s, read_cb_t read_callback, error_cb_t errcb) :
-		read_callback{std::move(read_callback)}, error_callback{std::move(errcb)}, socket{std::move(s)},
-		board_timeout{(int64_t) service::locator::configuration().get_board_timeout()}, timeout{service::locator::service_pool().get_thread_io_service()}
+
+    virtual void write(dstring &&)=0;
+    virtual void start()=0;
+    virtual void stop(bool force=false)=0;
+    virtual ~communicator_interface() = default;
+protected:
+    read_cb_t read_callback;
+    error_cb_t error_callback;
+};
+
+/**
+ *
+ * */
+
+/** \brief communicator template class is responsible of managing the communication incoming and outgoing from other components.
+ *  It operates at the transport layer, basically providing an "easier" interface on the socket.
+ *
+ * */
+template<class socket_t = boost::asio::ip::tcp::socket, size_t reusable_buffer_size = 8192>
+class communicator final : public communicator_interface
+{
+public:
+	/** Creates a new communicator
+	 * \param s the socket wrapped by the communicator
+	 * \param read_callback the callback used to communicate that something has been read from remote
+	 * \param error_callback the callback used to communicate that an error has occurred
+	 * \param timeout_ms the milliseconds before operations are considered timed out.
+	 *
+	 * */
+	communicator(std::unique_ptr<socket_t> s, read_cb_t read_callback, error_cb_t error_callback, int64_t timeout_ms) :
+		communicator_interface{std::move(read_callback), std::move(error_callback)}, socket{std::move(s)},
+		timeout_ms{timeout_ms}, timeout{service::locator::service_pool().get_thread_io_service()}
 	{
 		assert(socket);
 	}
 
 	communicator(const communicator& c) = delete;
 
-	communicator(communicator &&c) : board_timeout{c.board_timeout},  timeout{c.timeout.get_io_service()}
+	communicator(communicator &&c) : timeout_ms{c.timeout_ms},  timeout{c.timeout.get_io_service()}
 	{
 		socket.swap(c.socket);
-		std::swap(board_timeout, c.board_timeout);
+		std::swap(timeout_ms, c.timeout_ms);
 		std::swap(queue, c.queue);
 		std::swap(read_callback, c.read_callback);
 		std::swap(error_callback, c.error_callback);
@@ -51,33 +80,33 @@ public:
 	communicator& operator=(communicator &&c)
 	{
 		socket.swap(c.socket);
-		std::swap(board_timeout, c.board_timeout);
+		std::swap(timeout_ms, c.timeout_ms);
 		std::swap(queue, c.queue);
 		std::swap(read_callback, c.read_callback);
 		std::swap(error_callback, c.error_callback);
 		std::swap(errcode, c.errcode);
 		std::swap(_rb, c._rb);
-		std::swap(board_timeout, c.board_timeout);
+		std::swap(timeout_ms, c.timeout_ms);
 		return *this;
 	}
 
 	/** \brief enqueues a dstring so that it can be written on the socket.
 	 *  \param data the data to be sent on the socket
 	 * */
-	void write(dstring&& data)
+	void write(dstring&& data) override
 	{
 		queue.emplace(std::move(data));
 		perform_write();
 	}
 
 	/** \brief starts the communicator activity */
-	void start() { return perform_read(); }
+	void start() override { return perform_read(); }
 
 	/** \brief stops the communicator and closes the socket.
 	 *  \param force if true stops also the write operations currently in progress.
 	 *
 	 * */
-	void stop(bool force=false)
+	void stop(bool force=false) override
 	{
 		LOGTRACE("stopping ", (int) waiting_count);
 		if ( stopping ) return;
@@ -90,9 +119,9 @@ public:
 		set_error(INTERNAL_ERROR(1)); //fixme: stopped from remote, for the moment it is 500;
 	}
 
-	~communicator()
+	~communicator() override
 	{
-		LOGTRACE("Gone! XXXX");
+		LOGTRACE("dtor");
 	}
 private:
 	/** \brief performs an actual write on the socket
@@ -177,7 +206,7 @@ private:
 	{
 		++waiting_count;
 		LOGTRACE("scheduling timeout");
-		timeout.expires_from_now(board_timeout);
+		timeout.expires_from_now(timeout_ms);
 		timeout.async_wait([this](const boost::system::error_code &ec)
 		{
 			--waiting_count;
@@ -217,13 +246,11 @@ private:
 	}
 
 	std::queue<dstring> queue;
-	read_cb_t read_callback;
-	error_cb_t error_callback;
 	bool writing{false}, stopping{false}, stop_delivered{false};
 	std::unique_ptr<socket_t> socket{nullptr};
 	uint8_t waiting_count{0};
 	errors::error_code errcode;
-	boost::posix_time::milliseconds board_timeout;
+	boost::posix_time::milliseconds timeout_ms;
 	boost::asio::deadline_timer timeout;
 	reusable_buffer<reusable_buffer_size> _rb;
 };

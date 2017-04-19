@@ -90,7 +90,7 @@ void connector_clear::init() noexcept
 							auto s_self = w_self.lock();
 							s_self->on_error( errc );
 							s_self->stop();
-						} ) 
+						}, static_cast<int64_t>(service::locator::configuration().get_board_timeout()))
 					} );
 			}
 			else
