@@ -74,6 +74,8 @@ public:
 		msg.schema("http");
 		msg.urihost("localhost");
 		msg.port("2000");
+		msg.setParameter("hostname", "localhost");
+		msg.setParameter("port", "2000"); 
 		node_interface::on_request_preamble( std::move( msg ) );
 	}
 };
