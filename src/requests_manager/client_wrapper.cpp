@@ -140,7 +140,7 @@ void client_wrapper::on_request_preamble(http::http_request&& preamble)
 	}, [this](int e){
         LOGTRACE("client_wrapper ", this, " could not retrieve a communicator for the specified endpoint");
         --waiting_count;
-        errcode = INTERNAL_ERROR_LONG(errors::http_error_code::internal_server_error);
+        errcode = INTERNAL_ERROR_LONG(errors::http_error_code::not_found);
         canceled = true;
         stop();
         termination_handler();
@@ -202,7 +202,6 @@ void client_wrapper::termination_handler()
 
 	if(errcode && (finished_request || canceled))
 	{
-        std::cout << "sending back an error!" << std::endl;
 		LOGTRACE("client_wrapper ",this," Error:", errcode);
 		return on_error(errcode);
 	}
