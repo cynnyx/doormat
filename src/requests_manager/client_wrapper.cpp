@@ -34,7 +34,6 @@ client_wrapper::client_wrapper (
 {
 	LOGTRACE("client_wrapper ",this," constructor");
 /** Response callbacks: used to return control by the decoder.  **/
-
 	auto codec_scb = [this](http::http_structured_data** data)
 	{
 		if(managing_continue)  //reset to initial state.
@@ -118,9 +117,10 @@ void client_wrapper::on_request_preamble(http::http_request&& preamble)
 	start = std::chrono::high_resolution_clock::now();
 	local_request = std::move(preamble);
     ++waiting_count;
+    //retrieve a connector to talk with remote destination.
 	service::locator::communicator_factory().get_connector(local_request, [this](std::shared_ptr<network::communicator_interface> ci){
         --waiting_count;
-
+        LOGTRACE("client_wrapper ", this, " received communicator");
         ci->set_callbacks([this](const char *data, size_t size)
                           {
                               if(!codec.decode(data, size))
@@ -138,8 +138,10 @@ void client_wrapper::on_request_preamble(http::http_request&& preamble)
 
         write_proxy.set_communicator(ci);
 	}, [this](int e){
+        LOGTRACE("client_wrapper ", this, " could not retrieve a communicator for the specified endpoint");
         --waiting_count;
-        errcode = INTERNAL_ERROR(404);
+        errcode = INTERNAL_ERROR_LONG(errors::http_error_code::internal_server_error);
+        canceled = true;
         stop();
         termination_handler();
 	});
@@ -171,6 +173,7 @@ void client_wrapper::on_request_finished()
 	if(!errcode)
 	{
 		write_proxy.enqueue_for_write(codec.encode_eom());
+		return;
 	}
 	//in some cases, response could have arrived before the end of the request; in this case, we shall react accordingly.
 	if(finished_response)
@@ -199,6 +202,7 @@ void client_wrapper::termination_handler()
 
 	if(errcode && (finished_request || canceled))
 	{
+        std::cout << "sending back an error!" << std::endl;
 		LOGTRACE("client_wrapper ",this," Error:", errcode);
 		return on_error(errcode);
 	}

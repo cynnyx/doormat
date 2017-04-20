@@ -81,6 +81,10 @@ private:
 			if(_communicator) _communicator->stop();
 		}
 
+        operator bool() const {
+            return bool(_communicator);
+        }
+
 	} write_proxy;
 
 	/**
