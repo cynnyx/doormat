@@ -72,7 +72,6 @@ private:
 			_communicator->start();
 			if(temporary_string.size())
 				_communicator->write( std::move(temporary_string) );
-
 			//Not sure that's needed
 			temporary_string = {};
 		}
@@ -97,8 +96,6 @@ private:
 	void termination_handler();
 
 	void stop();
-
-	void connect();
 
 	//static routing::abstract_destination_provider::address get_custom_address(const http::http_request &req);
 

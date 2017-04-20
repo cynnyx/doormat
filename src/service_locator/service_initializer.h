@@ -9,7 +9,7 @@
 #include "../log/inspector_serializer.h"
 #include "../stats/stats_manager.h"
 #include "../endpoints/chain_factory.h"
-#include "src/network/communicator/communicator_factory.h"
+#include "../network/communicator/communicator_factory.h"
 
 #include <thread>
 

@@ -21,10 +21,10 @@ namespace network {
         auto&& io = service::locator::service_pool().get_thread_io_service();
         std::shared_ptr<boost::asio::ip::tcp::resolver> r = std::make_shared<boost::asio::ip::tcp::resolver>(io);
         std::string port =
-                (req.hasParameter("port")) ? req.getParameter("port") : ((req.ssl()) ? "443" : "80");
+                (req.hasParameter("port") && req.getParameter("port").size()) ? req.getParameter("port") : ((req.ssl()) ? "443" : "80");
         /** For now we will consider only the case without ssl*/
         if(req.ssl()) return error_cb(2); //fixme
-
+        LOGTRACE("resolving ", req.getParameter("hostname"), "with port ", port);
         boost::asio::ip::tcp::resolver::query q( req.getParameter("hostname"),  port );
         auto resolve_timer = std::make_shared<boost::asio::deadline_timer>(service::locator::service_pool().get_thread_io_service());
         resolve_timer->expires_from_now(boost::posix_time::milliseconds(resolve_timeout));
@@ -54,7 +54,7 @@ namespace network {
             return error_cb(3);
         auto&& endpoint = *it;
         auto connect_timer = std::make_shared<boost::asio::deadline_timer>(service::locator::service_pool().get_thread_io_service());
-        connect_timer->expires_from_now(boost::posix_time::milliseconds(connect_timeout));
+        connect_timer->expires_from_now(boost::posix_time::milliseconds(10000));
         connect_timer->async_wait([socket, connect_timer](const boost::system::error_code &ec){
             if(!ec) socket->cancel();
         });

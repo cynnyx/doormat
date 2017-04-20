@@ -117,38 +117,35 @@ void client_wrapper::on_request_preamble(http::http_request&& preamble)
 	LOGTRACE("client_wrapper ",this," on_request_preamble");
 	start = std::chrono::high_resolution_clock::now();
 	local_request = std::move(preamble);
+    ++waiting_count;
 	service::locator::communicator_factory().get_connector(local_request, [this](std::shared_ptr<network::communicator_interface> ci){
-		write_proxy.set_communicator(ci);
-	}, [this](auto e){
+        --waiting_count;
 
+        ci->set_callbacks([this](const char *data, size_t size)
+                          {
+                              if(!codec.decode(data, size))
+                              {
+                                  errcode = INTERNAL_ERROR_LONG( errors::http_error_code::internal_server_error );
+                                  stop();
+                              }
+                          },[this](errors::error_code errc)
+                          {
+                              if(errc.code() > 1)
+                                  errcode = errc; //todo: this is a porchetta.
+                              stop();
+                              termination_handler();
+                          });
+
+        write_proxy.set_communicator(ci);
+	}, [this](int e){
+        --waiting_count;
+        errcode = INTERNAL_ERROR(404);
+        stop();
+        termination_handler();
 	});
 	write_proxy.enqueue_for_write(codec.encode_header(local_request));
 }
 
-
-void client_wrapper::on_connect(std::unique_ptr<boost::asio::ip::tcp::socket> socket)
-{
-	/*assert(socket);
-	//create a new communicator and give it to the write_proxy.
-	++waiting_count;
-	auto communicator = new network::communicator<>(std::move(socket), [this](const char *data, size_t size)
-	{
-		if(!codec.decode(data, size))
-		{
-			errcode = INTERNAL_ERROR_LONG( errors::http_error_code::internal_server_error );
-			stop();
-		}
-	},[this](errors::error_code errc)
-	{
-		--waiting_count;
-		if(errc.code() > 1)
-			errcode = errc; //todo: this is a porchetta.
-		stop();
-		termination_handler();
-	});
-	write_proxy.set_communicator(communicator);
-	return;*/
-}
 
 void client_wrapper::on_request_body(dstring&& chunk)
 {
@@ -185,7 +182,7 @@ void client_wrapper::termination_handler()
 	if( !stopping ) return;
 
 	if(waiting_count > 0)
-		return LOGTRACE("client_wrapper ",this," waiting for ", waiting_count, " lambdas");
+		return LOGTRACE("client_wrapper ",this," waiting for ", (int) waiting_count, " lambdas");
 
 	auto end = std::chrono::high_resolution_clock::now();
 	auto latency = end - start;
@@ -223,7 +220,6 @@ void client_wrapper::stop()
 	{
 		write_proxy.shutdown_communicator();
 		LOGDEBUG("client_wrapper ",this," stopping");
-		boost::system::error_code ec;
 		stopping = true;
 	}
 }
