@@ -120,6 +120,8 @@ void http_structured_data::chunked(bool val) noexcept
 			header(http::hf_transfer_encoding, hv_chunked);
 		else
 			remove_header(http::hf_transfer_encoding);
+
+		_chunked = val;
 	}
 }
 
