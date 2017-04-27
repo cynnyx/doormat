@@ -10,7 +10,7 @@ std::string host{"provaprova.com"};
 std::string path{"/static/ciaone/"};
 std::string url = "https://"+ host + path;
 std::string body{"000000000000"};
-
+uint16_t port = 8454;
 
 using namespace test_utils;
 struct client_wrapper_test : public ::testing::Test
@@ -91,6 +91,8 @@ TEST_F(client_wrapper_test, preamble_only)
 	submitted_req.urihost(url.c_str());
 	submitted_req.hostname(url.c_str());
 	submitted_req.keepalive(false);
+	submitted_req.setParameter("hostname", "::");
+	submitted_req.setParameter("port", std::to_string(port));
 
 	auto d1 = submitted_req.serialize();
 	const auto expected_bytes = d1.size();
@@ -100,7 +102,7 @@ TEST_F(client_wrapper_test, preamble_only)
 		preset::init_thread_local();
 		ch = make_unique_chain<node_interface, first_node, nodes::client_wrapper, blocked_node>();
 		stop_condition = [this](){ return true; };
-		server.reset( new mock_server );
+		server.reset( new mock_server{port} );
 		server->start([this, expected_bytes](){ server->read( expected_bytes, read_fn ); });
 		ch->on_request_preamble( std::move(submitted_req) );
 
@@ -116,6 +118,7 @@ TEST_F(client_wrapper_test, preamble_only)
 
 TEST_F(client_wrapper_test, custom_destination_fail)
 {
+	dstring fake_port = 9879;
 	//test case to validate that client_wrapper does not corrupt the data.
 	http::http_request submitted_req;
 	submitted_req.protocol(http::proto_version::HTTP11);
@@ -124,7 +127,9 @@ TEST_F(client_wrapper_test, custom_destination_fail)
 	submitted_req.hostname(url.c_str());
 	submitted_req.keepalive(false);
 	submitted_req.header(http::hf_cyn_dest, "127.0.0.1");
-	submitted_req.header(http::hf_cyn_dest_port, "9879");
+	submitted_req.header(http::hf_cyn_dest_port, fake_port);
+	submitted_req.setParameter("hostname", "::");
+	submitted_req.setParameter("port", std::string(fake_port));
 	auto d1 = submitted_req.serialize();
 	boost::asio::deadline_timer dt{service::locator::service_pool().get_thread_io_service()};
 	auto init_fn = [this, submitted_req, &dt](boost::asio::io_service& ios) mutable
@@ -132,7 +137,7 @@ TEST_F(client_wrapper_test, custom_destination_fail)
 		preset::init_thread_local();
 		ch = make_unique_chain<node_interface, first_node, nodes::client_wrapper, blocked_node>();
 		stop_condition = [this](){ throw std::invalid_argument("shit"); return true; };
-		server.reset( new mock_server );
+		server.reset( new mock_server{port} );
 		server->start([this](){ server->read( 1, read_fn ); });
 		ch->on_request_preamble( std::move(submitted_req) );
 		dt.expires_from_now(boost::posix_time::seconds{1});
@@ -157,6 +162,8 @@ TEST_F(client_wrapper_test, custom_destination_ok)
 	submitted_req.keepalive(false);
 	submitted_req.header(http::hf_cyn_dest, "127.0.0.1");
 	submitted_req.header(http::hf_cyn_dest_port, "8454");
+	submitted_req.setParameter("hostname", "::");
+	submitted_req.setParameter("port", std::to_string(port));
 	auto d1 = submitted_req.serialize();
 	const auto expected_bytes = d1.size();
 	auto init_fn = [this, submitted_req, expected_bytes](boost::asio::io_service& ios) mutable
@@ -164,7 +171,7 @@ TEST_F(client_wrapper_test, custom_destination_ok)
 	preset::init_thread_local();
 		ch = make_unique_chain<node_interface, first_node, nodes::client_wrapper, blocked_node>();
 		stop_condition = [this](){ return true; };
-		server.reset( new mock_server );
+		server.reset( new mock_server{port} );
 		server->start([this, expected_bytes](){ server->read( expected_bytes, read_fn ); });
 		ch->on_request_preamble( std::move(submitted_req) );
 	};
@@ -185,6 +192,8 @@ TEST_F(client_wrapper_test, complete_request)
 	submitted_req.hostname(url.c_str());
 	submitted_req.keepalive(false);
 	submitted_req.content_len(body.size());
+	submitted_req.setParameter("hostname", "::");
+	submitted_req.setParameter("port", std::to_string(port));
 
 	auto d1 = submitted_req.serialize();
 	const auto expected_bytes = d1.size() + body.size();
@@ -196,7 +205,7 @@ TEST_F(client_wrapper_test, complete_request)
 		ch = make_unique_chain<node_interface, first_node, nodes::client_wrapper, blocked_node>();
 		stop_condition = [](){ return true; };
 
-		server.reset( new mock_server );
+		server.reset( new mock_server{port} );
 		server->start([this, expected_bytes](){server->read(expected_bytes, read_fn );});
 
 		ch->on_request_preamble(std::move(submitted_req));
@@ -222,6 +231,8 @@ TEST_F(client_wrapper_test, no_response)
 	submitted_req.urihost(url.c_str());
 	submitted_req.hostname(url.c_str());
 	submitted_req.keepalive(false);
+	submitted_req.setParameter("hostname", "::");
+	submitted_req.setParameter("port", std::to_string(port));
 
 	auto init_fn = [this, submitted_req](boost::asio::io_service& ios) mutable
 	{
@@ -236,7 +247,7 @@ TEST_F(client_wrapper_test, no_response)
 			EXPECT_TRUE( first_node::err == INTERNAL_ERROR(errors::http_error_code::internal_server_error) ) << first_node::err.code();
 		};
 
-		server.reset( new mock_server );
+		server.reset( new mock_server{port} );
 
 		server->start([this]()
 		{
@@ -261,6 +272,8 @@ TEST_F(client_wrapper_test, request_response)
 	submitted_req.hostname(url.c_str());
 	submitted_req.keepalive(false);
 	submitted_req.content_len(body.size());
+	submitted_req.setParameter("hostname", "::");
+	submitted_req.setParameter("port", std::to_string(port));
 
 	auto req_d = submitted_req.serialize();
 	const auto expected_bytes = req_d.size() + body.size();
@@ -291,7 +304,7 @@ TEST_F(client_wrapper_test, request_response)
 			EXPECT_TRUE(d == res_d);
 		};
 
-		server.reset( new mock_server );
+		server.reset( new mock_server{port} );
 
 		server->start([this, expected_bytes]()
 		{
@@ -323,6 +336,8 @@ TEST_F(client_wrapper_test, client_hangs)
 	submitted_req.urihost(url.c_str());
 	submitted_req.hostname(url.c_str());
 	submitted_req.keepalive(false);
+	submitted_req.setParameter("hostname", "::");
+	submitted_req.setParameter("port", std::to_string(port));
 
 	auto init_fn = [this, submitted_req](boost::asio::io_service& ios) mutable
 	{
@@ -335,7 +350,7 @@ TEST_F(client_wrapper_test, client_hangs)
 			EXPECT_TRUE(first_node::err == INTERNAL_ERROR(errors::http_error_code::internal_server_error));
 		};
 
-		server.reset( new mock_server );
+		server.reset( new mock_server{port} );
 		server->start([this](){ server->read( 1, read_fn ); });
 
 		ch->on_request_preamble( std::move(submitted_req) );
@@ -354,6 +369,8 @@ TEST_F(client_wrapper_test, server_hangs)
 	submitted_req.hostname(url.c_str());
 	submitted_req.keepalive(false);
 	submitted_req.content_len(body.size());
+	submitted_req.setParameter("hostname", "::");
+	submitted_req.setParameter("port", std::to_string(port));
 
 	auto req_d = submitted_req.serialize();
 
@@ -382,7 +399,7 @@ TEST_F(client_wrapper_test, server_hangs)
 			server->write(res_d.substr(0, res_d.size()/2));
 		};
 
-		server.reset( new mock_server );
+		server.reset( new mock_server{port} );
 		server->start([this]()
 		{
 			server->read(1, read_fn );

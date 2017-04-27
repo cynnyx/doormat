@@ -1,5 +1,7 @@
 #include "common.h"
 
+#include "src/network/communicator/dns_communicator_factory.h"
+
 namespace test_utils
 {
 
@@ -219,6 +221,7 @@ void teardown( std::unique_ptr<node_interface>& chain )
 void init_thread_local()
 {
 	service::locator::stats_manager().register_handler();
+	service::initializer::set_communicator_factory( new network::dns_communicator_factory() );
 }
 
 void stop_thread_local()
