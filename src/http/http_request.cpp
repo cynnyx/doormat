@@ -17,22 +17,10 @@ dstring http_request::serialize() const noexcept
 	dstring msg;
 	msg.append(method()).append(http::space);
 
-	bool supports_full_paths = protocol_version() == http::proto_version::HTTP20 || protocol_version() == http::proto_version::HTTP11;
-	if(_schema && supports_full_paths)
-		msg.append(_schema).append("://");
-
-	//TODO: DRM-207 userinfo not yet supported
-	//if(_userinfo.valid())
-	//	chunks.push_back(_userinfo);
-
-	if(_urihost && supports_full_paths)
-		msg.append(_urihost);
-
-	if(_port && supports_full_paths)
-		msg.append(http::colon).append(_port);
-
 	if(_path)
 		msg.append(_path);
+	else
+		msg.append(http::slash);
 
 	if(_query)
 		msg.append(http::questionmark).append(_query);

@@ -191,13 +191,6 @@ public:
 			_version = (_parser.http_minor == 1)? proto_version::HTTP11:proto_version::HTTP10;
 		_data->protocol(_version);
 
-		//Set method (request only)
-		if( _data->type() == typeid(http::http_request) )
-		{
-			auto&& req = static_cast<http::http_request *>(_data);
-			req->method((http_method)(_parser.method));
-		}
-
 		//Set last header
 		if( _got_header )
 		{
@@ -205,6 +198,25 @@ public:
 			_got_header = false;
 			_key = dstring{true};
 			_value = {};
+		}
+
+		//Set method (request only)
+		if( _data->type() == typeid(http::http_request) )
+		{
+			auto req = static_cast<http::http_request *>(_data);
+			req->method((http_method)(_parser.method));
+			if(req->urihost().empty())
+			{
+				auto&& host = req->header("host");
+				auto pos = host.find(':');
+				if(pos == std::string::npos)
+					req->urihost(host);
+				else
+				{
+					req->urihost(dstring{host.cdata(), pos++});
+					req->port(dstring{host.cdata() + pos, host.size() - pos});
+				}
+			}
 		}
 
 		//Set persistency

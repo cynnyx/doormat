@@ -6,9 +6,8 @@
 namespace
 {
 
-std::string host{"provaprova.com"};
-std::string path{"/static/ciaone/"};
-std::string url = "https://"+ host + path;
+dstring host{"provaprova.com"};
+dstring path{"/static/ciaone/"};
 std::string body{"000000000000"};
 uint16_t port = 8454;
 
@@ -88,8 +87,8 @@ TEST_F(client_wrapper_test, preamble_only)
 	http::http_request submitted_req;
 	submitted_req.protocol(http::proto_version::HTTP11);
 	submitted_req.method("GET");
-	submitted_req.urihost(url.c_str());
-	submitted_req.hostname(url.c_str());
+	submitted_req.hostname(host);
+	submitted_req.path(path);
 	submitted_req.keepalive(false);
 	submitted_req.setParameter("hostname", "::");
 	submitted_req.setParameter("port", std::to_string(port));
@@ -114,6 +113,7 @@ TEST_F(client_wrapper_test, preamble_only)
 	EXPECT_EQ(std::string(d1), std::string(d2));
 	EXPECT_TRUE(received_request.path() == path);
 	EXPECT_TRUE(received_request.urihost() == host);
+	EXPECT_TRUE(received_request.hostname() == host);
 }
 
 TEST_F(client_wrapper_test, custom_destination_fail)
@@ -123,8 +123,8 @@ TEST_F(client_wrapper_test, custom_destination_fail)
 	http::http_request submitted_req;
 	submitted_req.protocol(http::proto_version::HTTP11);
 	submitted_req.method("GET");
-	submitted_req.urihost(url.c_str());
-	submitted_req.hostname(url.c_str());
+	submitted_req.hostname(host);
+	submitted_req.path(path);
 	submitted_req.keepalive(false);
 	submitted_req.header(http::hf_cyn_dest, "127.0.0.1");
 	submitted_req.header(http::hf_cyn_dest_port, fake_port);
@@ -157,8 +157,8 @@ TEST_F(client_wrapper_test, custom_destination_ok)
 	http::http_request submitted_req;
 	submitted_req.protocol(http::proto_version::HTTP11);
 	submitted_req.method("GET");
-	submitted_req.urihost(url.c_str());
-	submitted_req.hostname(url.c_str());
+	submitted_req.hostname(host);
+	submitted_req.path(path);
 	submitted_req.keepalive(false);
 	submitted_req.header(http::hf_cyn_dest, "127.0.0.1");
 	submitted_req.header(http::hf_cyn_dest_port, "8454");
@@ -181,6 +181,7 @@ TEST_F(client_wrapper_test, custom_destination_ok)
 	EXPECT_EQ(std::string(d1), std::string(d2));
 	EXPECT_TRUE(received_request.path() == path);
 	EXPECT_TRUE(received_request.urihost() == host);
+	EXPECT_TRUE(received_request.hostname() == host);
 }
 
 TEST_F(client_wrapper_test, complete_request)
@@ -188,8 +189,8 @@ TEST_F(client_wrapper_test, complete_request)
 	http::http_request submitted_req;
 	submitted_req.protocol(http::proto_version::HTTP11);
 	submitted_req.method("PUT");
-	submitted_req.urihost(url.c_str());
-	submitted_req.hostname(url.c_str());
+	submitted_req.hostname(host);
+	submitted_req.path(path);
 	submitted_req.keepalive(false);
 	submitted_req.content_len(body.size());
 	submitted_req.setParameter("hostname", "::");
@@ -219,6 +220,7 @@ TEST_F(client_wrapper_test, complete_request)
 	EXPECT_EQ(std::string(d1), std::string(d2));
 	EXPECT_TRUE(received_request.path() == path);
 	EXPECT_TRUE(received_request.urihost() == host);
+	EXPECT_TRUE(received_request.hostname() == host);
 	EXPECT_TRUE(received_request_body == body);
 }
 
@@ -228,8 +230,8 @@ TEST_F(client_wrapper_test, no_response)
 	http::http_request submitted_req;
 	submitted_req.protocol(http::proto_version::HTTP11);
 	submitted_req.method("GET");
-	submitted_req.urihost(url.c_str());
-	submitted_req.hostname(url.c_str());
+	submitted_req.hostname(host);
+	submitted_req.path(path);
 	submitted_req.keepalive(false);
 	submitted_req.setParameter("hostname", "::");
 	submitted_req.setParameter("port", std::to_string(port));
@@ -268,8 +270,8 @@ TEST_F(client_wrapper_test, request_response)
 	http::http_request submitted_req;
 	submitted_req.protocol(http::proto_version::HTTP11);
 	submitted_req.method("PUT");
-	submitted_req.urihost(url.c_str());
-	submitted_req.hostname(url.c_str());
+	submitted_req.hostname(host);
+	submitted_req.path(path);
 	submitted_req.keepalive(false);
 	submitted_req.content_len(body.size());
 	submitted_req.setParameter("hostname", "::");
@@ -324,6 +326,7 @@ TEST_F(client_wrapper_test, request_response)
 	EXPECT_EQ(std::string(req_d), std::string(d));
 	EXPECT_TRUE(received_request.path() == path);
 	EXPECT_TRUE(received_request.urihost() == host);
+	EXPECT_TRUE(received_request.hostname() == host);
 	EXPECT_TRUE(received_request_body == body);
 }
 
@@ -333,8 +336,8 @@ TEST_F(client_wrapper_test, client_hangs)
 	http::http_request submitted_req;
 	submitted_req.protocol(http::proto_version::HTTP11);
 	submitted_req.method("GET");
-	submitted_req.urihost(url.c_str());
-	submitted_req.hostname(url.c_str());
+	submitted_req.hostname(host);
+	submitted_req.path(path);
 	submitted_req.keepalive(false);
 	submitted_req.setParameter("hostname", "::");
 	submitted_req.setParameter("port", std::to_string(port));
@@ -365,8 +368,8 @@ TEST_F(client_wrapper_test, server_hangs)
 	http::http_request submitted_req;
 	submitted_req.protocol(http::proto_version::HTTP11);
 	submitted_req.method("PUT");
-	submitted_req.urihost(url.c_str());
-	submitted_req.hostname(url.c_str());
+	submitted_req.hostname(host);
+	submitted_req.path(path);
 	submitted_req.keepalive(false);
 	submitted_req.content_len(body.size());
 	submitted_req.setParameter("hostname", "::");

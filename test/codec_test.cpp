@@ -148,7 +148,8 @@ void test_request_encoding(http_request *in_, const dstring& in_data)
 
 	//REQ
 	EXPECT_TRUE(out_msg.method() == in_msg.method());
-	EXPECT_TRUE(out_msg.schema() == in_msg.schema());
+	// note: we are aware that we lose the "schema info" in serialization
+	EXPECT_TRUE(out_msg.schema().empty() || out_msg.schema() == in_msg.schema());
 	EXPECT_TRUE(out_msg.urihost() == in_msg.urihost());
 	EXPECT_TRUE(out_msg.port() == in_msg.port());
 	EXPECT_TRUE(out_msg.path() == in_msg.path());

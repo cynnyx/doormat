@@ -40,6 +40,9 @@ public:
 	void schema(const dstring& val) noexcept { _schema = val; }
 	const dstring& schema() const noexcept { return _schema; }
 
+	// NOTE: urihost and hostname are independent in our code;
+	// we may want to establish some relation between them
+
     template<typename DS>
     void urihost(DS&& val) noexcept
     {
