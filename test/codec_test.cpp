@@ -236,7 +236,7 @@ TEST( codec, decode_chunked_req )
 		"connection: keep-alive\r\n"
 		"date: Wed,  6 Jul 2016 11:07:20 CEST\r\n"
 		"host: localhost\r\n"
-		"test: test_1,test_2\r\n"
+		"test: test_1, test_2\r\n"
 		"trailer: Date\r\n"
 		"transfer-encoding: Chunked\r\n"
 		"x-cyn-date: 1470328824\r\n"

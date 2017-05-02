@@ -1,6 +1,5 @@
 #pragma once
 
-#include <list>
 #include <string>
 #include <utility>
 
@@ -49,6 +48,41 @@ class http_codec::impl
 	http::http_codec::trailer_cb _tcb;
 	http::http_codec::void_cb _ccb;
 	http::http_codec::error_cb _fcb;
+
+	void process_current_header()
+	{
+		if(!_got_header)
+			return;
+
+		auto found = _value.find(',');
+		if(_key == "date" || found == std::string::npos)
+			_data->header(std::move(_key), std::move(_value));
+		else
+		{
+			size_t beg{};
+			do
+			{
+				while(*(_value.cdata() + beg) == ' ') ++beg;
+				while(*(_value.cdata() - 1) == ' ') --found;
+
+				if(found >= _value.size() || found == 0)
+				{
+					_data->header(_key, _value.substr(beg));
+					break;
+				}
+
+				// from here on, 0 < found < _value.size()
+				_data->header(_key, _value.substr(beg, found - beg));
+				beg = found + 1;
+				found = _value.find(',', beg);
+			}
+			while(true);
+		}
+
+		_got_header = false;
+		_key = dstring{true};
+		_value = {};
+	}
 
 public:
 	impl() noexcept
@@ -161,13 +195,7 @@ public:
 	int on_header_field( const char *at, size_t len ) noexcept
 	{
 		assert( _headers_completed == false );
-		if( _got_header )
-		{
-			_data->header(std::move(_key), std::move(_value));
-			_got_header = false;
-			_key = dstring{true};
-			_value = {};
-		}
+		process_current_header();
 
 		_key.append(at,len);
 		return 0;
@@ -192,13 +220,7 @@ public:
 		_data->protocol(_version);
 
 		//Set last header
-		if( _got_header )
-		{
-			_data->header(std::move(_key), std::move(_value));
-			_got_header = false;
-			_key = dstring{true};
-			_value = {};
-		}
+		process_current_header();
 
 		//Set method (request only)
 		if( _data->type() == typeid(http::http_request) )

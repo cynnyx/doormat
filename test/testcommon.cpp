@@ -110,7 +110,7 @@ std::string request_generator(const http_method method, const std::string& conte
 		.append(http::crlf)
 		.append("host: localhost:2000")
 		.append(http::crlf)
-		.append("test: test_1,test_2")
+		.append("test: test_1, test_2")
 		.append(http::crlf);
 
 	if(chunked)
