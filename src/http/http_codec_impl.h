@@ -54,31 +54,7 @@ class http_codec::impl
 		if(!_got_header)
 			return;
 
-		auto found = _value.find(',');
-		if(_key == "date" || found == std::string::npos)
-			_data->header(std::move(_key), std::move(_value));
-		else
-		{
-			size_t beg{};
-			do
-			{
-				while(*(_value.cdata() + beg) == ' ') ++beg;
-				while(*(_value.cdata() - 1) == ' ') --found;
-
-				if(found >= _value.size() || found == 0)
-				{
-					_data->header(_key, _value.substr(beg));
-					break;
-				}
-
-				// from here on, 0 < found < _value.size()
-				_data->header(_key, _value.substr(beg, found - beg));
-				beg = found + 1;
-				found = _value.find(',', beg);
-			}
-			while(true);
-		}
-
+		_data->header(std::move(_key), std::move(_value));
 		_got_header = false;
 		_key = dstring{true};
 		_value = {};
