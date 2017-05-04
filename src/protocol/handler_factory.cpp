@@ -81,7 +81,7 @@ void handler_factory::register_protocol_selection_callbacks(SSL_CTX* ctx)
 	SSL_CTX_set_alpn_select_cb(ctx, alpn_select_cb, nullptr);
 }
 
-handler_interface* handler_factory::negotiate_handler(const SSL *ssl) const noexcept
+std::shared_ptr<handler_interface> handler_factory::negotiate_handler(const SSL *ssl) const noexcept
 {
 	const unsigned char* proto{nullptr};
 	unsigned int len{0};
@@ -107,8 +107,7 @@ handler_interface* handler_factory::negotiate_handler(const SSL *ssl) const noex
 		}
 	}
 
-	http::proto_version version =
-			(type == ht_h2) ? http::proto_version::HTTP20 : ((proto == nullptr ||   proto[len-1] == '0') ? http::proto_version::HTTP10 : http::proto_version::HTTP11);
+	http::proto_version version = (type == ht_h2) ? http::proto_version::HTTP20 : ((proto == nullptr ||   proto[len-1] == '0') ? http::proto_version::HTTP10 : http::proto_version::HTTP11);
 
 
 	return build_handler( type , version );
@@ -116,19 +115,20 @@ handler_interface* handler_factory::negotiate_handler(const SSL *ssl) const noex
 
 boost::asio::ip::address handler_interface::find_origin() const
 {
-	return _connector->origin();
+    if(connector()) return connector()->origin();
+    return {};
 }
 
-handler_interface* handler_factory::build_handler(handler_type type, http::proto_version proto) const noexcept
+std::shared_ptr<handler_interface> handler_factory::build_handler(handler_type type, http::proto_version proto) const noexcept
 {
 	switch(type)
 	{
 		case ht_h1:
 			LOGDEBUG("HTTP1 selected");
-			return new handler_http1( proto );
+			return std::make_shared<handler_http1>( proto );
 		case ht_h2:
 			LOGTRACE("HTTP2 NG selected");
-			return new http2::session();
+			return std::make_shared<http2::session>();
 		case ht_unknown: return nullptr;
 	}
 	return nullptr;
@@ -146,11 +146,11 @@ void handler_interface::initialize_callbacks(node_interface &cor)
     cor.initialize_callbacks(hcb, bcb, tcb, eomcb, ecb, rccb);
 }
 
-void handler_interface::connector( connector_interface * conn )
+void handler_interface::connector( std::shared_ptr<connector_interface>  conn )
 {
 	LOGTRACE("handler_interface::connector ", conn );
 	_connector = conn;
-	if ( ! _connector )
+	if ( ! _connector.lock() )
 		on_connector_nulled();
 }
 } //namespace

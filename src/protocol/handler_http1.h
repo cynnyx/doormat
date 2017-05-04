@@ -59,7 +59,7 @@ private:
 		dstring encoded_data;
 		http::http_request data;
 		http::http_response continue_response;
-		handler_http1 *enclosing = nullptr;
+		std::shared_ptr<handler_interface> enclosing{nullptr};
 		http::http_codec encoder;
 		logging::access_recorder access;
 	public:
@@ -70,8 +70,8 @@ private:
 		bool request_is_finished{false};
 		std::unique_ptr<node_interface> cor;
 
-		transaction_handler(/*std::unique_ptr<node_interface> managed_cor,*/ handler_http1 *enclosing, bool ssl)
-			: data{ssl}, enclosing{enclosing/*, cor{std::move(managed_cor) */}
+		transaction_handler(std::shared_ptr<handler_interface> enclosing, bool ssl)
+			: data{ssl}, enclosing{enclosing}
 		{
 			// @todo This should be refactored
 			access.set_request_start();

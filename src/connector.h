@@ -45,7 +45,7 @@ class connector: public connector_interface,
 	public std::enable_shared_from_this< connector<socket_type> >
 {
 	std::shared_ptr<socket_type> _socket;
-	handler_interface * _handler{nullptr};
+	std::shared_ptr<handler_interface> _handler{nullptr};
 
 	interval _handshake_ttl;
 	interval _ttl;
@@ -116,14 +116,13 @@ public:
 
 	//TODO: DRM-200:this method is required by ng_h2 apis, remove it once they'll be gone
 	socket_type& socket() noexcept { return *_socket; }
-	void handshake_countdown(){schedule_deadline(_handshake_ttl);}
 
 	void renew_ttl() { schedule_deadline(_ttl); }
 
-	void handler( handler_interface* h )
+	void handler( std::shared_ptr<handler_interface> h )
 	{
 		_handler = h;
-		_handler->connector( this );
+		_handler->connector( this->shared_from_this() );
 	}
 
 	void start( bool tcp_no_delay = false )

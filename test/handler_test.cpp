@@ -39,13 +39,13 @@ struct handler: public ::testing::Test
 	std::unique_ptr<boost::asio::deadline_timer> deadline;
 
 	MockConnector::wcb cb;
-	MockConnector conn;
+	std::shared_ptr<MockConnector> conn;
 
 	std::string response;
 
 	boost::asio::io_service::work *keep_alive = nullptr;
 protected:
-	handler() : conn(cb)
+	handler() : conn{std::make_shared<MockConnector>(cb)}
 	{
 		service::initializer::load_configuration("./etc/doormat/doormat.test.config");
 		service::initializer::init_services();
@@ -99,7 +99,7 @@ TEST_F(handler, http1_persistent)
 		"\r\n";
 
 	server::handler_http1 h1{http::proto_version::HTTP11};
-	h1.connector(&conn);
+	h1.connector(conn);
 
 	// list of chunks that I expect to receive inside the on_write()
 	std::string expected_response = "HTTP/1.1 200 OK\r\n"
@@ -156,7 +156,7 @@ TEST_F(handler, http1_non_persistent)
 			"\r\n";
 
 	server::handler_http1 h1{http::proto_version::HTTP11};
-	h1.connector(&conn);
+	h1.connector(conn);
 
 	// list of chunks that I expect to receive inside the on_write()
 	std::string expected_response = "HTTP/1.1 200 OK\r\n"
@@ -217,7 +217,7 @@ TEST_F(handler, http1_pipelining)
 			"\r\n";
 
 	server::handler_http1 h1{http::proto_version::HTTP11};
-	h1.connector(&conn);
+	h1.connector(conn);
 
 	// list of chunks that I expect to receive inside the on_write()
 	std::string expected_response = "HTTP/1.1 200 OK\r\n"

@@ -82,12 +82,23 @@ void http_server::start_accept(ssl_context& ssl_ctx, tcp_acceptor& acceptor)
 
 		if (!ec)
 		{
-			auto conn = std::make_shared<ssl_connector>(_connect_timeout, _read_timeout, socket);
-			auto handshake_cb = [this, conn](const boost::system::error_code &ec)
+            auto connection_timer = std::make_shared<boost::asio::deadline_timer>(acceptor.get_io_service());
+            connection_timer->expires_from_now(_connect_timeout);
+            connection_timer->async_wait([socket, connection_timer](const boost::system::error_code &ec)
+            {
+                if(ec) return;
+                socket->shutdown();
+            });
+			auto handshake_cb = [this, connection_timer, socket](const boost::system::error_code &ec)
 			{
 				LOGTRACE("handshake_cb called");
-				if (!ec)
+				if(ec != boost::system::errc::operation_canceled)
+                {
+                    connection_timer->cancel();
+                }
+                if (!ec)
 				{
+                    auto conn = std::make_shared<ssl_connector>(_connect_timeout, _read_timeout, socket);
 					auto h = _handlers.negotiate_handler(conn->socket().native_handle());
 					if(h != nullptr)
 					{
@@ -101,9 +112,7 @@ void http_server::start_accept(ssl_context& ssl_ctx, tcp_acceptor& acceptor)
 				if(ec.category() == boost::asio::error::get_ssl_category())
 					log_ssl_errors(ec);
 			};
-
-			conn->handshake_countdown();
-			conn->socket().async_handshake(ssl::stream_base::server, handshake_cb);
+            socket->async_handshake(ssl::stream_base::server, handshake_cb);
 		}
 		else LOGERROR(ec.message());
 
@@ -148,7 +157,7 @@ tcp_acceptor http_server::make_acceptor(boost::asio::io_service& io, tcp::endpoi
 	acceptor.open(endpoint.protocol(), ec);
 	if(setsockopt(acceptor.native_handle(), SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &set, sizeof(set)) != 0)
 	{
-		LOGERROR("cannot set option SO_REUSEPORT on the socket; will execute in a sequential manner. Error is ", strerror(errno));
+		LOGERROR("cannot set option SO_REUSEPORT on the socket; doormat will execute in a sequential manner. Error is ", strerror(errno));
 	}
 	if(!ec)
 		acceptor.bind(endpoint, ec);

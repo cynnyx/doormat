@@ -26,7 +26,7 @@ bool handler_http1::start() noexcept
 {
 	auto scb = [this](http::http_structured_data** data)
 	{
-		th.emplace_back(/*handler_interface::make_chain(),*/ this, connector()->is_ssl() );
+		th.emplace_back(this->shared_from_this(), connector()->is_ssl() );
 		*data = &(th.back().get_data());
 		(*data)->origin( find_origin() );
 	};
@@ -190,8 +190,6 @@ void handler_http1::on_eom()
 	if(!connector())
 	{
 		th.remove_if( [](transaction_handler &t){ return t.message_ended; });
-		if(th.empty())
-			delete this;
 	}
 }
 
@@ -202,14 +200,14 @@ void handler_http1::on_error(const int&)
 	if(!connector())
 	{
 		th.remove_if([](transaction_handler &t){ return t.message_ended; });
-		if(th.empty()) delete this;
 	}
 }
 
 void handler_http1::transaction_handler::on_request_preamble( http::http_request&& message )
 {
 	access.request(message);
-	if ( enclosing && enclosing->th.size() > 1 ) access.set_pipe( true );
+	//todo: reintroduce.
+	//if ( enclosing && enclosing->th.size() > 1 ) access.set_pipe( true );
 	LOGTRACE(this," on_request_preamble");
 	
     cor = std::move ( service::locator::chain_factory().get_chain_and_params( message ) );
@@ -258,10 +256,9 @@ void handler_http1::do_write()
 void handler_http1::on_connector_nulled()
 {
 	error_code_distruction = INTERNAL_ERROR_LONG(408);
-	if(handler_http1::should_stop() || th.empty())
-		delete this;
-	else
-		for (auto &t : th) t.on_request_canceled(error_code_distruction);
+	if(handler_http1::should_stop() || th.empty()) return;
+	//delete all th no longer in use.
+	for (auto &t : th) t.on_request_canceled(error_code_distruction);
 }
 
 } //namespace
