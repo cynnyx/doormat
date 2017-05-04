@@ -93,7 +93,7 @@ stream* session::create_stream ( std::int32_t id )
 {
 	stream* stream_data = static_cast<stream*>( all.malloc( sizeof(stream), all.mem_user_data ) );
 	LOGTRACE(" Create stream: ", id, " address: ", stream_data );
-	new ( stream_data ) stream{ this, [] ( stream* s, session* sess )
+	new ( stream_data ) stream{ this->shared_from_this(), [] ( stream* s, session* sess )
 		{
 			LOGTRACE("Stream destruction: ", s, " session: ", sess );
 			s->~stream();
@@ -234,15 +234,13 @@ void session::on_connector_nulled()
 // 		delete this;
 // 	else
 // 		for(auto &s: streams) s->on_request_canceled(error_code_distruction);
-	if ( stream_counter == 0)
-		delete this; // The session kills every stream
 }
 
 void session::finished_stream() noexcept
 {
 	--stream_counter;
-	if ( stream_counter == 0 && connector() == nullptr )
-		delete this;
+	/*if ( stream_counter == 0 && connector() == nullptr )
+		delete this;*/
 }
 
 int session::on_frame_recv_callback(nghttp2_session *session_, const nghttp2_frame *frame, void *user_data )

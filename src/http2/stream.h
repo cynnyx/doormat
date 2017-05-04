@@ -51,8 +51,8 @@ class stream final
 	nghttp2_nv* trailers_nva{nullptr};
 	std::size_t trailers_nvlen{0};
 
-	session* const session_{nullptr};
-	
+	std::shared_ptr<server::handler_interface> const s_owner{nullptr};
+	session * const session_{nullptr};
 	http::http_structured_data::headers_map prepared_headers;
 	http::http_request request{true};
 	
@@ -75,7 +75,7 @@ class stream final
 	std::function<void(stream*, session*)> destructor;
 public:
 //	stream( std::function<void(stream*, session*)> des );
-	stream( session* s, std::function<void(stream*, session*)> des, std::int16_t prio = 0 );
+	stream( std::shared_ptr<server::handler_interface> s, std::function<void(stream*, session*)> des, std::int16_t prio = 0 );
 	stream( const stream& ) = delete;
 	stream& operator=( const stream& ) = delete;
 	stream( stream&& o ) noexcept;
