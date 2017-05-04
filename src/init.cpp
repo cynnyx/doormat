@@ -183,7 +183,7 @@ int doormat( int argc, char** argv )
 		service::locator::configuration().set_fd_limit(fdl.rlim_cur);
 	}
 
-	doormat_srv.reset(new server::http_server{});
+	doormat_srv.reset(new server::http_server{service::locator::configuration().get_operation_timeout(), service::locator::configuration().get_client_connection_timeout(), service::locator::configuration().get_port(), service::locator::configuration().get_port_h()});
 
 	//Handle user fallback after successfull bind on 443 or 80
 	if(getuid() == 0)

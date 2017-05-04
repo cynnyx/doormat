@@ -28,13 +28,13 @@ void log_ssl_errors(const boost::system::error_code& ec)
 	LOGERROR(err);
 }
 
-http_server::http_server()
-	: _backlog( socket_base::max_connections )
-	, _threads(service::locator::configuration().get_thread_number())
-	, _read_timeout(boost::posix_time::milliseconds( service::locator::configuration().get_operation_timeout() ) )
-	, _connect_timeout( boost::posix_time::milliseconds(
-				service::locator::configuration().get_client_connection_timeout() ) )
-	, _ssl{sni.load_certificates()}
+http_server::http_server(size_t read_timeout, size_t connect_timeout, uint16_t ssl_port, uint16_t http_port)
+	: _backlog(socket_base::max_connections),
+	 _read_timeout(boost::posix_time::milliseconds(read_timeout)),
+	 _connect_timeout( boost::posix_time::milliseconds(connect_timeout)),
+	 _ssl{sni.load_certificates()},
+     ssl_port{ssl_port},
+     http_port{http_port}
 {
 	if(_ssl)
 	{
@@ -43,11 +43,11 @@ http_server::http_server()
 		for( auto&& iter = sni.begin(); iter != sni.end(); ++iter )
 			_handlers.register_protocol_selection_callbacks(iter->context.native_handle());
 
-		auto port = service::locator::configuration().get_port();
+		auto port = ssl_port;
 		listen_on(port, true );
 	}
 
-	auto porth = service::locator::configuration().get_port_h();
+	auto porth = http_port;
 	listen_on(porth);
 }
 
@@ -58,14 +58,12 @@ void http_server::start(io_service_pool::main_init_fn_t main_init,
 	{
 		running = true;
 
-		for (auto &acceptor : _acceptors)
-			start_accept(acceptor);
-
-		for (auto &acceptor : _ssl_acceptors)
-		{
-			assert(_ssl_ctx != nullptr);
-			start_accept(*_ssl_ctx , acceptor);
-		}
+        if(plain_acceptor) start_accept(*plain_acceptor);
+        if(ssl_acceptor)
+        {
+            assert(_ssl_ctx != nullptr);
+            start_accept(*_ssl_ctx, *ssl_acceptor);
+        }
 
         auto thread_init_local = [ti=std::move(thread_init)](boost::asio::io_service& ios)
 		{
@@ -81,8 +79,8 @@ void http_server::start(io_service_pool::main_init_fn_t main_init,
                 ti(ios);
 		};
 
-		LOGINFO("Starting doormat on ports ", service::locator::configuration().get_port(),",",
-				service::locator::configuration().get_port_h(),", with ", _threads, " threads");
+		LOGINFO("Starting doormat on ports ", http_port ,",",
+				ssl_port,", with ", 1, " threads");
 
         service::locator::service_pool().run(std::move(thread_init_local), std::move(main_init));
 	}
@@ -93,12 +91,8 @@ void http_server::stop( ) noexcept
 	if(running)
 	{
 		running = false;
-
-		for (auto &acceptor : _acceptors)
-			acceptor.close();
-
-		for (auto &acceptor : _ssl_acceptors)
-			acceptor.close();
+		if(plain_acceptor) plain_acceptor->close();
+		if(ssl_acceptor) ssl_acceptor->close();
 	}
 }
 
@@ -196,7 +190,7 @@ void http_server::listen_on(const uint16_t &port, bool ssl )
 	tcp::resolver resolver(service::locator::service_pool().get_io_service());
 	tcp::resolver::query query("0.0.0.0", to_string(port));
 
-	auto& acceptors = ssl?_ssl_acceptors:_acceptors;
+	auto& acceptor = (ssl) ? ssl_acceptor : plain_acceptor;
 
 	boost::system::error_code ec;
 	auto it = resolver.resolve(query, ec);
@@ -204,18 +198,14 @@ void http_server::listen_on(const uint16_t &port, bool ssl )
 	{
 		for (; it != tcp::resolver::iterator(); ++it)
 		{
-			for(size_t i = 0; i < _threads; ++i)
-			{
-				auto acceptor = make_acceptor(*it, ec);
-				if(!ec)
-					acceptors.push_back(std::move(acceptor));
-			}
+            auto _acceptor = make_acceptor(*it, ec);
+            if(!ec)
+                acceptor = std::move(_acceptor);
 		}
 	}
 
-	if(!acceptors.empty())
+	if(!acceptor)
 		ec.clear();
-
 
 	if(ec)
 	{
