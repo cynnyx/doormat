@@ -8,3 +8,5 @@ user/*
 .idea/*
 *.autosave
 cmake-build-debug/*
+test/server/node_modules/*
+test/server/npm-debug.log
