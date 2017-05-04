@@ -98,8 +98,8 @@ TEST_F(handler, http1_persistent)
 		"date: Tue, 17 May 2016 14:53:09 GMT\r\n"
 		"\r\n";
 
-	server::handler_http1 h1{http::proto_version::HTTP11};
-	h1.connector(conn);
+	std::shared_ptr<server::handler_http1> h1 = std::make_shared<server::handler_http1>(http::proto_version::HTTP11);
+	h1->connector(conn);
 
 	// list of chunks that I expect to receive inside the on_write()
 	std::string expected_response = "HTTP/1.1 200 OK\r\n"
@@ -120,11 +120,11 @@ TEST_F(handler, http1_persistent)
 			return;
 
 		dstring chunk;
-		while(h1.on_write(chunk))
+		while(h1->on_write(chunk))
 		{
-			if(h1.should_stop() || chunk.empty())
+			if(h1->should_stop() || chunk.empty())
 			{
-				if(h1.should_stop())
+				if(h1->should_stop())
 					deadline->cancel();
 				break;
 			}
@@ -133,14 +133,14 @@ TEST_F(handler, http1_persistent)
 			chunk = {};
 		}
 
-		if(!h1.should_stop() && !simulate_connection_closed)
+		if(!h1->should_stop() && !simulate_connection_closed)
 		{
 			service::locator::service_pool().get_thread_io_service().post(cb);
 		}
 	};
 
-	ASSERT_TRUE(h1.start());
-	h1.on_read(req.data(), req.size());
+	ASSERT_TRUE(h1->start());
+	h1->on_read(req.data(), req.size());
 	service::locator::service_pool().get_thread_io_service().run();
 	EXPECT_EQ(expected_response, response);
 }
@@ -155,8 +155,8 @@ TEST_F(handler, http1_non_persistent)
 			"connection: close\r\n"
 			"\r\n";
 
-	server::handler_http1 h1{http::proto_version::HTTP11};
-	h1.connector(conn);
+	std::shared_ptr<server::handler_http1> h1= std::make_shared<server::handler_http1>(http::proto_version::HTTP11);
+	h1->connector(conn);
 
 	// list of chunks that I expect to receive inside the on_write()
 	std::string expected_response = "HTTP/1.1 200 OK\r\n"
@@ -173,11 +173,11 @@ TEST_F(handler, http1_non_persistent)
 			return;
 
 		dstring chunk;
-		while(h1.on_write(chunk))
+		while(h1->on_write(chunk))
 		{
-			if(h1.should_stop() || chunk.empty())
+			if(h1->should_stop() || chunk.empty())
 			{
-				if(h1.should_stop())
+				if(h1->should_stop())
 					deadline->cancel();
 				break;
 			}
@@ -186,17 +186,17 @@ TEST_F(handler, http1_non_persistent)
 			chunk = {};
 		}
 
-		if(!h1.should_stop())
+		if(!h1->should_stop())
 		{
 			service::locator::service_pool().get_thread_io_service().post(cb);
 		}
 
 	};
 
-	ASSERT_TRUE(h1.start());
-	h1.on_read(req.data(), req.size());
+	ASSERT_TRUE(h1->start());
+	h1->on_read(req.data(), req.size());
 	service::locator::service_pool().get_thread_io_service().run();
-	ASSERT_TRUE(h1.should_stop());
+	ASSERT_TRUE(h1->should_stop());
 
 	EXPECT_EQ(expected_response, response);
 }
@@ -216,8 +216,8 @@ TEST_F(handler, http1_pipelining)
 			"connection: close\r\n"
 			"\r\n";
 
-	server::handler_http1 h1{http::proto_version::HTTP11};
-	h1.connector(conn);
+	std::shared_ptr<server::handler_http1> h1= std::make_shared<server::handler_http1>(http::proto_version::HTTP11);
+	h1->connector(conn);
 
 	// list of chunks that I expect to receive inside the on_write()
 	std::string expected_response = "HTTP/1.1 200 OK\r\n"
@@ -243,11 +243,11 @@ TEST_F(handler, http1_pipelining)
 			return;
 
 		dstring chunk;
-		while(h1.on_write(chunk))
+		while(h1->on_write(chunk))
 		{
-			if(h1.should_stop() || chunk.empty())
+			if(h1->should_stop() || chunk.empty())
 			{
-				if(h1.should_stop())
+				if(h1->should_stop())
 					deadline->cancel();
 				break;
 			}
@@ -256,13 +256,13 @@ TEST_F(handler, http1_pipelining)
 			chunk = {};
 		}
 
-		if(!h1.should_stop())
+		if(!h1->should_stop())
 			service::locator::service_pool().get_thread_io_service().post(cb);
 	};
 
-	ASSERT_TRUE(h1.start());
-	h1.on_read(req.data(), req.size());
+	ASSERT_TRUE(h1->start());
+	h1->on_read(req.data(), req.size());
 	service::locator::service_pool().get_thread_io_service().run();
-	ASSERT_TRUE(h1.should_stop());
+	ASSERT_TRUE(h1->should_stop());
 	EXPECT_EQ(expected_response, response);
 }
