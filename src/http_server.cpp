@@ -25,8 +25,7 @@ void log_ssl_errors(const boost::system::error_code& ec)
 }
 
 http_server::http_server(size_t read_timeout, size_t connect_timeout, uint16_t ssl_port, uint16_t http_port)
-	: _backlog(socket_base::max_connections),
-	 _read_timeout(boost::posix_time::milliseconds(read_timeout)),
+	: _read_timeout(boost::posix_time::milliseconds(read_timeout)),
 	 _connect_timeout( boost::posix_time::milliseconds(connect_timeout)),
 	 _ssl{sni.load_certificates()},
      ssl_port{ssl_port},
@@ -36,35 +35,26 @@ http_server::http_server(size_t read_timeout, size_t connect_timeout, uint16_t s
 void http_server::start(boost::asio::io_service &io) noexcept
 {
     if(running) return;
+    running = true;
     if(_ssl)
     {
         _ssl_ctx = &(sni.begin()->context);
 
         for(auto&& iter = sni.begin(); iter != sni.end(); ++iter)
             _handlers.register_protocol_selection_callbacks(iter->context.native_handle());
-
-        auto port = ssl_port;
-        listen_on(io, port, true);
+        listen(io, true);
     }
 
-    auto porth = http_port;
-    listen_on(io, porth);
+    listen(io);
 
-	if(!running)
+	if(plain_acceptor) start_accept(*plain_acceptor);
+	if(ssl_acceptor)
 	{
-		running = true;
-
-        if(plain_acceptor) start_accept(*plain_acceptor);
-        if(ssl_acceptor)
-        {
-            assert(_ssl_ctx != nullptr);
-            start_accept(*_ssl_ctx, *ssl_acceptor);
-        }
-
-		LOGINFO("Starting doormat on ports ", http_port ,",",
-				ssl_port,", with ", 1, " threads");
-
+		assert(_ssl_ctx != nullptr);
+		start_accept(*_ssl_ctx, *ssl_acceptor);
 	}
+
+	LOGINFO("Starting doormat on ports ", http_port ,",", ssl_port,", with ", 1, " threads");
 }
 
 void http_server::stop( ) noexcept
@@ -163,18 +153,19 @@ tcp_acceptor http_server::make_acceptor(boost::asio::io_service& io, tcp::endpoi
 	if(!ec)
 		acceptor.bind(endpoint, ec);
 	if(!ec)
-		acceptor.listen(_backlog, ec);
+		acceptor.listen(socket_base::max_connections, ec);
 
 	return acceptor;
 }
 
-void http_server::listen_on(boost::asio::io_service &io, const uint16_t &port, bool ssl )
+void http_server::listen(boost::asio::io_service &io, bool ssl )
 {
-	tcp::resolver resolver(io);
+    auto port = (ssl) ? ssl_port : http_port;
+    auto& acceptor = (ssl) ? ssl_acceptor : plain_acceptor;
+    tcp::resolver resolver(io);
     //make the interface addr. parametric in the constructor.
 	tcp::resolver::query query("0.0.0.0", to_string(port));
 
-	auto& acceptor = (ssl) ? ssl_acceptor : plain_acceptor;
 
 	boost::system::error_code ec;
 	auto it = resolver.resolve(query, ec);
