@@ -21,6 +21,7 @@
 #include "requests_manager/client_wrapper.h"
 
 #include "../deps/cynnypp/include/cynnypp/async_fs.hpp"
+#include "network/communicator/dns_communicator_factory.h"
 
 
 namespace doormat
@@ -207,9 +208,19 @@ int doormat( int argc, char** argv )
 		new endpoints::chain_factory( node_factory ) );
 	
 	//Main loop
-	doormat_srv->start(main_init);
+	doormat_srv->start(service::locator::service_pool().get_io_service());
+    auto thread_init_local = [](boost::asio::io_service& ios)
+    {
+        using namespace service;
+        locator::stats_manager().register_handler();
 
-	//Stopping
+        auto&& cw = locator::configuration();
+        auto il = new logging::inspector_log{ cw.get_log_path(), "inspector", cw.inspector_active() };
+        initializer::set_inspector_log(il);
+        initializer::set_communicator_factory(new network::dns_communicator_factory());
+    };
+    service::locator::service_pool().run(std::move(thread_init_local), std::move(main_init));
+    //Stopping
 	doormat_srv->stop();
 
 	rv = EXIT_SUCCESS;

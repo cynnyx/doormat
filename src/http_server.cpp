@@ -1,9 +1,5 @@
 #include <boost/lexical_cast.hpp>
 #include "http_server.h"
-#include "service_locator/service_initializer.h"
-#include "utils/log_wrapper.h"
-#include "network/cloudia_pool.h"
-#include "network/communicator/dns_communicator_factory.h"
 
 using namespace std;
 using namespace boost::asio;
@@ -35,25 +31,25 @@ http_server::http_server(size_t read_timeout, size_t connect_timeout, uint16_t s
 	 _ssl{sni.load_certificates()},
      ssl_port{ssl_port},
      http_port{http_port}
+{}
+
+void http_server::start(boost::asio::io_service &io) noexcept
 {
-	if(_ssl)
-	{
-		_ssl_ctx = &(sni.begin()->context);
+    if(running) return;
+    if(_ssl)
+    {
+        _ssl_ctx = &(sni.begin()->context);
 
-		for( auto&& iter = sni.begin(); iter != sni.end(); ++iter )
-			_handlers.register_protocol_selection_callbacks(iter->context.native_handle());
+        for(auto&& iter = sni.begin(); iter != sni.end(); ++iter)
+            _handlers.register_protocol_selection_callbacks(iter->context.native_handle());
 
-		auto port = ssl_port;
-		listen_on(port, true );
-	}
+        auto port = ssl_port;
+        listen_on(io, port, true);
+    }
 
-	auto porth = http_port;
-	listen_on(porth);
-}
+    auto porth = http_port;
+    listen_on(io, porth);
 
-void http_server::start(io_service_pool::main_init_fn_t main_init,
-                        io_service_pool::thread_init_fn_t thread_init) noexcept
-{
 	if(!running)
 	{
 		running = true;
@@ -65,24 +61,9 @@ void http_server::start(io_service_pool::main_init_fn_t main_init,
             start_accept(*_ssl_ctx, *ssl_acceptor);
         }
 
-        auto thread_init_local = [ti=std::move(thread_init)](boost::asio::io_service& ios)
-		{
-			using namespace service;
-			locator::stats_manager().register_handler();
-// 			initializer::set_socket_pool(new network::magnet(1));
-
-			auto&& cw = locator::configuration();
-			auto il = new logging::inspector_log{ cw.get_log_path(), "inspector", cw.inspector_active() };
-			initializer::set_inspector_log(il);
-			initializer::set_communicator_factory(new network::dns_communicator_factory());
-            if(ti)
-                ti(ios);
-		};
-
 		LOGINFO("Starting doormat on ports ", http_port ,",",
 				ssl_port,", with ", 1, " threads");
 
-        service::locator::service_pool().run(std::move(thread_init_local), std::move(main_init));
 	}
 }
 
@@ -168,9 +149,11 @@ void http_server::start_accept(tcp_acceptor& acceptor)
 	});
 }
 
-tcp_acceptor http_server::make_acceptor(tcp::endpoint endpoint, boost::system::error_code& ec)
+tcp_acceptor http_server::make_acceptor(boost::asio::io_service& io, tcp::endpoint endpoint, boost::system::error_code& ec)
 {
-	auto acceptor = tcp::acceptor(service::locator::service_pool().get_io_service());
+    //this is the point where we introduce the huge dependency from the external service_pool.
+    //
+	auto acceptor = tcp::acceptor(io);
 	int set = 1;
 	acceptor.open(endpoint.protocol(), ec);
 	if(setsockopt(acceptor.native_handle(), SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &set, sizeof(set)) != 0)
@@ -185,9 +168,10 @@ tcp_acceptor http_server::make_acceptor(tcp::endpoint endpoint, boost::system::e
 	return acceptor;
 }
 
-void http_server::listen_on(const uint16_t &port, bool ssl )
+void http_server::listen_on(boost::asio::io_service &io, const uint16_t &port, bool ssl )
 {
-	tcp::resolver resolver(service::locator::service_pool().get_io_service());
+	tcp::resolver resolver(io);
+    //make the interface addr. parametric in the constructor.
 	tcp::resolver::query query("0.0.0.0", to_string(port));
 
 	auto& acceptor = (ssl) ? ssl_acceptor : plain_acceptor;
@@ -198,7 +182,7 @@ void http_server::listen_on(const uint16_t &port, bool ssl )
 	{
 		for (; it != tcp::resolver::iterator(); ++it)
 		{
-            auto _acceptor = make_acceptor(*it, ec);
+            auto _acceptor = make_acceptor(io, *it, ec);
             if(!ec)
                 acceptor = std::move(_acceptor);
 		}

@@ -49,13 +49,12 @@ class http_server : private boost::noncopyable
 	void start_accept(tcp_acceptor&);
 	void start_accept(ssl_context& , tcp_acceptor& );
 
-	tcp_acceptor make_acceptor(boost::asio::ip::tcp::endpoint endpoint, boost::system::error_code&);
-	void listen_on( const uint16_t &port, bool ssl = false );
+	tcp_acceptor make_acceptor(boost::asio::io_service &io, boost::asio::ip::tcp::endpoint endpoint, boost::system::error_code&);
+	void listen_on(boost::asio::io_service &io, const uint16_t &port, bool ssl = false );
 
 public:
 	explicit http_server(size_t read_timeout, size_t connect_timeout, uint16_t ssl_port = 443, uint16_t http_port = 80);
-    void start(io_service_pool::main_init_fn_t main_init,
-                io_service_pool::thread_init_fn_t thread_init = {}) noexcept;
+    void start(boost::asio::io_service &io) noexcept;
 	void stop() noexcept;
 
 };
