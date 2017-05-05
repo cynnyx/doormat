@@ -98,12 +98,10 @@ void http_server::start_accept(ssl_context& ssl_ctx, tcp_acceptor& acceptor)
                 }
                 if (!ec)
 				{
-                    auto conn = std::make_shared<ssl_connector>(_connect_timeout, _read_timeout, socket);
-					auto h = _handlers.negotiate_handler(conn->socket().native_handle());
+                    //auto conn = std::make_shared<ssl_connector>(_connect_timeout, _read_timeout, socket);
+					auto h = _handlers.negotiate_handler(socket, _connect_timeout, _read_timeout);
 					if(h != nullptr)
 					{
-						conn->handler( h );
-						conn->start(true);
 						return;
 					}
 				}
@@ -135,11 +133,8 @@ void http_server::start_accept(tcp_acceptor& acceptor)
 
 		if (!ec)
 		{
-			auto conn = std::make_shared<tcp_connector>(_connect_timeout, _read_timeout, socket);
-			//Assume only HTTP1.1 can land here
-			auto h = _handlers.build_handler(ht_h1);
-			conn->handler( h );
-			conn->start();
+			//auto conn = std::make_shared<tcp_connector>(_connect_timeout, _read_timeout, socket);
+			auto h = _handlers.build_handler(ht_h1, http::proto_version::UNSET, _connect_timeout, _read_timeout, socket);
 			return start_accept(acceptor);
 		}
 		else LOGERROR(ec.message());

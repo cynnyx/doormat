@@ -11,6 +11,7 @@
 #include "../configuration/configuration_wrapper.h"
 
 #include <string>
+#include "../connector.h"
 
 using namespace std;
 
@@ -81,16 +82,18 @@ void handler_factory::register_protocol_selection_callbacks(SSL_CTX* ctx)
 	SSL_CTX_set_alpn_select_cb(ctx, alpn_select_cb, nullptr);
 }
 
-std::shared_ptr<handler_interface> handler_factory::negotiate_handler(const SSL *ssl) const noexcept
+std::shared_ptr<handler_interface> handler_factory::negotiate_handler(std::shared_ptr<ssl_socket> sck, interval connect_timeout, interval read_timeout) const noexcept
 {
 	const unsigned char* proto{nullptr};
 	unsigned int len{0};
 
+    const SSL *ssl_handle = sck->native_handle();
+
 	//ALPN
-	SSL_get0_alpn_selected(ssl, &proto, &len);
+	SSL_get0_alpn_selected(ssl_handle, &proto, &len);
 	if( !len )
 		//NPN
-		SSL_get0_next_proto_negotiated(ssl, &proto, &len);
+		SSL_get0_next_proto_negotiated(ssl_handle, &proto, &len);
 
 
 	handler_type type{ht_h1};
@@ -110,7 +113,7 @@ std::shared_ptr<handler_interface> handler_factory::negotiate_handler(const SSL 
 	http::proto_version version = (type == ht_h2) ? http::proto_version::HTTP20 : ((proto == nullptr ||   proto[len-1] == '0') ? http::proto_version::HTTP10 : http::proto_version::HTTP11);
 
 
-	return build_handler( type , version );
+	return build_handler( type , version, connect_timeout, read_timeout, sck);
 }
 
 boost::asio::ip::address handler_interface::find_origin() const
@@ -119,19 +122,36 @@ boost::asio::ip::address handler_interface::find_origin() const
     return {};
 }
 
-std::shared_ptr<handler_interface> handler_factory::build_handler(handler_type type, http::proto_version proto) const noexcept
+std::shared_ptr<handler_interface> handler_factory::build_handler(handler_type type, http::proto_version proto, interval _connect_timeout, interval _read_timeout, std::shared_ptr<tcp_socket> socket) const noexcept
 {
-	switch(type)
-	{
-		case ht_h1:
-			LOGDEBUG("HTTP1 selected");
-			return std::make_shared<handler_http1>( proto );
-		case ht_h2:
-			LOGTRACE("HTTP2 NG selected");
-			return std::make_shared<http2::session>();
-		case ht_unknown: return nullptr;
-	}
-	return nullptr;
+    auto h = make_handler(type, proto);
+    auto conn = std::make_shared<connector<tcp_socket>>(_connect_timeout, _read_timeout, socket);
+    conn->handler(h);
+    conn->start(true);
+    return h;
+}
+
+std::shared_ptr<handler_interface> handler_factory::build_handler(handler_type type, http::proto_version proto, interval _connect_timeout, interval _read_timeout, std::shared_ptr<ssl_socket> socket) const noexcept
+{
+    auto conn = std::make_shared<connector<ssl_socket>>(_connect_timeout, _read_timeout, socket);
+    auto h = make_handler(type, proto);
+    conn->handler( h );
+    conn->start(true);
+    return h;
+}
+
+std::shared_ptr<handler_interface> handler_factory::make_handler(handler_type type, http::proto_version proto ) const noexcept {
+    switch(type)
+    {
+        case ht_h1:
+            LOGDEBUG("HTTP1 selected");
+            return std::make_shared<handler_http1>( proto );
+        case ht_h2:
+            LOGTRACE("HTTP2 NG selected");
+            return std::make_shared<http2::session>();
+        case ht_unknown: return nullptr;
+    }
+    return nullptr;
 }
 
 void handler_interface::initialize_callbacks(node_interface &cor)

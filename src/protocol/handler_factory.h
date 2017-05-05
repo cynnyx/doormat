@@ -3,6 +3,7 @@
 #include <memory>
 #include <functional>
 #include <boost/asio.hpp>
+#include <boost/asio/ssl.hpp>
 #include "../../deps/openssl/include/openssl/ssl.h"
 
 #include "../http/http_commons.h"
@@ -17,6 +18,7 @@ namespace http
 
 namespace server
 {
+using interval = boost::posix_time::time_duration;
 
 constexpr const size_t MAXINBYTESPERLOOP{8192};
 
@@ -28,6 +30,9 @@ enum handler_type
 };
 
 class connector_interface;
+using tcp_socket = boost::asio::ip::tcp::socket;
+using ssl_socket = boost::asio::ssl::stream<tcp_socket>;
+
 
 /**
  * @note This "interface" violates all SOLID paradigm
@@ -72,10 +77,13 @@ public :
 
 class handler_factory
 {
+    std::shared_ptr<handler_interface> make_handler(handler_type, http::proto_version) const noexcept;
+
 public:
 	void register_protocol_selection_callbacks(SSL_CTX* ctx);
-	std::shared_ptr<handler_interface> negotiate_handler(const SSL* ssl) const noexcept;
-	std::shared_ptr<handler_interface> build_handler(handler_type, http::proto_version vers = http::proto_version::UNSET) const noexcept;
+	std::shared_ptr<handler_interface> negotiate_handler(std::shared_ptr<ssl_socket> s,interval, interval) const noexcept;
+    std::shared_ptr<handler_interface> build_handler(handler_type, http::proto_version vers, interval, interval, std::shared_ptr<ssl_socket> s) const noexcept;
+	std::shared_ptr<handler_interface> build_handler(handler_type, http::proto_version vers, interval, interval, std::shared_ptr<tcp_socket> socket) const noexcept;
 };
 
 } //namespace
