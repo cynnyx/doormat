@@ -145,8 +145,6 @@ void http_server::start_accept(tcp_acceptor& acceptor)
 
 tcp_acceptor http_server::make_acceptor(boost::asio::io_service& io, tcp::endpoint endpoint, boost::system::error_code& ec)
 {
-    //this is the point where we introduce the huge dependency from the external service_pool.
-    //
 	auto acceptor = tcp::acceptor(io);
 	int set = 1;
 	acceptor.open(endpoint.protocol(), ec);
