@@ -208,6 +208,13 @@ int doormat( int argc, char** argv )
 		new endpoints::chain_factory( node_factory ) );
 	
 	//Main loop
+	doormat_srv->on_client_connect([](auto a){
+		a->on_request([](int a, int b){
+            std::cout << "received request" << a << " and " << b << std::endl;
+        });
+	});
+
+
 	doormat_srv->start(service::locator::service_pool().get_io_service());
     auto thread_init_local = [](boost::asio::io_service& ios)
     {

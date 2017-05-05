@@ -131,6 +131,10 @@ std::shared_ptr<handler_interface> handler_factory::build_handler(handler_type t
     return h;
 }
 
+void handler_interface::close() {
+    if(auto s = _connector.lock()) s->close();
+}
+
 std::shared_ptr<handler_interface> handler_factory::build_handler(handler_type type, http::proto_version proto, interval _connect_timeout, interval _read_timeout, std::shared_ptr<ssl_socket> socket) const noexcept
 {
     auto conn = std::make_shared<connector<ssl_socket>>(_connect_timeout, _read_timeout, socket);

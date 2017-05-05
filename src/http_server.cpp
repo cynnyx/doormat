@@ -1,6 +1,5 @@
 #include <boost/lexical_cast.hpp>
 #include "http_server.h"
-
 using namespace std;
 using namespace boost::asio;
 using namespace boost::asio::ip;
@@ -31,6 +30,11 @@ http_server::http_server(size_t read_timeout, size_t connect_timeout, uint16_t s
      ssl_port{ssl_port},
      http_port{http_port}
 {}
+
+void http_server::on_client_connect(connect_callback cb) noexcept
+{
+    connect_cb.emplace(std::move(cb));
+}
 
 void http_server::start(boost::asio::io_service &io) noexcept
 {
@@ -100,9 +104,9 @@ void http_server::start_accept(ssl_context& ssl_ctx, tcp_acceptor& acceptor)
 				{
                     //auto conn = std::make_shared<ssl_connector>(_connect_timeout, _read_timeout, socket);
 					auto h = _handlers.negotiate_handler(socket, _connect_timeout, _read_timeout);
-					if(h != nullptr)
+					if(h != nullptr && connect_cb)
 					{
-						return;
+						return (*connect_cb)(h);
 					}
 				}
 
@@ -135,6 +139,10 @@ void http_server::start_accept(tcp_acceptor& acceptor)
 		{
 			//auto conn = std::make_shared<tcp_connector>(_connect_timeout, _read_timeout, socket);
 			auto h = _handlers.build_handler(ht_h1, http::proto_version::UNSET, _connect_timeout, _read_timeout, socket);
+            if(connect_cb)
+            {
+                (*connect_cb)(h);
+            }
 			return start_accept(acceptor);
 		}
 		else LOGERROR(ec.message());

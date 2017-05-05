@@ -30,6 +30,7 @@ struct MockConnector : public server::connector_interface
 	MockConnector(wcb& cb): write_cb(cb){}
 	void do_write() override { write_cb(); }
 	void do_read() override {}
+	void close() override {}
 	boost::asio::ip::address origin() const override { return boost::asio::ip::address::from_string("127.0.0.1");}
 	bool is_ssl() const noexcept override { return true; }
 };

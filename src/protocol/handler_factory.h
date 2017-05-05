@@ -5,7 +5,8 @@
 #include <boost/asio.hpp>
 #include <boost/asio/ssl.hpp>
 #include "../../deps/openssl/include/openssl/ssl.h"
-
+#include <iostream>
+#include <experimental/optional>
 #include "../http/http_commons.h"
 
 class dstring;
@@ -33,6 +34,18 @@ class connector_interface;
 using tcp_socket = boost::asio::ip::tcp::socket;
 using ssl_socket = boost::asio::ssl::stream<tcp_socket>;
 
+struct http_connection {
+    using request_callback = std::function<void(int, int)>;
+    void on_request(request_callback rcb) { request_cb.emplace(std::move(rcb)); }
+    virtual void close() = 0;
+    virtual ~http_connection() = default;
+    std::experimental::optional<request_callback> request_cb;
+protected:
+    void request_received(int i)
+    {
+        if(request_cb) (*request_cb)(i, i);
+    }
+};
 
 /**
  * @note This "interface" violates all SOLID paradigm
@@ -40,13 +53,14 @@ using ssl_socket = boost::asio::ssl::stream<tcp_socket>;
  *
  * At least three responsabilities found.
  */
-class handler_interface : public std::enable_shared_from_this<handler_interface>
+class handler_interface : public std::enable_shared_from_this<handler_interface>, public http_connection
 {
     std::weak_ptr<connector_interface> _connector;
 protected:
 	virtual void do_write() = 0;
 	virtual void on_connector_nulled() = 0;
 public :
+	void close() override;
 	handler_interface() = default;
 	virtual ~handler_interface() = default;
 

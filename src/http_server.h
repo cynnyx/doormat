@@ -21,8 +21,10 @@ using tcp_acceptor = boost::asio::ip::tcp::acceptor;
 using tcp_connector = connector<tcp_socket>;
 using ssl_connector = connector<ssl_socket>;
 
+
 class http_server
 {
+	using connect_callback = std::function<void(std::shared_ptr<http_connection>)>;
 	std::atomic_bool running{false};
 
 	handler_factory _handlers;
@@ -46,10 +48,19 @@ class http_server
 	static tcp_acceptor make_acceptor(boost::asio::io_service &io, boost::asio::ip::tcp::endpoint endpoint, boost::system::error_code&);
 	void listen(boost::asio::io_service &io, bool ssl = false );
 
+
+	std::experimental::optional<connect_callback> connect_cb;
+
 public:
 	explicit http_server(size_t read_timeout, size_t connect_timeout, uint16_t ssl_port = 443, uint16_t http_port = 80);
-    http_server(const http_server&) = delete;
+
+	http_server(const http_server&) = delete;
 	http_server& operator=(const http_server&) = delete;
+
+	void on_client_connect(connect_callback cb) noexcept;
+
+
+
 	void start(boost::asio::io_service &io) noexcept;
 	void stop() noexcept;
 

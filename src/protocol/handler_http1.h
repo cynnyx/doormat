@@ -48,7 +48,7 @@ public:
 
 	void on_eom() override;
 	void on_error(const int&) override;
-
+	virtual ~handler_http1() = default;
 protected:
 	void do_write() override;
 	void on_connector_nulled() override;

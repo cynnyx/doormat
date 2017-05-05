@@ -34,7 +34,7 @@ public:
 	virtual boost::asio::ip::address origin() const = 0;
 	virtual bool is_ssl() const noexcept = 0;
 	reusable_buffer<MAXINBYTESPERLOOP> _rb;
-
+	virtual void close()=0;
 protected:
 	dstring _out;
 };
@@ -83,6 +83,11 @@ class connector: public connector_interface,
 	}
 
 public:
+
+	void close() override
+	{
+		stop();
+	}
 	/// Construct a connection with the given io_service.
 	explicit connector(const interval& hto, const interval &ttl, std::shared_ptr<socket_type> socket) noexcept
 		: _socket(std::move(socket))

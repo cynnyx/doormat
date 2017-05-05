@@ -26,6 +26,7 @@ bool handler_http1::start() noexcept
 {
 	auto scb = [this](http::http_structured_data** data)
 	{
+		request_received(100);
 		th.emplace_back(this->shared_from_this(), connector()->is_ssl() );
 		*data = &(th.back().get_data());
 		(*data)->origin( find_origin() );
