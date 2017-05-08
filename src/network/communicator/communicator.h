@@ -20,22 +20,22 @@ namespace network
 class communicator_interface
 {
 public:
-    using read_cb_t = std::function<void(const char *, size_t)>;
-    using error_cb_t = std::function<void(errors::error_code)>;
-    communicator_interface() = default;
+	using read_cb_t = std::function<void(const char *, size_t)>;
+	using error_cb_t = std::function<void(errors::error_code)>;
+	communicator_interface() = default;
 
-    void set_callbacks(read_cb_t rcb, error_cb_t ecb)
-    {
-        read_callback = std::move(rcb);
-        error_callback = std::move(ecb);
-    }
-    virtual void write(dstring &&)=0;
-    virtual void start()=0;
-    virtual void stop(bool force=false)=0;
-    virtual ~communicator_interface() = default;
+	void set_callbacks(read_cb_t rcb, error_cb_t ecb)
+	{
+		read_callback = std::move(rcb);
+		error_callback = std::move(ecb);
+	}
+	virtual void write(dstring &&)=0;
+	virtual void start()=0;
+	virtual void stop(bool force=false)=0;
+	virtual ~communicator_interface() = default;
 protected:
-    read_cb_t read_callback;
-    error_cb_t error_callback;
+	read_cb_t read_callback;
+	error_cb_t error_callback;
 };
 
 /**
@@ -62,14 +62,14 @@ public:
 		timeout_ms{timeout_ms}, timeout{service::locator::service_pool().get_thread_io_service()}
 	{
 		assert(socket);
-        set_callbacks(std::move(read_callback), std::move(error_callback));
+		set_callbacks(std::move(read_callback), std::move(error_callback));
 	}
 
 
-    communicator(std::shared_ptr<socket_t> s, int64_t timeout_ms) :
-        communicator_interface{}, socket{std::move(s)}, timeout_ms{timeout_ms},
-        timeout{service::locator::service_pool().get_thread_io_service()}
-    {}
+	communicator(std::shared_ptr<socket_t> s, int64_t timeout_ms) :
+		communicator_interface{}, socket{std::move(s)}, timeout_ms{timeout_ms},
+		timeout{service::locator::service_pool().get_thread_io_service()}
+	{}
 
 	communicator(const communicator& c) = delete;
 
@@ -144,7 +144,7 @@ private:
 		++waiting_count;
 		LOGTRACE("write of size ", queue.front().size(), " has been scheduled");
 		boost::asio::async_write(*socket, boost::asio::buffer(queue.front().cdata(), queue.front().size()),
-			[this](const boost::system::error_code &ec, size_t size)
+								 [this](const boost::system::error_code &ec, size_t size)
 		{
 			LOGTRACE("wrote ", size, "bytes with return status ", ec.message());
 			queue.pop();
@@ -174,25 +174,25 @@ private:
 		auto buf = _rb.reserve();
 		LOGTRACE("read operation pending");
 		socket->async_read_some(boost::asio::mutable_buffers_1(buf),
-			[this](const boost::system::error_code &ec, size_t size) mutable
+								[this](const boost::system::error_code &ec, size_t size) mutable
+		{
+			LOGTRACE("read ", size, " bytes");
+			handle_timeout();
+			--waiting_count;
+			if(!ec)
 			{
-				LOGTRACE("read ", size, " bytes");
-				handle_timeout();
-				--waiting_count;
-				if(!ec)
-				{
-					auto tmp = _rb.produce(size);
-					if(!stop_delivered) read_callback(tmp, size);
-					_rb.consume(tmp + size);
-					perform_read();
-				}
-				else if(ec != boost::system::errc::operation_canceled)
-				{
-					LOGDEBUG("error while reading from the remote endpoint: ", ec.message(), "; this will trigger a communicator stop");
-					set_error(INTERNAL_ERROR_LONG(500));
-				}
-				manage_termination();
-			});
+				auto tmp = _rb.produce(size);
+				if(!stop_delivered) read_callback(tmp, size);
+				_rb.consume(tmp + size);
+				perform_read();
+			}
+			else if(ec != boost::system::errc::operation_canceled)
+			{
+				LOGDEBUG("error while reading from the remote endpoint: ", ec.message(), "; this will trigger a communicator stop");
+				set_error(INTERNAL_ERROR_LONG(500));
+			}
+			manage_termination();
+		});
 	}
 
 
