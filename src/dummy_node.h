@@ -80,4 +80,21 @@ public:
 	}
 };
 
+class tls_test_node : public node_interface
+{
+public:
+	using node_interface::node_interface;
+	void on_request_preamble(http::http_request&& msg)
+	{
+		msg.ssl(true);
+		msg.schema("https");
+		msg.urihost("localhost");
+		msg.port("4000");
+		msg.setParameter("hostname", "localhost");
+		msg.setParameter("port", "4000"); 
+		node_interface::on_request_preamble( std::move( msg ) );
+	}
+};
+
+
 

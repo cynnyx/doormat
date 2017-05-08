@@ -5,6 +5,7 @@
 #include <queue>
 #include <functional>
 #include <memory>
+#include <type_traits>
 #include "../../chain_of_responsibility/error_code.h"
 #include "../../utils/dstring.h"
 #include "../../utils/log_wrapper.h"
@@ -49,6 +50,36 @@ protected:
 template<class socket_t = boost::asio::ip::tcp::socket, size_t reusable_buffer_size = 8192>
 class communicator final : public communicator_interface
 {
+	template<class socket_type>
+	std::enable_if_t<std::is_same<socket_type,boost::asio::ip::tcp::socket>::value> do_close()
+	{
+		socket->close();
+	}
+	
+	template<class socket_type>
+	std::enable_if_t<not std::is_same<socket_type,boost::asio::ip::tcp::socket>::value> do_close()
+	{
+		// We close the socket maybe too soon!
+		socket->async_shutdown( [this](const boost::system::error_code& ec )
+		{
+			if ( ec ) LOGERROR(ec.message());
+		});
+	}
+	
+	template<class socket_type>
+	std::enable_if_t<std::is_same<socket_type,boost::asio::ip::tcp::socket>::value> do_shutdown()
+	{
+		boost::system::error_code bec;
+		socket->shutdown(boost::asio::socket_base::shutdown_type::shutdown_both, bec);
+		if ( bec )
+			LOGERROR(bec.message());
+	}
+	
+	template<class socket_type>
+	std::enable_if_t<not std::is_same<socket_type,boost::asio::ip::tcp::socket>::value> do_shutdown()
+	{
+		do_close<socket_type>();
+	}
 public:
 	/** Creates a new communicator
 	 * \param s the socket wrapped by the communicator
@@ -64,7 +95,6 @@ public:
 		assert(socket);
         set_callbacks(std::move(read_callback), std::move(error_callback));
 	}
-
 
     communicator(std::shared_ptr<socket_t> s, int64_t timeout_ms) :
         communicator_interface{}, socket{std::move(s)}, timeout_ms{timeout_ms},
@@ -120,7 +150,8 @@ public:
 		if ( stopping ) return;
 		if(queue.empty() || force)
 		{
-			socket->close();
+			//socket->close();
+			do_close<socket_t>();
 			timeout.cancel();
 		}
 		stopping = true;
@@ -240,7 +271,6 @@ private:
 			stop_delivered = true;
 			return error_callback(errcode);
 		}
-
 	}
 
 	void set_error(errors::error_code ec) noexcept
@@ -248,8 +278,9 @@ private:
 		if(errcode.code() == 0)
 		{
 			errcode = ec;
-			boost::system::error_code bec;
-			if(socket) socket->shutdown(boost::asio::socket_base::shutdown_type::shutdown_both, bec);
+			//boost::system::error_code bec;
+			//if(socket) socket->shutdown(boost::asio::socket_base::shutdown_type::shutdown_both, bec);
+			if ( socket ) do_shutdown<socket_t>();
 		}
 	}
 
