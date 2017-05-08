@@ -1,12 +1,11 @@
 #pragma once
 
 #include <string>
-#include <vector>
 #include <memory>
 #include <atomic>
 
+#include <experimental/optional>
 #include <boost/asio.hpp>
-#include <boost/noncopyable.hpp>
 #include <boost/system/error_code.hpp>
 
 #include "connector.h"
@@ -22,34 +21,36 @@ using tcp_acceptor = boost::asio::ip::tcp::acceptor;
 using tcp_connector = connector<tcp_socket>;
 using ssl_connector = connector<ssl_socket>;
 
-class http_server : private boost::noncopyable
+class http_server
 {
 	std::atomic_bool running{false};
-	size_t _backlog;
-	size_t _threads;
 
 	handler_factory _handlers;
 
 	interval _read_timeout;
 	interval _connect_timeout;
 
-	ssl_context* _ssl_ctx = nullptr; // a non-owner pointer
+	ssl_context* _ssl_ctx = nullptr; // a non-owner pointer to the ssl_context
 	ssl_utils::sni_solver sni;
 	bool _ssl;
 
-	std::vector<tcp_acceptor> _acceptors;
-	std::vector<tcp_acceptor> _ssl_acceptors;
+	uint16_t ssl_port;
+	uint16_t http_port;
+
+	std::experimental::optional<tcp_acceptor> plain_acceptor;
+	std::experimental::optional<tcp_acceptor> ssl_acceptor;
 
 	void start_accept(tcp_acceptor&);
 	void start_accept(ssl_context& , tcp_acceptor& );
 
-	tcp_acceptor make_acceptor(boost::asio::ip::tcp::endpoint endpoint, boost::system::error_code&);
-	void listen_on( const uint16_t &port, bool ssl = false );
+	static tcp_acceptor make_acceptor(boost::asio::io_service &io, boost::asio::ip::tcp::endpoint endpoint, boost::system::error_code&);
+	void listen(boost::asio::io_service &io, bool ssl = false );
 
 public:
-	explicit http_server();
-    void start(io_service_pool::main_init_fn_t main_init,
-                io_service_pool::thread_init_fn_t thread_init = {}) noexcept;
+	explicit http_server(size_t read_timeout, size_t connect_timeout, uint16_t ssl_port = 443, uint16_t http_port = 80);
+    http_server(const http_server&) = delete;
+	http_server& operator=(const http_server&) = delete;
+	void start(boost::asio::io_service &io) noexcept;
 	void stop() noexcept;
 
 };

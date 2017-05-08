@@ -1,9 +1,5 @@
 #include <boost/lexical_cast.hpp>
 #include "http_server.h"
-#include "service_locator/service_initializer.h"
-#include "utils/log_wrapper.h"
-#include "network/cloudia_pool.h"
-#include "network/communicator/dns_communicator_factory.h"
 
 using namespace std;
 using namespace boost::asio;
@@ -28,64 +24,37 @@ void log_ssl_errors(const boost::system::error_code& ec)
 	LOGERROR(err);
 }
 
-http_server::http_server()
-	: _backlog( socket_base::max_connections )
-	, _threads(service::locator::configuration().get_thread_number())
-	, _read_timeout(boost::posix_time::milliseconds( service::locator::configuration().get_operation_timeout() ) )
-	, _connect_timeout( boost::posix_time::milliseconds(
-				service::locator::configuration().get_client_connection_timeout() ) )
-	, _ssl{sni.load_certificates()}
+http_server::http_server(size_t read_timeout, size_t connect_timeout, uint16_t ssl_port, uint16_t http_port)
+	: _read_timeout(boost::posix_time::milliseconds(read_timeout)),
+	 _connect_timeout( boost::posix_time::milliseconds(connect_timeout)),
+	 _ssl{sni.load_certificates()},
+     ssl_port{ssl_port},
+     http_port{http_port}
+{}
+
+void http_server::start(boost::asio::io_service &io) noexcept
 {
-	if(_ssl)
+    if(running) return;
+    running = true;
+    if(_ssl)
+    {
+        _ssl_ctx = &(sni.begin()->context);
+
+        for(auto&& iter = sni.begin(); iter != sni.end(); ++iter)
+            _handlers.register_protocol_selection_callbacks(iter->context.native_handle());
+        listen(io, true);
+    }
+
+    listen(io);
+
+	if(plain_acceptor) start_accept(*plain_acceptor);
+	if(ssl_acceptor)
 	{
-		_ssl_ctx = &(sni.begin()->context);
-
-		for( auto&& iter = sni.begin(); iter != sni.end(); ++iter )
-			_handlers.register_protocol_selection_callbacks(iter->context.native_handle());
-
-		auto port = service::locator::configuration().get_port();
-		listen_on(port, true );
+		assert(_ssl_ctx != nullptr);
+		start_accept(*_ssl_ctx, *ssl_acceptor);
 	}
 
-	auto porth = service::locator::configuration().get_port_h();
-	listen_on(porth);
-}
-
-void http_server::start(io_service_pool::main_init_fn_t main_init,
-                        io_service_pool::thread_init_fn_t thread_init) noexcept
-{
-	if(!running)
-	{
-		running = true;
-
-		for (auto &acceptor : _acceptors)
-			start_accept(acceptor);
-
-		for (auto &acceptor : _ssl_acceptors)
-		{
-			assert(_ssl_ctx != nullptr);
-			start_accept(*_ssl_ctx , acceptor);
-		}
-
-        auto thread_init_local = [ti=std::move(thread_init)](boost::asio::io_service& ios)
-		{
-			using namespace service;
-			locator::stats_manager().register_handler();
-// 			initializer::set_socket_pool(new network::magnet(1));
-
-			auto&& cw = locator::configuration();
-			auto il = new logging::inspector_log{ cw.get_log_path(), "inspector", cw.inspector_active() };
-			initializer::set_inspector_log(il);
-			initializer::set_communicator_factory(new network::dns_communicator_factory());
-            if(ti)
-                ti(ios);
-		};
-
-		LOGINFO("Starting doormat on ports ", service::locator::configuration().get_port(),",",
-				service::locator::configuration().get_port_h(),", with ", _threads, " threads");
-
-        service::locator::service_pool().run(std::move(thread_init_local), std::move(main_init));
-	}
+	LOGINFO("Starting doormat on ports ", http_port ,",", ssl_port,", with ", 1, " threads");
 }
 
 void http_server::stop( ) noexcept
@@ -93,12 +62,8 @@ void http_server::stop( ) noexcept
 	if(running)
 	{
 		running = false;
-
-		for (auto &acceptor : _acceptors)
-			acceptor.close();
-
-		for (auto &acceptor : _ssl_acceptors)
-			acceptor.close();
+		if(plain_acceptor) plain_acceptor->close();
+		if(ssl_acceptor) ssl_acceptor->close();
 	}
 }
 
@@ -117,17 +82,26 @@ void http_server::start_accept(ssl_context& ssl_ctx, tcp_acceptor& acceptor)
 
 		if (!ec)
 		{
-			auto conn = std::make_shared<ssl_connector>(_connect_timeout, _read_timeout, socket);
-			auto handshake_cb = [this, conn](const boost::system::error_code &ec)
+            auto connection_timer = std::make_shared<boost::asio::deadline_timer>(acceptor.get_io_service());
+            connection_timer->expires_from_now(_connect_timeout);
+            connection_timer->async_wait([socket, connection_timer](const boost::system::error_code &ec)
+            {
+                if(ec) return;
+                socket->shutdown();
+            });
+			auto handshake_cb = [this, connection_timer, socket](const boost::system::error_code &ec)
 			{
 				LOGTRACE("handshake_cb called");
-				if (!ec)
+				if(ec != boost::system::errc::operation_canceled)
+                {
+                    connection_timer->cancel();
+                }
+                if (!ec)
 				{
-					auto h = _handlers.negotiate_handler(conn->socket().native_handle());
+                    //auto conn = std::make_shared<ssl_connector>(_connect_timeout, _read_timeout, socket);
+					auto h = _handlers.negotiate_handler(socket, _connect_timeout, _read_timeout);
 					if(h != nullptr)
 					{
-						conn->handler( h );
-						conn->start(true);
 						return;
 					}
 				}
@@ -136,9 +110,7 @@ void http_server::start_accept(ssl_context& ssl_ctx, tcp_acceptor& acceptor)
 				if(ec.category() == boost::asio::error::get_ssl_category())
 					log_ssl_errors(ec);
 			};
-
-			conn->handshake_countdown();
-			conn->socket().async_handshake(ssl::stream_base::server, handshake_cb);
+            socket->async_handshake(ssl::stream_base::server, handshake_cb);
 		}
 		else LOGERROR(ec.message());
 
@@ -161,11 +133,8 @@ void http_server::start_accept(tcp_acceptor& acceptor)
 
 		if (!ec)
 		{
-			auto conn = std::make_shared<tcp_connector>(_connect_timeout, _read_timeout, socket);
-			//Assume only HTTP1.1 can land here
-			auto h = _handlers.build_handler(ht_h1);
-			conn->handler( h );
-			conn->start();
+			//auto conn = std::make_shared<tcp_connector>(_connect_timeout, _read_timeout, socket);
+			auto h = _handlers.build_handler(ht_h1, http::proto_version::UNSET, _connect_timeout, _read_timeout, socket);
 			return start_accept(acceptor);
 		}
 		else LOGERROR(ec.message());
@@ -174,29 +143,31 @@ void http_server::start_accept(tcp_acceptor& acceptor)
 	});
 }
 
-tcp_acceptor http_server::make_acceptor(tcp::endpoint endpoint, boost::system::error_code& ec)
+tcp_acceptor http_server::make_acceptor(boost::asio::io_service& io, tcp::endpoint endpoint, boost::system::error_code& ec)
 {
-	auto acceptor = tcp::acceptor(service::locator::service_pool().get_io_service());
+	auto acceptor = tcp::acceptor(io);
 	int set = 1;
 	acceptor.open(endpoint.protocol(), ec);
 	if(setsockopt(acceptor.native_handle(), SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &set, sizeof(set)) != 0)
 	{
-		LOGERROR("cannot set option SO_REUSEPORT on the socket; will execute in a sequential manner. Error is ", strerror(errno));
+		LOGERROR("cannot set option SO_REUSEPORT on the socket; doormat will execute in a sequential manner. Error is ", strerror(errno));
 	}
 	if(!ec)
 		acceptor.bind(endpoint, ec);
 	if(!ec)
-		acceptor.listen(_backlog, ec);
+		acceptor.listen(socket_base::max_connections, ec);
 
 	return acceptor;
 }
 
-void http_server::listen_on(const uint16_t &port, bool ssl )
+void http_server::listen(boost::asio::io_service &io, bool ssl )
 {
-	tcp::resolver resolver(service::locator::service_pool().get_io_service());
+    auto port = (ssl) ? ssl_port : http_port;
+    auto& acceptor = (ssl) ? ssl_acceptor : plain_acceptor;
+    tcp::resolver resolver(io);
+    //make the interface addr. parametric in the constructor.
 	tcp::resolver::query query("0.0.0.0", to_string(port));
 
-	auto& acceptors = ssl?_ssl_acceptors:_acceptors;
 
 	boost::system::error_code ec;
 	auto it = resolver.resolve(query, ec);
@@ -204,18 +175,14 @@ void http_server::listen_on(const uint16_t &port, bool ssl )
 	{
 		for (; it != tcp::resolver::iterator(); ++it)
 		{
-			for(size_t i = 0; i < _threads; ++i)
-			{
-				auto acceptor = make_acceptor(*it, ec);
-				if(!ec)
-					acceptors.push_back(std::move(acceptor));
-			}
+            auto _acceptor = make_acceptor(io, *it, ec);
+            if(!ec)
+                acceptor = std::move(_acceptor);
 		}
 	}
 
-	if(!acceptors.empty())
+	if(!acceptor)
 		ec.clear();
-
 
 	if(ec)
 	{

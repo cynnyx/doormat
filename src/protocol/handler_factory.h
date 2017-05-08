@@ -3,6 +3,7 @@
 #include <memory>
 #include <functional>
 #include <boost/asio.hpp>
+#include <boost/asio/ssl.hpp>
 #include "../../deps/openssl/include/openssl/ssl.h"
 
 #include "../http/http_commons.h"
@@ -17,6 +18,7 @@ namespace http
 
 namespace server
 {
+using interval = boost::posix_time::time_duration;
 
 constexpr const size_t MAXINBYTESPERLOOP{8192};
 
@@ -28,6 +30,9 @@ enum handler_type
 };
 
 class connector_interface;
+using tcp_socket = boost::asio::ip::tcp::socket;
+using ssl_socket = boost::asio::ssl::stream<tcp_socket>;
+
 
 /**
  * @note This "interface" violates all SOLID paradigm
@@ -35,9 +40,9 @@ class connector_interface;
  *
  * At least three responsabilities found.
  */
-class handler_interface
+class handler_interface : public std::enable_shared_from_this<handler_interface>
 {
-	connector_interface* _connector{nullptr};
+    std::weak_ptr<connector_interface> _connector;
 protected:
 	virtual void do_write() = 0;
 	virtual void on_connector_nulled() = 0;
@@ -47,9 +52,17 @@ public :
 
 	void initialize_callbacks(node_interface& cor);
 
-	connector_interface* connector() noexcept { return _connector; }
-	const connector_interface* connector() const noexcept { return _connector; }
-	void connector( connector_interface * conn);
+	std::shared_ptr<connector_interface> connector() noexcept
+    {
+        if(auto s = _connector.lock()) return s;
+        return nullptr;
+    }
+	const std::shared_ptr<connector_interface> connector() const noexcept
+    {
+        if(auto s = _connector.lock()) return s;
+        return nullptr;
+    }
+	void connector( std::shared_ptr<connector_interface> conn);
 	void notify_write() noexcept { do_write(); }
 	boost::asio::ip::address find_origin() const;
 
@@ -64,10 +77,13 @@ public :
 
 class handler_factory
 {
+    std::shared_ptr<handler_interface> make_handler(handler_type, http::proto_version) const noexcept;
+
 public:
 	void register_protocol_selection_callbacks(SSL_CTX* ctx);
-	handler_interface* negotiate_handler(const SSL* ssl) const noexcept;
-	handler_interface* build_handler(handler_type, http::proto_version vers = http::proto_version::UNSET) const noexcept;
+	std::shared_ptr<handler_interface> negotiate_handler(std::shared_ptr<ssl_socket> s,interval, interval) const noexcept;
+    std::shared_ptr<handler_interface> build_handler(handler_type, http::proto_version vers, interval, interval, std::shared_ptr<ssl_socket> s) const noexcept;
+	std::shared_ptr<handler_interface> build_handler(handler_type, http::proto_version vers, interval, interval, std::shared_ptr<tcp_socket> socket) const noexcept;
 };
 
 } //namespace

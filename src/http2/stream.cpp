@@ -46,8 +46,8 @@ stream& stream::operator=( stream&& o ) noexcept
 	return *this;
 }
 
-stream::stream( session* s,  std::function<void(stream*, session*)> des, std::int16_t prio ):
-	weight_{prio}, session_{s}, destructor{des}
+stream::stream( std::shared_ptr<server::handler_interface> s,  std::function<void(stream*, session*)> des, std::int16_t prio ):
+	weight_{prio}, s_owner{s}, session_{dynamic_cast<session *>(s_owner.get())}, destructor{des}
 {
 	LOGTRACE("stream ", this, " session", session_ );
 	assert(session_ != nullptr);
