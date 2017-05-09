@@ -31,7 +31,7 @@ http_request* connection::request_received(std::function<void(http_response&&)> 
 }
 
 
-std::tuple<std::function<void()>, std::function<void(dstring&&)>, std::function<void(dstring&&, dstring&&)>, std::function<void()>> connection::get_request_handlers()
+connection::request_handlers_t connection::get_request_handlers()
 {
 	auto hcb = [this](){ notify_headers();};
 	auto bcb = [this](dstring&&b){notify_body(std::move(b));};

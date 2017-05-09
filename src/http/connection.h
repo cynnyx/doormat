@@ -2,6 +2,7 @@
 #define DOORMAT_CONNECTION_H
 
 #include <functional>
+#include <tuple>
 
 #include "http_request.h"
 #include "http_response.h"
@@ -12,6 +13,12 @@ class response;
 
 struct connection : std::enable_shared_from_this<connection> {
 	using request_callback = std::function<void(std::shared_ptr<http::request>, std::shared_ptr<http::response>)>;
+	using request_handlers_t = std::tuple<
+		std::function<void()>,
+		std::function<void(dstring&&)>,
+		std::function<void(dstring&&, dstring&&)>,
+		std::function<void()>
+	>;
 	void on_request(request_callback rcb) { request_cb = std::move(rcb); }
 	virtual void close() = 0;
 	virtual ~connection() = default;
@@ -19,12 +26,7 @@ protected:
 	http_request *request_received();
 	http_request *request_received(std::function<void(http_response&&)>, std::function<void(dstring&&)>, std::function<void(dstring&&, dstring&&)>, std::function<void()>);
 
-	std::tuple<
-	std::function<void()>,
-	std::function<void(dstring&&)>,
-	std::function<void(dstring&&, dstring&&)>,
-	std::function<void()>
-	> get_request_handlers();
+	request_handlers_t get_request_handlers();
 
 	//TODO: make pure virtual as soon as we get to fix http2 implementation
 	virtual void notify_response_headers(http_response &&res){}
