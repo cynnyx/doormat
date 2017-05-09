@@ -91,6 +91,8 @@ void session::send_connection_header()
 
 stream* session::create_stream ( std::int32_t id )
 {
+
+
 	stream* stream_data = static_cast<stream*>( all.malloc( sizeof(stream), all.mem_user_data ) );
 	LOGTRACE(" Create stream: ", id, " address: ", stream_data );
 	new ( stream_data ) stream{ this->get_shared(), [] ( stream* s, session* sess )
@@ -101,6 +103,27 @@ stream* session::create_stream ( std::int32_t id )
 		} }; // The pointed object will commit suicide
 
 	stream_data->id( id );
+	auto r = request_received(
+			[stream_data](http::http_response&& res){
+				stream_data->on_header(std::move(res));
+			},
+			[stream_data](dstring&& b){
+				stream_data->on_body(std::move(b));
+			},
+			[stream_data](dstring &&k, dstring&&v) {
+				stream_data->on_trailer(std::move(k), std::move(v));
+			},
+			[stream_data]() {
+				stream_data->on_eom();
+			}
+	);
+	stream_data->set_request(r);
+	auto request_callbacks = get_request_handlers();
+	stream_data->_hcb = std::get<0>(request_callbacks);
+	stream_data->_bcb = std::get<1>(request_callbacks);
+	stream_data->_tcb = std::get<2>(request_callbacks);
+	stream_data->_ccb = std::get<3>(request_callbacks);
+
 	int rv = nghttp2_session_set_stream_user_data( session_data.get(), id, stream_data );
 	if ( rv != 0 ) LOGERROR ( "nghttp2_session_set_stream_user_data ",  nghttp2_strerror( rv ) );
 
