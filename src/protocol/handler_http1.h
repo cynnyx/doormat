@@ -53,6 +53,30 @@ protected:
 	void do_write() override;
 	void on_connector_nulled() override;
 private:
+
+    dstring serialization;
+
+    void notify_response_headers(http::http_response&& res) override
+    {
+        serialization.append(encoder.encode_header(res));
+		do_write();
+    }
+
+	void notify_response_body(dstring&& b) override {
+		serialization.append(encoder.encode_body(b));
+		do_write();
+	}
+
+	void notify_response_trailer(dstring&&k, dstring&&v){
+		serialization.append(encoder.encode_trailer(k, v));
+		do_write();
+	}
+
+	void notify_response_end(){
+		serialization.append(encoder.encode_eom());
+		do_write();
+	}
+
 	bool some_message_started( http::proto_version& proto ) const noexcept;
 	class transaction_handler
 	{
@@ -75,6 +99,7 @@ private:
 		{
 			// @todo This should be refactored
 			access.set_request_start();
+
 		}
 
 		~transaction_handler() noexcept
@@ -118,6 +143,8 @@ private:
 	};
 
 	std::list<transaction_handler> th;
+	http::http_codec encoder;
+
 };
 
 } //namespace

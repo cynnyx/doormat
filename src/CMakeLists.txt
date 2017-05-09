@@ -56,6 +56,8 @@ set(DOORMAT_COMMON_SOURCES
 	errors/error_factory.cpp
 	requests_manager/error_producer.cpp
 	requests_manager/client_wrapper.cpp
+	http/connection.cpp
+		http/request.cpp
 	)
 
 #

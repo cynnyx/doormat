@@ -22,8 +22,8 @@
 
 #include "../deps/cynnypp/include/cynnypp/async_fs.hpp"
 #include "network/communicator/dns_communicator_factory.h"
-
-
+#include "http/request.h"
+#include "http/response.h"
 namespace doormat
 {
 
@@ -34,7 +34,7 @@ static std::unique_ptr<node_interface> node_factory()
 	return make_unique_chain<node_interface, /*dummy_node,*/ test_node, nodes::client_wrapper>();
 }
 }
-	
+
 std::unique_ptr<server::http_server> doormat_srv;
 
 std::string configuration_file_path{"/opt/doormat/etc/doormat.config"};
@@ -70,10 +70,10 @@ void set_desc ( std::unique_ptr<boost::program_options::options_description> des
 	desc = std::move( desc_ );
 }
 
-boost::program_options::options_description& get_desc() 
+boost::program_options::options_description& get_desc()
 {
 	namespace po = boost::program_options;
-	
+
 	if ( ! desc )
 	{
 		set_desc( std::unique_ptr<po::options_description>{new po::options_description( "Available options" )} );
@@ -88,7 +88,7 @@ boost::program_options::options_description& get_desc()
 		("verbose,v", "prints logs to standard output")
 		("version,r", "prints current version")
 		("check-config", "checks if the fetched configuration is ok");
-			
+
 	return *desc;
 }
 
@@ -203,14 +203,26 @@ int doormat( int argc, char** argv )
 		signals_handlers::unblock_all();
 		service::locator::stats_manager().start();
 	};
-	
-	service::initializer::set_chain_factory( 
+
+	service::initializer::set_chain_factory(
 		new endpoints::chain_factory( node_factory ) );
-	
+
 	//Main loop
-	doormat_srv->on_client_connect([](auto a){
-		a->on_request([](int a, int b){
-            std::cout << "received request" << a << " and " << b << std::endl;
+	doormat_srv->on_client_connect([](auto connection){
+		connection->on_request([](std::shared_ptr<http::request> r, std::shared_ptr<http::response> b){
+            std::cout << "received request" << b << std::endl;
+            r->on_headers([r, b](http::http_request &&req){
+                auto d = req.serialize();
+                std::cout << "received " << std::string(d) << std::endl;
+                http::http_response res;
+                res.protocol(req.protocol_version());
+                res.status(200);
+                std::string body{"ciao"};
+                res.content_len(body.size());
+                b->headers(std::move(res));
+                b->body(dstring{body.c_str(), body.size()});
+				b->end();
+			});
         });
 	});
 

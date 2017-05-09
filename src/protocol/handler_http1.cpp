@@ -26,41 +26,31 @@ bool handler_http1::start() noexcept
 {
 	auto scb = [this](http::http_structured_data** data)
 	{
-		request_received(100);
+		auto r = request_received(100);/*
 		th.emplace_back(this->shared_from_this(), connector()->is_ssl() );
 		*data = &(th.back().get_data());
-		(*data)->origin( find_origin() );
+		(*data)->origin( find_origin() );*/
+		*data = r;
 	};
 
 	auto hcb = [this]()
 	{
-		auto&& current_transaction = th.back();
-		auto&& data = current_transaction.get_data();
-		persistent_connection = current_transaction.persistent = data.keepalive();
-		version = (version == http::proto_version::UNSET) ? data.protocol_version() : version;
-		current_transaction.on_request_preamble(std::move(data));
+		notify_headers();
 	};
 
 	auto bcb = [this](dstring&& b)
 	{
-		auto&& current_transaction = th.back();
-		// pass the request preamble down the chain
-// 		current_transaction.cor->on_request_body(std::move(b));
-		current_transaction.on_request_body(std::move(b));
+		notify_body(std::move(b));
 	};
 
 	auto tcb = [this](dstring&& k, dstring&& v)
 	{
-		auto&& current_transaction = th.back();
-		// pass the request preamble down the chain
-		current_transaction.on_request_trailer( std::move(k), std::move(v) );
+		notify_trailers(std::move(k), std::move(v));
 	};
 
 	auto ccb = [this]()
 	{
-		auto&& current_transaction = th.back();
-		// the request is complete
-		current_transaction.on_request_finished();
+		notify_finished();
 	};
 
 	auto fcb = [this](int error,bool&)
@@ -137,11 +127,12 @@ bool handler_http1::on_write(dstring& data)
 {
 	if(connector())
 	{
-		if(!th.empty() && th.front().has_encoded_data())
-			data = th.front().get_encoded_data();
-		else if(!th.empty() && th.front().disposable())
-			th.pop_front();
-		return true;
+		if(!serialization.empty())
+		{
+			data = std::move(serialization);
+			return true;
+		}
+
 	}
 	return false;
 }

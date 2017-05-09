@@ -7,20 +7,21 @@ using namespace boost::asio::ip;
 namespace server
 {
 
-void log_ssl_errors(const boost::system::error_code& ec)
-{
-	string err{" ("};
-	err += boost::lexical_cast<string>(ERR_GET_LIB(ec.value()));
-	err +=",";
-	err += boost::lexical_cast<string>(ERR_GET_FUNC(ec.value()));
-	err +=",";
-	err += boost::lexical_cast<string>(ERR_GET_REASON(ec.value()));
-	err +=") ";
+namespace details {
+    void log_ssl_errors(const boost::system::error_code &ec) {
+        string err{" ("};
+        err += boost::lexical_cast<string>(ERR_GET_LIB(ec.value()));
+        err += ",";
+        err += boost::lexical_cast<string>(ERR_GET_FUNC(ec.value()));
+        err += ",";
+        err += boost::lexical_cast<string>(ERR_GET_REASON(ec.value()));
+        err += ") ";
 
-	char buf[128];
-	ERR_error_string_n(ec.value(), buf, sizeof(buf));
-	err += buf;
-	LOGERROR(err);
+        char buf[128];
+        ERR_error_string_n(ec.value(), buf, sizeof(buf));
+        err += buf;
+        LOGERROR(err);
+    }
 }
 
 http_server::http_server(size_t read_timeout, size_t connect_timeout, uint16_t ssl_port, uint16_t http_port)
@@ -102,17 +103,18 @@ void http_server::start_accept(ssl_context& ssl_ctx, tcp_acceptor& acceptor)
                 }
                 if (!ec)
 				{
-                    //auto conn = std::make_shared<ssl_connector>(_connect_timeout, _read_timeout, socket);
 					auto h = _handlers.negotiate_handler(socket, _connect_timeout, _read_timeout);
+                    // the check on h != nullptr is needed, because the protocol negotiation could fail.
+                    // in the case without tls, instead, it is not needed as an handler (http1.x) will
+                    // always be provided.
 					if(h != nullptr && connect_cb)
 					{
 						return (*connect_cb)(h);
 					}
 				}
-
 				LOGERROR(this," async accept failed:", ec.message());
 				if(ec.category() == boost::asio::error::get_ssl_category())
-					log_ssl_errors(ec);
+					details::log_ssl_errors(ec);
 			};
             socket->async_handshake(ssl::stream_base::server, handshake_cb);
 		}
@@ -120,7 +122,6 @@ void http_server::start_accept(ssl_context& ssl_ctx, tcp_acceptor& acceptor)
 
 		start_accept(ssl_ctx, acceptor);
 	});
-
 }
 
 void http_server::start_accept(tcp_acceptor& acceptor)
