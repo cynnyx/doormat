@@ -23,9 +23,8 @@ using interval = boost::posix_time::time_duration;
 
 constexpr const size_t MAXINBYTESPERLOOP{8192};
 
-enum handler_type
+enum class handler_type
 {
-	ht_unknown,
 	ht_h1,
 	ht_h2
 };

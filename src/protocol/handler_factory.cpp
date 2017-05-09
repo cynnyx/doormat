@@ -96,7 +96,7 @@ std::shared_ptr<handler_interface> handler_factory::negotiate_handler(std::share
 		SSL_get0_next_proto_negotiated(ssl_handle, &proto, &len);
 
 
-	handler_type type{ht_h1};
+	handler_type type{handler_type::ht_h1};
 	if( len )
 	{
 		LOGDEBUG("Protocol negotiated: ", std::string(reinterpret_cast<const char*>(proto), len));
@@ -105,12 +105,12 @@ std::shared_ptr<handler_interface> handler_factory::negotiate_handler(std::share
 		case 2:
 		case 3:
 		case 5:
-			type = ht_h2;
+			type = handler_type::ht_h2;
 			break;
 		}
 	}
 
-	http::proto_version version = (type == ht_h2) ? http::proto_version::HTTP20 : ((proto == nullptr ||   proto[len-1] == '0') ? http::proto_version::HTTP10 : http::proto_version::HTTP11);
+	http::proto_version version = (type == handler_type::ht_h2) ? http::proto_version::HTTP20 : ((proto == nullptr ||   proto[len-1] == '0') ? http::proto_version::HTTP10 : http::proto_version::HTTP11);
 
 
 	return build_handler( type , version, connect_timeout, read_timeout, sck);
@@ -147,15 +147,14 @@ std::shared_ptr<handler_interface> handler_factory::build_handler(handler_type t
 std::shared_ptr<handler_interface> handler_factory::make_handler(handler_type type, http::proto_version proto ) const noexcept {
 	switch(type)
 	{
-	case ht_h1:
-		LOGDEBUG("HTTP1 selected");
-		return std::make_shared<handler_http1>( proto );
-	case ht_h2:
+	case handler_type::ht_h2:
 		LOGTRACE("HTTP2 NG selected");
 		return std::make_shared<http2::session>();
-	case ht_unknown: return nullptr;
+	case handler_type::ht_h1:
+	default:
+		LOGDEBUG("HTTP1 selected");
+		return std::make_shared<handler_http1>( proto );
 	}
-	return nullptr;
 }
 
 void handler_interface::initialize_callbacks(node_interface &cor)
