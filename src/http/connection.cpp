@@ -11,7 +11,7 @@ http_request* connection::request_received()
 	auto res_handler = std::make_shared<http::response>([s = this->shared_from_this()](){
 		s->notify_response();
 	});
-	if(request_cb) (*request_cb)(req_handler, res_handler);
+	if(request_cb) request_cb(req_handler, res_handler);
 	requests.emplace(std::move(req_handler));
 	responses.push(std::move(res_handler));
 	return &current_request;
@@ -23,7 +23,7 @@ http_request* connection::request_received(std::function<void(http_response&&)> 
 	auto req_handler = std::make_shared<http::request>(this->shared_from_this());
 	auto res_handler = std::make_shared<http::response>(hcb, bcb, tcb, ccb);
 
-	if(request_cb) (*request_cb)(req_handler, res_handler);
+	if(request_cb) request_cb(req_handler, res_handler);
 	requests.emplace(std::move(req_handler));
 	responses.push(std::move(res_handler));
 

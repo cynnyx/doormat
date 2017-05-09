@@ -2,7 +2,7 @@
 #define DOORMAT_CONNECTION_H
 
 #include <functional>
-#include <experimental/optional>
+
 #include "http_request.h"
 #include "http_response.h"
 namespace http {
@@ -12,10 +12,9 @@ class response;
 
 struct connection : std::enable_shared_from_this<connection> {
 	using request_callback = std::function<void(std::shared_ptr<http::request>, std::shared_ptr<http::response>)>;
-	void on_request(request_callback rcb) { request_cb.emplace(std::move(rcb)); }
+	void on_request(request_callback rcb) { request_cb = std::move(rcb); }
 	virtual void close() = 0;
 	virtual ~connection() = default;
-	std::experimental::optional<request_callback> request_cb;
 protected:
 	http_request *request_received();
 	http_request *request_received(std::function<void(http_response&&)>, std::function<void(dstring&&)>, std::function<void(dstring&&, dstring&&)>, std::function<void()>);
@@ -49,6 +48,7 @@ private:
 	http_request current_request;
 	std::queue<std::weak_ptr<http::request>> requests;
 	std::queue<std::weak_ptr<http::response>> responses;
+	request_callback request_cb;
 };
 
 }
