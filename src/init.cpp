@@ -210,10 +210,8 @@ int doormat( int argc, char** argv )
 	//Main loop
 	doormat_srv->on_client_connect([](auto connection){
 		connection->on_request([](std::shared_ptr<http::request> r, std::shared_ptr<http::response> b){
-            std::cout << "received request" << b << std::endl;
             r->on_headers([r, b](http::http_request &&req){
                 auto d = req.serialize();
-                std::cout << "received " << std::string(d) << std::endl;
                 http::http_response res;
                 res.protocol(req.protocol_version());
                 res.status(200);

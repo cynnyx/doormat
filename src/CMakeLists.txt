@@ -58,6 +58,7 @@ set(DOORMAT_COMMON_SOURCES
 	requests_manager/client_wrapper.cpp
 	http/connection.cpp
 		http/request.cpp
+		http/response.cpp
 	)
 
 #

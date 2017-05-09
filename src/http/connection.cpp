@@ -102,6 +102,7 @@ void connection::notify_response()
         auto &c = responses.front();
         if(auto s = c.lock()) {
             if(poll_response(s)) responses.pop();
+            else break;
         }
     }
 }
