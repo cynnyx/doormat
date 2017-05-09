@@ -68,7 +68,7 @@ private:
 		void set_communicator(std::shared_ptr<network::communicator_interface> comm)
 		{
 			assert(!_communicator);
-			_communicator = comm;
+			_communicator = std::move(comm);
 			_communicator->start();
 			if(temporary_string.size())
 				_communicator->write( std::move(temporary_string) );
@@ -79,6 +79,7 @@ private:
 		void shutdown_communicator()
 		{
 			if(_communicator) _communicator->stop();
+			_communicator.reset();
 		}
 
         operator bool() const {

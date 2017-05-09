@@ -47,7 +47,9 @@ protected:
  *
  * */
 template<class socket_t = boost::asio::ip::tcp::socket, size_t reusable_buffer_size = 8192>
-class communicator final : public communicator_interface
+class communicator final :
+		public communicator_interface,
+		public std::enable_shared_from_this<communicator<socket_t, reusable_buffer_size>>
 {
 public:
 	/** Creates a new communicator
@@ -118,11 +120,7 @@ public:
 	{
 		LOGTRACE("stopping ", (int) waiting_count);
 		if ( stopping ) return;
-		if(queue.empty() || force)
-		{
-			socket->close();
-			timeout.cancel();
-		}
+		shutdown(force);
 		stopping = true;
 		set_error(INTERNAL_ERROR(1)); //fixme: stopped from remote, for the moment it is 500;
 	}
@@ -132,19 +130,31 @@ public:
 		LOGTRACE("dtor");
 	}
 private:
+	void shutdown(bool force)
+	{
+		if(shutting_down) return;
+
+		if(queue.empty() || force)
+		{
+			socket->close();
+			timeout.cancel();
+		}
+		shutting_down = true;
+	}
+
 	/** \brief performs an actual write on the socket
 	 * */
 	void perform_write()
 	{
 		//no multiple write: boost::asio doesn't guarantee correctness in case of multiple writes on the same socket.
-		if(writing || stopping || queue.empty()) return;
+		if(writing || shutting_down || queue.empty()) return;
 
 		writing = true;
 		schedule_timeout(); //renews the deadline, since we had another event.
 		++waiting_count;
 		LOGTRACE("write of size ", queue.front().size(), " has been scheduled");
 		boost::asio::async_write(*socket, boost::asio::buffer(queue.front().cdata(), queue.front().size()),
-								 [this](const boost::system::error_code &ec, size_t size)
+								 [that=this->shared_from_this(), this](const boost::system::error_code &ec, size_t size)
 		{
 			LOGTRACE("wrote ", size, "bytes with return status ", ec.message());
 			queue.pop();
@@ -168,13 +178,13 @@ private:
 	/** \brief performs an actual read on the socket. */
 	void perform_read()
 	{
-		if(stopping) return;
+		if(shutting_down) return;
 		schedule_timeout();
 		++waiting_count;
 		auto buf = _rb.reserve();
 		LOGTRACE("read operation pending");
 		socket->async_read_some(boost::asio::mutable_buffers_1(buf),
-								[this](const boost::system::error_code &ec, size_t size) mutable
+								[that=this->shared_from_this(), this](const boost::system::error_code &ec, size_t size) mutable
 		{
 			LOGTRACE("read ", size, " bytes");
 			handle_timeout();
@@ -215,7 +225,7 @@ private:
 		++waiting_count;
 		LOGTRACE("scheduling timeout");
 		timeout.expires_from_now(timeout_ms);
-		timeout.async_wait([this](const boost::system::error_code &ec)
+		timeout.async_wait([that=this->shared_from_this(), this](const boost::system::error_code &ec)
 		{
 			--waiting_count;
 			LOGTRACE("timeout terminated with ec ", ec.message());
@@ -230,17 +240,17 @@ private:
 
 	void manage_termination()
 	{
-		if(errcode != 0)
-		{
-			/** There was an error: abort everything*/
-			stop(true);
-		}
-		if(waiting_count == 0 && errcode != 0)
+		if(!errcode)
+			return;
+
+		/** There was an error: abort everything*/
+		shutdown(true);
+
+		if(waiting_count == 0 && !stopping)
 		{
 			stop_delivered = true;
 			return error_callback(errcode);
 		}
-
 	}
 
 	void set_error(errors::error_code ec) noexcept
@@ -254,7 +264,7 @@ private:
 	}
 
 	std::queue<dstring> queue;
-	bool writing{false}, stopping{false}, stop_delivered{false};
+	bool writing{}, stopping{}, stop_delivered{}, shutting_down{};
 	std::shared_ptr<socket_t> socket{nullptr};
 	uint8_t waiting_count{0};
 	errors::error_code errcode;

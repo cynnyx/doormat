@@ -83,6 +83,7 @@ client_wrapper::client_wrapper (
 		}
 		finished_response = true;
 		stop(); //we already received our response; hence we can stop the client wrapper.
+		termination_handler();
 	};
 
 	auto codec_fcb = [this](int err, bool& fatal)
@@ -99,6 +100,7 @@ client_wrapper::client_wrapper (
 		}
 		errcode = INTERNAL_ERROR_LONG(errors::http_error_code::internal_server_error);
 		stop();
+		termination_handler();
 	};
 
 	codec.register_callback(std::move(codec_scb), std::move(codec_hcb), std::move(codec_bcb), std::move(codec_tcb),
@@ -109,6 +111,7 @@ client_wrapper::~client_wrapper()
 {
 	assert(waiting_count == 0);
 	LOGTRACE("client_wrapper ",this," destructor");
+	stop();
 }
 
 void client_wrapper::on_request_preamble(http::http_request&& preamble)

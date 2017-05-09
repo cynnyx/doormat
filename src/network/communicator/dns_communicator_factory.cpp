@@ -70,10 +70,7 @@ namespace network {
                                       return endpoint_connect(std::move(it), std::move(socket), std::move(connector_cb), std::move(error_cb));
                                   }
                                   return connector_cb(
-                                          std::unique_ptr<communicator_interface>(
-                                                  new communicator<>(socket, service::locator::configuration().get_board_timeout())
-                                          )
-                                  );
+                                          std::make_shared<communicator<>>(socket, service::locator::configuration().get_board_timeout()));
                               });
 
     }
