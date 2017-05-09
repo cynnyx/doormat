@@ -116,38 +116,39 @@ void client_wrapper::on_request_preamble(http::http_request&& preamble)
 	LOGTRACE("client_wrapper ",this," on_request_preamble");
 	start = std::chrono::high_resolution_clock::now();
 	local_request = std::move(preamble);
-    ++waiting_count;
-    //retrieve a connector to talk with remote destination.
-	service::locator::communicator_factory().get_connector(local_request, [this](std::shared_ptr<network::communicator_interface> ci){
-        --waiting_count;
-        LOGTRACE("client_wrapper ", this, " received communicator");
-        ci->set_callbacks([this](const char *data, size_t size)
-                          {
-                              if(!codec.decode(data, size))
-                              {
-                                  errcode = INTERNAL_ERROR_LONG( errors::http_error_code::internal_server_error );
-                                  stop();
-                              }
-                          },[this](errors::error_code errc)
-                          {
-                              if(errc.code() > 1)
-                                  errcode = errc; //todo: this is a porchetta.
-                              stop();
-                              termination_handler();
-                          });
+	++waiting_count;
+	//retrieve a connector to talk with remote destination.
+	service::locator::communicator_factory().get_connector(local_request, [this]
+		(std::shared_ptr<network::communicator_interface> ci)
+		{
+			--waiting_count;
+			LOGTRACE("client_wrapper ", this, " received communicator");
+			ci->set_callbacks([this](const char *data, size_t size)
+			{
+				if(!codec.decode(data, size))
+				{
+					errcode = INTERNAL_ERROR_LONG( errors::http_error_code::internal_server_error );
+					stop();
+				}
+			},[this](errors::error_code errc)
+			{
+				if(errc.code() > 1)
+					errcode = errc; //todo: this is a porchetta.
+				stop();
+				termination_handler();
+			});
 
-        write_proxy.set_communicator(ci);
-	}, [this](int e){
-        LOGTRACE("client_wrapper ", this, " could not retrieve a communicator for the specified endpoint");
-        --waiting_count;
-        errcode = INTERNAL_ERROR_LONG(errors::http_error_code::not_found);
-        canceled = true;
-        stop();
-        termination_handler();
-	});
+			write_proxy.set_communicator(ci);
+		}, [this](int e){
+			LOGTRACE("client_wrapper ", this, " could not retrieve a communicator for the specified endpoint");
+			--waiting_count;
+			errcode = INTERNAL_ERROR_LONG(errors::http_error_code::not_found);
+			canceled = true;
+			stop();
+			termination_handler();
+		});
 	write_proxy.enqueue_for_write(codec.encode_header(local_request));
 }
-
 
 void client_wrapper::on_request_body(dstring&& chunk)
 {
