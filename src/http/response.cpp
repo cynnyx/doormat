@@ -5,12 +5,40 @@
 namespace http
 {
 
-response::response(std::function<void()> content_notification) : content_notification{std::move(content_notification)}
+response::response(std::function<void()> content_notification)
+{
+    hcb = [this, content_notification](http_response &&res){
+        response_headers.emplace(std::move(res));
+        content_notification();
+    };
+
+    bcb = [this, content_notification](dstring &&d) {
+        content.append(d);
+        content_notification();
+    };
+
+    tcb =[this, content_notification](dstring &&k, dstring&&v) {
+        trailers.emplace(std::make_pair(std::move(k), std::move(v)));
+        content_notification();
+    };
+
+    ccb = [this, content_notification](){
+        ended = true;
+        content_notification();
+    };
+
+}
+
+response::response(std::function<void(http_response&&)> hcb, std::function<void(dstring &&)> bcb, std::function<void(dstring &&, dstring &&)> tcb,
+                   std::function<void()> ccb) :
+hcb{std::move(hcb)}, bcb{std::move(bcb)}, tcb{std::move(tcb)}, ccb{std::move(ccb)}
 {}
-void response::headers(http_response &&res) { response_headers.emplace(std::move(res)); content_notification();}
-void response::body(dstring &&d){ content.append(d); content_notification();};
-void response::trailer(dstring &&k, dstring&& v) { trailers.emplace(std::make_pair(std::move(k), std::move(v)));content_notification(); }
-void response::end() { ended = true;  content_notification(); }
+
+
+void response::headers(http_response &&res) { hcb(std::move(res));  }
+void response::body(dstring &&d){ bcb(std::move(d));  };
+void response::trailer(dstring &&k, dstring&& v) { tcb(std::move(k), std::move(v)); }
+void response::end() { ccb(); }
 
 void response::on_error(error_callback_t ecb) { error_callback.emplace(std::move(ecb)); }
 

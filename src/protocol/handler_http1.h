@@ -145,6 +145,11 @@ private:
 	std::list<transaction_handler> th;
 	http::http_codec encoder;
 
+	std::function<void()> _hcb;
+	std::function<void(dstring &&)> _bcb;
+	std::function<void(dstring&&, dstring&&)> _tcb;
+	std::function<void()> _ccb;
+
 };
 
 } //namespace

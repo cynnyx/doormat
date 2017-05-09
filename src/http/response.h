@@ -28,6 +28,8 @@ public:
     };
 
     response(std::function<void()> content_notification);
+    response(std::function<void(http_response&&)>, std::function<void(dstring&&)>, std::function<void(dstring &&, dstring&&)>, std::function<void()>);
+
     void headers(http_response &&res);
     void body(dstring &&d);
     void trailer(dstring &&k, dstring&& v);
@@ -53,6 +55,12 @@ private:
     dstring content;
     std::queue<std::pair<dstring, dstring>> trailers;
     std::function<void()> content_notification;
+
+
+    std::function<void(http_response&&)> hcb;
+    std::function<void(dstring&&)> bcb;
+    std::function<void(dstring &&, dstring&&)> tcb;
+    std::function<void()> ccb;
 
 };
 

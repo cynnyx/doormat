@@ -24,33 +24,37 @@ bool handler_http1::some_message_started( http::proto_version& proto ) const noe
 
 bool handler_http1::start() noexcept
 {
-	auto scb = [this](http::http_structured_data** data)
+
+
+    auto scb = [this](http::http_structured_data** data)
 	{
-		auto r = request_received(100);/*
-		th.emplace_back(this->shared_from_this(), connector()->is_ssl() );
-		*data = &(th.back().get_data());
-		(*data)->origin( find_origin() );*/
-		*data = r;
+		auto r = request_received();
+        *data = r;
+        auto h = get_request_handlers();
+		_hcb = std::get<0>(h);
+        _bcb = std::get<1>(h);
+        _tcb = std::get<2>(h);
+        _ccb = std::get<3>(h);
 	};
 
 	auto hcb = [this]()
 	{
-		notify_headers();
+		_hcb();
 	};
 
 	auto bcb = [this](dstring&& b)
 	{
-		notify_body(std::move(b));
+		_bcb(std::move(b));
 	};
 
 	auto tcb = [this](dstring&& k, dstring&& v)
 	{
-		notify_trailers(std::move(k), std::move(v));
+		_tcb(std::move(k), std::move(v));
 	};
 
 	auto ccb = [this]()
 	{
-		notify_finished();
+		_ccb();
 	};
 
 	auto fcb = [this](int error,bool&)

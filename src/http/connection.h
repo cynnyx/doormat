@@ -17,20 +17,32 @@ struct connection : std::enable_shared_from_this<connection> {
     virtual ~connection() = default;
     std::experimental::optional<request_callback> request_cb;
 protected:
-    http_request *request_received(int i);
-    /** Interface exposed to the handler, so that we can send events to the request*/
+    http_request *request_received();
+    http_request *request_received(std::function<void(http_response&&)>, std::function<void(dstring&&)>, std::function<void(dstring&&, dstring&&)>, std::function<void()>);
+
+    std::tuple<
+            std::function<void()>,
+            std::function<void(dstring&&)>,
+            std::function<void(dstring&&, dstring&&)>,
+            std::function<void()>
+    > get_request_handlers();
+
+    //TODO: make pure virtual as soon as we get to fix http2 implementation
+    virtual void notify_response_headers(http_response &&res){};
+    virtual void notify_response_body(dstring&& body){};
+    virtual void notify_response_trailer(dstring&&k, dstring&&v){};
+    virtual void notify_response_end(){};
+private:
+
+
+    /** Inner management of http events, so that we can send events to the request*/
     void notify_headers();
     void notify_body(dstring&& body);
     void notify_finished();
     void notify_trailers(dstring &&, dstring&&);
     void notify_error(bool global = false);
 
-    //TODO: make virtual as soon as we get to fix http2 implementation
-    virtual void notify_response_headers(http_response &&res){};
-    virtual void notify_response_body(dstring&& body){};
-    virtual void notify_response_trailer(dstring&&k, dstring&&v){};
-    virtual void notify_response_end(){};
-private:
+
     bool poll_response(std::shared_ptr<response>);
     void notify_response();
 
