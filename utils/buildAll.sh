@@ -11,42 +11,56 @@ CPPFLAGS_BAK=${CPPFLAGS}
 LDFLAGS_BAK=${LDFLAGS}
 trap 'export CPPFLAGS=${CPPFLAGS_BAK};export LDFLAGS=${LDFLAGS_BAK}; export VERBOSE=${VERBOSE_BAK};cd $START_DIR' EXIT
 
-# Parse args
-JOBS=$(nproc)
-USAGE="$0"
-USAGE="\n$USAGE [-j/--jobs num_jobs]"
-USAGE="\n$USAGE [-f/--force deps re-fetch/re-build]"
-USAGE="\n$USAGE [-r/--release compile in release mode]"
-USAGE="\n$USAGE [-a/--asan enable address sanitizer (forces debug mode)]"
-USAGE="\n$USAGE [-v/--verbose enable VERBOSE]"
-USAGE="\n$USAGE [-p/--purify compile openssl in a way to suppress valgrind pain]"
+function printUsage(){
+    cat <<EOF
+    Usage: $0 [options]
+
+    -h| --help				show this help and exit.
+
+    -j| --jobs 				compile with J jobs (default=nproc)
+    -f| --force deps 			re-fetch/re-build
+    -r| --release 			compile in release mode
+    -a| --asan 				enable address sanitizer (forces debug mode)
+    -v| --verbose 			enable VERBOSE
+    -p| --purify 			compile openssl in a way to suppress valgrind pain
+    -t| --target 			specify doormat target
+
+    Note: if called with no parameters all dependencies will be built
+EOF
+}
 
 #Default values
+JOBS=$(nproc)
 BUILD_TYPE=Debug
 PURIFY=""
+TARGET="all"
 
+# Parse args
 while [ "$1" != "" ]; do
   case $1 in
 	-j | --jobs ) shift
 				JOBS=$1
 				;;
-	-f | --force )
+	-f | --force ) shift
 				FORCE=yes
 				;;
-	-v | --verbose )
+	-v | --verbose ) shift
 				VERBOSE_BAK=${VERBOSE}
 				export VERBOSE=1
 				;;
-	-r | --release )
+	-r | --release ) shift
 				BUILD_TYPE=Release
 				;;
-	-a | --asan )
+	-a | --asan ) shift
 				BUILD_TYPE=Asan
-				;;					  
-	-p | --purify )
+				;;
+	-p | --purify ) shift
 				PURIFY="-DPURIFY"
-				;;					  
-	* )			echo "${USAGE}"
+				;;
+	-t | --target ) shift
+				TARGET=$1
+				;;
+	* )			printUsage
 				exit 1
 esac
 shift
@@ -189,4 +203,4 @@ CONFIG_COMMAND="${CONFIG_COMMAND}  .."
 $CONFIG_COMMAND
 
 echo "Building doormat";
-make "-j${JOBS}" || ( echo "fatal: doormat build failed"; exit -1 )
+make "-j${JOBS}" "${TARGET}" || ( echo "fatal: doormat build failed"; exit -1 )
