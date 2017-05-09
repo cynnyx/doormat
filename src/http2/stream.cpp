@@ -54,10 +54,6 @@ stream::stream( std::shared_ptr<server::handler_interface> s,  std::function<voi
 	prd.source.ptr =  static_cast<void*> ( this );
 	prd.read_callback = stream::data_source_read_callback;
 
-	request.protocol( http::proto_version::HTTP11 );
-	request.channel( http::proto_version::HTTP20 );
-	request.origin( session_->find_origin() );
-
 	logger.set_request_start();
 	// Not all streams are supposed to send data - it would be better to have a
 	// lazy creation
@@ -65,36 +61,39 @@ stream::stream( std::shared_ptr<server::handler_interface> s,  std::function<voi
 
 void stream::on_request_header_complete()
 {
-	logger.request( request );
+	logger.request( *request );
 	LOGTRACE("stream headers complete!");
-
-	auto cor = service::locator::chain_factory().get_chain( request );
+/*	auto cor = service::locator::chain_factory().get_chain( request );
 	callback_cor_initializer<stream>( cor, this );
 	managed_chain = std::move( cor );
-	managed_chain->on_request_preamble( std::move( request ) );
+	managed_chain->on_request_preamble( std::move( request ) );*/
+	//to send back the headers, we need to get the handlers!
+	_hcb();
 }
 
 void stream::on_request_header( http::http_request::header_t&& h )
 {
-	request.header( h.first, h.second );
+	request->header( h.first, h.second );
 }
 
 void stream::on_request_body( dstring&& c )
 {
 	logger.append_request_body( c );
-	managed_chain->on_request_body( std::move( c ) );
+	//managed_chain->on_request_body( std::move( c ) );
+	_bcb(std::move(c));
 }
 
 void stream::on_request_canceled( const errors::error_code &ec)
 {
 	LOGERROR("stream::on_request_canceled");
-	managed_chain->on_request_canceled( ec );
+	//managed_chain->on_request_canceled( ec );
 }
 
 void stream::on_request_finished()
 {
 	LOGTRACE("stream ", this, " request end detected");
-	managed_chain->on_request_finished();
+	//managed_chain->on_request_finished();
+	_ccb();
 }
 
 void stream::on_request_ack()
@@ -396,8 +395,8 @@ void stream::uri_host( const dstring &p ) noexcept
 //	From Me:
 //	If our client uses Host, it should be managed normally. If it uses both,
 //  every behaviour is fine.
-	request.hostname( p );
-	request.urihost( p );
+	request->hostname( p );
+	request->urihost( p );
 }
 
 }
