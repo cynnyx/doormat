@@ -47,10 +47,10 @@ const static unsigned char npn_protos_legacy[]
 };
 
 using alpn_cb = int (*)
-	(ssl_st*, const unsigned char**, unsigned char*, const unsigned char*, unsigned int, void*);
+(ssl_st*, const unsigned char**, unsigned char*, const unsigned char*, unsigned int, void*);
 
 alpn_cb alpn_select_cb = [](ssl_st *ctx, const unsigned char** out, unsigned char* outlen,
-		const unsigned char* in, unsigned int inlen, void *data)
+const unsigned char* in, unsigned int inlen, void *data)
 {
 	//string local_alpn_protos[5] = (service_locator::configuration().http2_is_disabled()) ?  alpn_protos_legacy : alpn_protos_default;
 	if(service::locator::configuration().http2_is_disabled())
@@ -87,7 +87,7 @@ std::shared_ptr<handler_interface> handler_factory::negotiate_handler(std::share
 	const unsigned char* proto{nullptr};
 	unsigned int len{0};
 
-    const SSL *ssl_handle = sck->native_handle();
+	const SSL *ssl_handle = sck->native_handle();
 
 	//ALPN
 	SSL_get0_alpn_selected(ssl_handle, &proto, &len);
@@ -102,11 +102,11 @@ std::shared_ptr<handler_interface> handler_factory::negotiate_handler(std::share
 		LOGDEBUG("Protocol negotiated: ", std::string(reinterpret_cast<const char*>(proto), len));
 		switch(len)
 		{
-			case 2:
-			case 3:
-			case 5:
-				type = ht_h2;
-				break;
+		case 2:
+		case 3:
+		case 5:
+			type = ht_h2;
+			break;
 		}
 	}
 
@@ -118,44 +118,44 @@ std::shared_ptr<handler_interface> handler_factory::negotiate_handler(std::share
 
 boost::asio::ip::address handler_interface::find_origin() const
 {
-    if(connector()) return connector()->origin();
-    return {};
+	if(connector()) return connector()->origin();
+	return {};
 }
 
 std::shared_ptr<handler_interface> handler_factory::build_handler(handler_type type, http::proto_version proto, interval _connect_timeout, interval _read_timeout, std::shared_ptr<tcp_socket> socket) const noexcept
 {
-    auto h = make_handler(type, proto);
-    auto conn = std::make_shared<connector<tcp_socket>>(_connect_timeout, _read_timeout, socket);
-    conn->handler(h);
-    conn->start(true);
-    return h;
+	auto h = make_handler(type, proto);
+	auto conn = std::make_shared<connector<tcp_socket>>(_connect_timeout, _read_timeout, socket);
+	conn->handler(h);
+	conn->start(true);
+	return h;
 }
 
 void handler_interface::close() {
-    if(auto s = _connector.lock()) s->close();
+	if(auto s = _connector.lock()) s->close();
 }
 
 std::shared_ptr<handler_interface> handler_factory::build_handler(handler_type type, http::proto_version proto, interval _connect_timeout, interval _read_timeout, std::shared_ptr<ssl_socket> socket) const noexcept
 {
-    auto conn = std::make_shared<connector<ssl_socket>>(_connect_timeout, _read_timeout, socket);
-    auto h = make_handler(type, proto);
-    conn->handler( h );
-    conn->start(true);
-    return h;
+	auto conn = std::make_shared<connector<ssl_socket>>(_connect_timeout, _read_timeout, socket);
+	auto h = make_handler(type, proto);
+	conn->handler( h );
+	conn->start(true);
+	return h;
 }
 
 std::shared_ptr<handler_interface> handler_factory::make_handler(handler_type type, http::proto_version proto ) const noexcept {
-    switch(type)
-    {
-        case ht_h1:
-            LOGDEBUG("HTTP1 selected");
-            return std::make_shared<handler_http1>( proto );
-        case ht_h2:
-            LOGTRACE("HTTP2 NG selected");
-            return std::make_shared<http2::session>();
-        case ht_unknown: return nullptr;
-    }
-    return nullptr;
+	switch(type)
+	{
+	case ht_h1:
+		LOGDEBUG("HTTP1 selected");
+		return std::make_shared<handler_http1>( proto );
+	case ht_h2:
+		LOGTRACE("HTTP2 NG selected");
+		return std::make_shared<http2::session>();
+	case ht_unknown: return nullptr;
+	}
+	return nullptr;
 }
 
 void handler_interface::initialize_callbacks(node_interface &cor)
@@ -167,7 +167,7 @@ void handler_interface::initialize_callbacks(node_interface &cor)
 	error_callback ecb = [this](const errors::error_code& ec) { on_error( ec.code() ); };
 	response_continue_callback rccb = [this](){ /*on_response_continue(); */};
 
-    cor.initialize_callbacks(hcb, bcb, tcb, eomcb, ecb, rccb);
+	cor.initialize_callbacks(hcb, bcb, tcb, eomcb, ecb, rccb);
 }
 
 void handler_interface::connector( std::shared_ptr<connector_interface>  conn )

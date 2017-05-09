@@ -14,7 +14,7 @@ struct node_interface;
 
 namespace http
 {
-	class http_response;
+class http_response;
 }
 
 namespace server
@@ -44,14 +44,14 @@ using ssl_socket = boost::asio::ssl::stream<tcp_socket>;
  */
 class handler_interface : public http::connection
 {
-    std::weak_ptr<connector_interface> _connector;
+	std::weak_ptr<connector_interface> _connector;
 protected:
 	virtual void do_write() = 0;
 	virtual void on_connector_nulled() = 0;
-    std::shared_ptr<handler_interface> get_shared()
-    {
-        return std::static_pointer_cast<handler_interface>(this->shared_from_this());
-    }
+	std::shared_ptr<handler_interface> get_shared()
+	{
+		return std::static_pointer_cast<handler_interface>(this->shared_from_this());
+	}
 public:
 
 	void close() override;
@@ -61,15 +61,15 @@ public:
 	void initialize_callbacks(node_interface& cor);
 
 	std::shared_ptr<connector_interface> connector() noexcept
-    {
-        if(auto s = _connector.lock()) return s;
-        return nullptr;
-    }
+	{
+		if(auto s = _connector.lock()) return s;
+		return nullptr;
+	}
 	const std::shared_ptr<connector_interface> connector() const noexcept
-    {
-        if(auto s = _connector.lock()) return s;
-        return nullptr;
-    }
+	{
+		if(auto s = _connector.lock()) return s;
+		return nullptr;
+	}
 	void connector( std::shared_ptr<connector_interface> conn);
 	void notify_write() noexcept { do_write(); }
 	boost::asio::ip::address find_origin() const;
@@ -85,12 +85,12 @@ public:
 
 class handler_factory
 {
-    std::shared_ptr<handler_interface> make_handler(handler_type, http::proto_version) const noexcept;
+	std::shared_ptr<handler_interface> make_handler(handler_type, http::proto_version) const noexcept;
 
 public:
 	void register_protocol_selection_callbacks(SSL_CTX* ctx);
 	std::shared_ptr<handler_interface> negotiate_handler(std::shared_ptr<ssl_socket> s,interval, interval) const noexcept;
-    std::shared_ptr<handler_interface> build_handler(handler_type, http::proto_version vers, interval, interval, std::shared_ptr<ssl_socket> s) const noexcept;
+	std::shared_ptr<handler_interface> build_handler(handler_type, http::proto_version vers, interval, interval, std::shared_ptr<ssl_socket> s) const noexcept;
 	std::shared_ptr<handler_interface> build_handler(handler_type, http::proto_version vers, interval, interval, std::shared_ptr<tcp_socket> socket) const noexcept;
 };
 
