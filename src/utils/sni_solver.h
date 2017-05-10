@@ -5,13 +5,6 @@
 #include <boost/asio/ssl.hpp>
 #include <boost/asio/ssl/context.hpp>
 #include <list>
-#include <type_traits>
-
-
-namespace configuration
-{
-	class certificates_iterator;
-}
 
 namespace ssl_utils
 {
@@ -22,14 +15,10 @@ int sni_callback(SSL *ssl, int *ad, void *arg);
  */
 class sni_solver
 {
-	//friend int sni_solver::sni_callback(SSL *ssl, int *ad, void *arg);
 public:
 
 	struct certificate
 	{
-		certificate(std::string server_name, boost::asio::ssl::context::method method) : server_name{server_name},
-			context{method} { }
-
 		std::string server_name;
 		boost::asio::ssl::context context;
 		X509* x509;
@@ -39,27 +28,18 @@ public:
 
 	/* Avoid copy, move and whatever*/
 	sni_solver(const sni_solver &) = delete;
-
 	sni_solver &operator=(const sni_solver &) = delete;
-
 	sni_solver(sni_solver &&) = delete;
-
-	/** \brief loads all the certificates present in the certification file and then gets the server names later used for SNI
-	*/
-	bool load_certificates();
+	sni_solver &operator=(sni_solver &&) = delete;
+	
+	bool load_certificate( const std::string& cert, const std::string& key, const std::string &pass ) noexcept;
 
 	std::list<certificate>::iterator begin() { return certificates_list.begin(); }
 	std::list<certificate>::iterator end() { return certificates_list.end(); }
+	std::size_t size() const noexcept { return certificates_list.size(); }
 	~sni_solver() = default;
-
 private:
-
-	bool prepare_certificate(configuration::certificates_iterator &current_certificate);
-
 	std::list<certificate> certificates_list;
-	std::vector<std::string> supported_protocols;
-	std::vector<unsigned char> wire_format_supported_protocols;
-
 	friend int sni_callback(SSL *ssl, int *ad, void *arg);
 };
 

@@ -44,6 +44,7 @@ class http_server
 	void listen(boost::asio::io_service &io, bool ssl = false );
 	std::experimental::optional<connect_callback> connect_cb;
 public:
+	// If ssl_port is 0 tls is disabled
 	explicit http_server(size_t read_timeout, size_t connect_timeout, uint16_t ssl_port = 443, uint16_t http_port = 80);
 
 	http_server(const http_server&) = delete;
