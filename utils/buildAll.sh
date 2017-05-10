@@ -105,7 +105,8 @@ if [ "x${FORCE}" != "xyes" ] &&
 	[ -f "${GTEST_ROOT_DIR}/build/googlemock/gtest/libgtest_main.a" ]; then
 	echo "GoogleTest already built, skip rebuilding..."
 else
-	cd "${WORKING_DIR}/../deps" && git submodule update --init gtest || exit
+	echo "${BUILD_DIR}"
+	cd "${BUILD_DIR}/.." && git submodule update --init deps/gtest || exit
 	cd "${GTEST_ROOT_DIR}"||exit
 	mkdir -p "build" && cd "build"||exit
 	cmake -DBUILD_GTEST=ON ..
