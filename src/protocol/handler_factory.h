@@ -9,6 +9,8 @@
 #include <experimental/optional>
 #include "../http/http_commons.h"
 #include "../http/connection.h"
+#include "handler_interface.h"
+
 class dstring;
 struct node_interface;
 
@@ -21,7 +23,6 @@ namespace server
 {
 using interval = boost::posix_time::time_duration;
 
-constexpr const size_t MAXINBYTESPERLOOP{8192};
 
 enum class handler_type
 {
@@ -33,54 +34,6 @@ class connector_interface;
 using tcp_socket = boost::asio::ip::tcp::socket;
 using ssl_socket = boost::asio::ssl::stream<tcp_socket>;
 
-
-
-/**
- * @note This "interface" violates all SOLID paradigm
- * static builder functions and unused methods - how to shoot yourself in the feet.
- *
- * At least three responsabilities found.
- */
-class handler_interface : public http::connection
-{
-	std::weak_ptr<connector_interface> _connector;
-protected:
-	virtual void do_write() = 0;
-	virtual void on_connector_nulled() = 0;
-	std::shared_ptr<handler_interface> get_shared()
-	{
-		return std::static_pointer_cast<handler_interface>(this->shared_from_this());
-	}
-public:
-
-	void close() override;
-	handler_interface() = default;
-	virtual ~handler_interface() = default;
-
-	void initialize_callbacks(node_interface& cor);
-
-	std::shared_ptr<connector_interface> connector() noexcept
-	{
-		if(auto s = _connector.lock()) return s;
-		return nullptr;
-	}
-	const std::shared_ptr<connector_interface> connector() const noexcept
-	{
-		if(auto s = _connector.lock()) return s;
-		return nullptr;
-	}
-	void connector( std::shared_ptr<connector_interface> conn);
-	void notify_write() noexcept { do_write(); }
-	boost::asio::ip::address find_origin() const;
-
-	virtual bool start() noexcept = 0;
-	virtual bool should_stop() const noexcept = 0;
-	virtual bool on_read(const char*, size_t) = 0;
-	virtual bool on_write(dstring& chunk) = 0;
-
-	virtual void on_eom() = 0;
-	virtual void on_error(const int &) = 0;
-};
 
 class handler_factory
 {

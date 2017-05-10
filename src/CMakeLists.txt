@@ -59,6 +59,7 @@ set(DOORMAT_COMMON_SOURCES
 	http/connection.cpp
 		http/request.cpp
 		http/response.cpp
+		protocol/handler_interface.cpp
 	)
 
 #

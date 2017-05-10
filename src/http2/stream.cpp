@@ -1,17 +1,16 @@
 #include "stream.h"
 #include "http2alloc.h"
-#include "../protocol/handler_factory.h"
 #include "../utils/log_wrapper.h"
 #include "../utils/utils.h"
 #include "../http/http_structured_data.h"
 #include "../http/http_commons.h"
 #include "../service_locator/service_locator.h"
-#include "../protocol/handler_factory.h"
 #include "../endpoints/chain_factory.h"
 #include "../chain_of_responsibility/callback_initializer.h"
 #include "../log/log.h"
 #include "../log/inspector_serializer.h"
 #include "../http/request.h"
+#include "../protocol/handler_interface.h"
 
 
 #define MAKE_NV(NAME, VALUE) \
@@ -48,7 +47,7 @@ stream& stream::operator=( stream&& o ) noexcept
 	return *this;
 }
 
-stream::stream( std::shared_ptr<server::handler_interface> s,  std::function<void(stream*, session*)> des, std::int16_t prio ):
+stream::stream(std::shared_ptr<server::handler_interface> s, std::function<void(stream*, session*)> des, std::int16_t prio ):
 	weight_{prio}, s_owner{s}, session_{dynamic_cast<session *>(s_owner.get())}, destructor{des}
 {
 	LOGTRACE("stream ", this, " session", session_ );

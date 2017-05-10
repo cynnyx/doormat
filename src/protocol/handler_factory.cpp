@@ -116,12 +116,6 @@ std::shared_ptr<handler_interface> handler_factory::negotiate_handler(std::share
 	return build_handler( type , version, connect_timeout, read_timeout, sck);
 }
 
-boost::asio::ip::address handler_interface::find_origin() const
-{
-	if(connector()) return connector()->origin();
-	return {};
-}
-
 std::shared_ptr<handler_interface> handler_factory::build_handler(handler_type type, http::proto_version proto, interval _connect_timeout, interval _read_timeout, std::shared_ptr<tcp_socket> socket) const noexcept
 {
 	auto h = make_handler(type, proto);
@@ -129,10 +123,6 @@ std::shared_ptr<handler_interface> handler_factory::build_handler(handler_type t
 	conn->handler(h);
 	conn->start(true);
 	return h;
-}
-
-void handler_interface::close() {
-	if(auto s = _connector.lock()) s->close();
 }
 
 std::shared_ptr<handler_interface> handler_factory::build_handler(handler_type type, http::proto_version proto, interval _connect_timeout, interval _read_timeout, std::shared_ptr<ssl_socket> socket) const noexcept
@@ -157,23 +147,4 @@ std::shared_ptr<handler_interface> handler_factory::make_handler(handler_type ty
 	}
 }
 
-void handler_interface::initialize_callbacks(node_interface &cor)
-{
-	header_callback hcb = [this](http::http_response&& headers){ /*on_header(move(headers)); */ };
-	body_callback bcb = [this](dstring&& chunk){ /* on_body(std::move(chunk)); */};
-	trailer_callback tcb = [this](dstring&& k, dstring&& v){ /* on_trailer(move(k),move(v)); */};
-	end_of_message_callback eomcb = [this](){on_eom();};
-	error_callback ecb = [this](const errors::error_code& ec) { on_error( ec.code() ); };
-	response_continue_callback rccb = [this](){ /*on_response_continue(); */};
-
-	cor.initialize_callbacks(hcb, bcb, tcb, eomcb, ecb, rccb);
-}
-
-void handler_interface::connector( std::shared_ptr<connector_interface>  conn )
-{
-	LOGTRACE("handler_interface::connector ", conn );
-	_connector = conn;
-	if ( ! _connector.lock() )
-		on_connector_nulled();
-}
 } //namespace

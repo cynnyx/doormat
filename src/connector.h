@@ -13,9 +13,11 @@
 #include "utils/dstring.h"
 #include "utils/reusable_buffer.h"
 #include "utils/log_wrapper.h"
+#include "protocol/handler_interface.h"
 
 namespace server
 {
+constexpr const size_t MAXINBYTESPERLOOP{8192};
 
 using interval = boost::posix_time::time_duration;
 using berror_code = boost::system::error_code;
@@ -127,6 +129,7 @@ public:
 	void handler( std::shared_ptr<handler_interface> h )
 	{
 		_handler = h;
+        //todo: make it private;
 		_handler->connector( this->shared_from_this() );
 	}
 

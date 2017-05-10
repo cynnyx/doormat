@@ -13,6 +13,7 @@
 #include "../http/http_structured_data.h"
 #include "../http/http_request.h"
 #include "../log/access_record.h"
+#include "../protocol/handler_interface.h"
 
 namespace http2
 {
@@ -80,7 +81,7 @@ class stream final
 public:
 
 //	stream( std::function<void(stream*, session*)> des );
-	stream( std::shared_ptr<server::handler_interface> s, std::function<void(stream*, session*)> des, std::int16_t prio = 0 );
+	stream(std::shared_ptr<server::handler_interface> s, std::function<void(stream*, session*)> des, std::int16_t prio = 0 );
 	stream( const stream& ) = delete;
 	stream& operator=( const stream& ) = delete;
 	stream( stream&& o ) noexcept;

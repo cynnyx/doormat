@@ -21,8 +21,6 @@ handler_http1::handler_http1(http::proto_version version)
 
 bool handler_http1::start() noexcept
 {
-
-
     auto scb = [this](http::http_structured_data** data)
 	{
 
@@ -38,6 +36,7 @@ bool handler_http1::start() noexcept
 
 	auto hcb = [this]()
 	{
+		if(requests.empty()) return;
 		if(auto s = requests.back().lock())
 		{
 			s->headers(std::move(current_request));
@@ -48,6 +47,7 @@ bool handler_http1::start() noexcept
 
 	auto bcb = [this](dstring&& b)
 	{
+		if(requests.empty()) return;
 		if(auto s = requests.back().lock())
 		{
 			s->body(std::move(b));
@@ -57,6 +57,7 @@ bool handler_http1::start() noexcept
 
 	auto tcb = [this](dstring&& k, dstring&& v)
 	{
+		if(requests.empty()) return;
 		if(auto s = requests.back().lock()) {
 			s->trailer(std::move(k), std::move(v));
 		}
@@ -64,6 +65,7 @@ bool handler_http1::start() noexcept
 
 	auto ccb = [this]()
 	{
+		if(requests.empty()) return;
 		if(auto s = requests.back().lock()) {
 			s->finished();
 		}
@@ -71,7 +73,17 @@ bool handler_http1::start() noexcept
 
 	auto fcb = [this](int error,bool&)
 	{
+		//failure always gets called after start...
 		LOGTRACE("Codec failure handling");
+		if(auto s = requests.back().lock())
+		{
+			s->error();
+		}
+		if(auto s = responses.back().lock()) {
+			s->error();
+		}
+		requests.pop();
+		responses.pop();
 		/*http::proto_version pv = version;
 		if ( ! error_code_distruction && some_message_started( pv ) )
 		{
@@ -144,19 +156,12 @@ bool handler_http1::on_write(dstring& data)
 	return false;
 }
 
-void handler_http1::on_eom()
-{
-	LOGTRACE(this, " on_eom");
-	if(!connector())
-	{
-	//	th.remove_if( [](transaction_handler &t){ return t.message_ended; });
-	}
-}
 
 void handler_http1::on_error(const int&)
 {
 	LOGTRACE(this, " on_error");
 	error_happened = true;
+	//propagate error.
 }
 
 void handler_http1::do_write()
@@ -170,9 +175,8 @@ void handler_http1::do_write()
 void handler_http1::on_connector_nulled()
 {
 	error_code_distruction = INTERNAL_ERROR_LONG(408);
-	/*if(handler_http1::should_stop() || th.empty()) return;
-	//delete all th no longer in use.
-	for (auto &t : th) t.on_request_canceled(error_code_distruction);*/
+	//should notify everybody in the connection of the error!
+
 }
 
 
@@ -203,7 +207,7 @@ bool handler_http1::poll_response(std::shared_ptr<http::response> res) {
 //http1 only; move it down in the hierarchy.
 void handler_http1::notify_response()
 {
-    while(!responses.empty())
+    while(!responses.empty() && !requests.empty())
     {
         //replace all this with a polling mechanism!
         auto &c = responses.front();

@@ -7,9 +7,9 @@
 #include "../connector.h"
 #include "../log/access_record.h"
 #include "../chain_of_responsibility/error_code.h"
+#include "../protocol/handler_interface.h"
 
 #include <memory>
-#include <vector>
 
 namespace http2
 {
@@ -63,7 +63,6 @@ public:
 	void do_write() override;
 	void on_connector_nulled() override;
 
-	void on_eom() override;
 	void on_error(const int &) override;
 
 	void finished_stream() noexcept;

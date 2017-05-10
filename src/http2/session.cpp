@@ -18,14 +18,14 @@ static constexpr const std::int32_t max_concurrent_streams = 100;
 
 namespace http2
 {
-
+/*
 void session::on_eom()
 {
 	LOGTRACE("on_eom does not look useful");
 	if ( nghttp2_session_want_write( session_data.get() ) )
 		do_write();
 }
-
+*/
 void session::on_error(const int& er)
 {
 	LOGERROR( "Session error: ", er );
@@ -120,13 +120,7 @@ stream* session::create_stream ( std::int32_t id )
 														});
 	request_received(req_handler, res_handler);
     stream_data->set_handlers(req_handler, res_handler);
-    /**/
-	/*auto request_callbacks = get_request_handlers();
-	stream_data->_hcb = [req_handler, this](){ req->headers(stream_data->req); };
-	stream_data->_bcb = std::get<1>(request_callbacks);
-	stream_data->_tcb = std::get<2>(request_callbacks);
-	stream_data->_ccb = std::get<3>(request_callbacks);
-*/
+
 	int rv = nghttp2_session_set_stream_user_data( session_data.get(), id, stream_data );
 	if ( rv != 0 ) LOGERROR ( "nghttp2_session_set_stream_user_data ",  nghttp2_strerror( rv ) );
 
