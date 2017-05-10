@@ -102,7 +102,7 @@ set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--no-undefined")
 #endif(NOT BOOST_ROOT)
 
 if (NOT GMOCK_ROOT)
-    set(GMOCK_ROOT "${PROJECT_SOURCE_DIR}/${PROJECT_DEPS_DIR}/gtest/build/googlemock")
+    set(GMOCK_ROOT "${PROJECT_SOURCE_DIR}/${PROJECT_DEPS_DIR}/gtest/googlemock")
 endif (NOT GMOCK_ROOT)
 
 if (NOT OPENSSL_ROOT_DIR)

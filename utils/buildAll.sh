@@ -97,28 +97,21 @@ fi
 #echo "Boost is installed at ${BOOST_ROOT_DIR}"
 
 # Get GTest
-GTEST_ROOT_DIR="${BUILD_DIR}/../deps/gtest/googletest"
-if [ ! -e "${GTEST_ROOT_DIR}/libgtest.a" ] || [ "x${FORCE}" == "xyes" ]; then
-	cd "${BUILD_DIR}/../deps"||exit
-	git submodule init gtest 
-	git submodule update gtest
+GTEST_ROOT_DIR="${BUILD_DIR}/../deps/gtest"
+if [ "x${FORCE}" != "xyes" ] &&
+	[ -f "${GTEST_ROOT_DIR}/build/googlemock/libgmock.a" ] &&
+	[ -f "${GTEST_ROOT_DIR}/build/googlemock/libgmock_main.a" ] &&
+	[ -f "${GTEST_ROOT_DIR}/build/googlemock/gtest/libgtest.a" ] &&
+	[ -f "${GTEST_ROOT_DIR}/build/googlemock/gtest/libgtest_main.a" ]; then
+	echo "GoogleTest already built, skip rebuilding..."
+else
+	cd "${WORKING_DIR}/../deps" && git submodule update --init gtest || exit
 	cd "${GTEST_ROOT_DIR}"||exit
-	cmake .
-	make || ( echo "fatal: gtest build failed"; exit )
+	mkdir -p "build" && cd "build"||exit
+	cmake -DBUILD_GTEST=ON ..
+	make -j$(nproc) || ( echo "fatal: gtest build failed"; exit )
 fi
 echo "GTest Is installed at ${GTEST_ROOT_DIR}"
-
-# Get GMock
-GMOCK_ROOT_DIR="${BUILD_DIR}/../deps/gtest/googlemock"
-if [ ! -e "${GMOCK_ROOT_DIR}/libgmock.a" ] || [ "x${FORCE}" == "xyes" ]; then
-	cd "${BUILD_DIR}/../deps"||exit
-	git submodule init gtest 
-	git submodule update gtest
-	cd "${GMOCK_ROOT_DIR}"||exit
-	cmake .
-	make || ( echo "fatal: gmock build failed"; exit )
-fi
-echo "GMock Is installed at ${GMOCK_ROOT_DIR}"
 
 # Get Cynnypp
 CYNPP_ROOT_DIR="${BUILD_DIR}/../deps/cynnypp"
