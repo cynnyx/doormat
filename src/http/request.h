@@ -12,7 +12,7 @@ namespace http {
  * */
 class connection;
 class request : public std::enable_shared_from_this<request> {
-    friend connection;
+	friend class connection;
 public:
     request(std::shared_ptr<connection>);
     /** Callback types. */
