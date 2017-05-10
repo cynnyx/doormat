@@ -26,7 +26,7 @@ if(NOT GTEST_ROOT)
 endif(NOT GTEST_ROOT)
 
 if(NOT GTEST_BUILD)
-	set(GTEST_BUILD "${GTEST_ROOT}/googletest")
+	set(GTEST_BUILD "${GTEST_ROOT}/build/googletest")
 endif(NOT GTEST_BUILD)
 
 find_path(
