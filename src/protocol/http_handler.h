@@ -21,6 +21,7 @@ class http_handler : public http::connection
 {
 	std::weak_ptr<connector_interface> _connector;
 protected:
+	bool persistent{true};
 	virtual void do_write() = 0;
 	virtual void on_connector_nulled() = 0;
 	std::shared_ptr<http_handler> get_shared()
@@ -39,14 +40,12 @@ protected:
 		return nullptr;
 	}
 
-
+    void set_persistent(bool value) override { persistent = value; }
 public:
 	http_handler() = default;
 	void close() override;
     void connector( std::shared_ptr<connector_interface> conn);
 
-
-	void notify_write() noexcept { do_write(); }
 	boost::asio::ip::address find_origin() const;
 	virtual bool start() noexcept = 0;
 	virtual bool should_stop() const noexcept = 0;

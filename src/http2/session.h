@@ -60,7 +60,7 @@ public:
 	bool on_write( dstring& chunk ) override;
 	bool should_stop() const noexcept override;
 
-	void do_write() override;
+    void do_write() override;
 	void on_connector_nulled() override;
 
 	void on_error(const int &) override;

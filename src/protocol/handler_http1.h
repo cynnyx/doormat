@@ -29,7 +29,10 @@ public:
 	bool on_read(const char*, size_t) override;
 	bool on_write(dstring&) override;
 	void on_error(const int&) override;
+
 	virtual ~handler_http1() = default;
+
+
 protected:
 	void do_write() override;
 	void on_connector_nulled() override;
@@ -60,8 +63,7 @@ private:
     /** Dstring used to serialize the information coming from the responses*/
     dstring serialization;
 
-    bool persistent_connection{true};
-    bool error_happened{false};
+	bool error_happened{false};
 
     errors::error_code error_code_distruction;
 

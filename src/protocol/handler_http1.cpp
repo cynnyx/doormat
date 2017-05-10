@@ -132,7 +132,7 @@ bool handler_http1::start() noexcept
 bool handler_http1::should_stop() const noexcept
 {
 	auto finished = responses.empty();
-	return error_happened || (finished && !persistent_connection);
+	return error_happened || (finished && !persistent);
 }
 
 bool handler_http1::on_read(const char* data, size_t len)
@@ -230,19 +230,23 @@ void handler_http1::notify_response_headers(http::http_response&& res)
     do_write();
 }
 
-void handler_http1::notify_response_body(dstring&& b) {
+void handler_http1::notify_response_body(dstring&& b)
+{
     serialization.append(encoder.encode_body(b));
     do_write();
 }
 
-void handler_http1::notify_response_trailer(dstring&&k, dstring&&v){
+void handler_http1::notify_response_trailer(dstring&&k, dstring&&v)
+{
     serialization.append(encoder.encode_trailer(k, v));
     do_write();
 }
 
-void handler_http1::notify_response_end(){
+void handler_http1::notify_response_end()
+{
     serialization.append(encoder.encode_eom());
     do_write();
 }
+
 
 } //namespace
