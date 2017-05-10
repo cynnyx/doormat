@@ -58,7 +58,7 @@ protected:
 
 		auto& ios = service::locator::service_pool().get_thread_io_service();
 		deadline.reset(new boost::asio::deadline_timer(ios));
-// 		server::handler_interface::make_chain = []()
+// 		server::http_handler::make_chain = []()
 // 		{
 // 			return make_unique_chain<node_interface, dummy_node>();
 // 		};

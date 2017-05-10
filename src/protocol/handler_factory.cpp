@@ -82,7 +82,7 @@ void handler_factory::register_protocol_selection_callbacks(SSL_CTX* ctx)
 	SSL_CTX_set_alpn_select_cb(ctx, alpn_select_cb, nullptr);
 }
 
-std::shared_ptr<handler_interface> handler_factory::negotiate_handler(std::shared_ptr<ssl_socket> sck, interval connect_timeout, interval read_timeout) const noexcept
+std::shared_ptr<http_handler> handler_factory::negotiate_handler(std::shared_ptr<ssl_socket> sck, interval connect_timeout, interval read_timeout) const noexcept
 {
 	const unsigned char* proto{nullptr};
 	unsigned int len{0};
@@ -116,7 +116,7 @@ std::shared_ptr<handler_interface> handler_factory::negotiate_handler(std::share
 	return build_handler( type , version, connect_timeout, read_timeout, sck);
 }
 
-std::shared_ptr<handler_interface> handler_factory::build_handler(handler_type type, http::proto_version proto, interval _connect_timeout, interval _read_timeout, std::shared_ptr<tcp_socket> socket) const noexcept
+std::shared_ptr<http_handler> handler_factory::build_handler(handler_type type, http::proto_version proto, interval _connect_timeout, interval _read_timeout, std::shared_ptr<tcp_socket> socket) const noexcept
 {
 	auto h = make_handler(type, proto);
 	auto conn = std::make_shared<connector<tcp_socket>>(_connect_timeout, _read_timeout, socket);
@@ -125,7 +125,7 @@ std::shared_ptr<handler_interface> handler_factory::build_handler(handler_type t
 	return h;
 }
 
-std::shared_ptr<handler_interface> handler_factory::build_handler(handler_type type, http::proto_version proto, interval _connect_timeout, interval _read_timeout, std::shared_ptr<ssl_socket> socket) const noexcept
+std::shared_ptr<http_handler> handler_factory::build_handler(handler_type type, http::proto_version proto, interval _connect_timeout, interval _read_timeout, std::shared_ptr<ssl_socket> socket) const noexcept
 {
 	auto conn = std::make_shared<connector<ssl_socket>>(_connect_timeout, _read_timeout, socket);
 	auto h = make_handler(type, proto);
@@ -134,7 +134,7 @@ std::shared_ptr<handler_interface> handler_factory::build_handler(handler_type t
 	return h;
 }
 
-std::shared_ptr<handler_interface> handler_factory::make_handler(handler_type type, http::proto_version proto ) const noexcept {
+std::shared_ptr<http_handler> handler_factory::make_handler(handler_type type, http::proto_version proto ) const noexcept {
 	switch(type)
 	{
 	case handler_type::ht_h2:

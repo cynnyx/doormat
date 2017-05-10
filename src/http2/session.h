@@ -7,7 +7,7 @@
 #include "../connector.h"
 #include "../log/access_record.h"
 #include "../chain_of_responsibility/error_code.h"
-#include "../protocol/handler_interface.h"
+#include "../protocol/http_handler.h"
 
 #include <memory>
 
@@ -18,7 +18,7 @@ class stream;
 
 extern const std::size_t header_size_bytes;
 
-class session : public server::handler_interface
+class session : public server::http_handler
 {
 	using session_deleter = std::function<void(nghttp2_session*)>;
 

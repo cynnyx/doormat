@@ -18,7 +18,7 @@ namespace server
 /**
  *
  * */
-class handler_http1 : public handler_interface
+class handler_http1 : public http_handler
 {
 
 public:

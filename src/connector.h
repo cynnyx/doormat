@@ -13,7 +13,7 @@
 #include "utils/dstring.h"
 #include "utils/reusable_buffer.h"
 #include "utils/log_wrapper.h"
-#include "protocol/handler_interface.h"
+#include "protocol/http_handler.h"
 
 namespace server
 {
@@ -41,13 +41,13 @@ protected:
 	dstring _out;
 };
 
-// handler_interface will become a template!?
+// http_handler will become a template!?
 template <typename socket_type>
 class connector: public connector_interface,
 	public std::enable_shared_from_this< connector<socket_type> >
 {
 	std::shared_ptr<socket_type> _socket;
-	std::shared_ptr<handler_interface> _handler{nullptr};
+	std::shared_ptr<http_handler> _handler{nullptr};
 
 	interval _handshake_ttl;
 	interval _ttl;
@@ -107,7 +107,7 @@ public:
 		LOGTRACE(this," destructor start");
 		if(_handler)
 		{
-			// handler_interface's derived classes will get an on_connector_nulled() event
+			// http_handler's derived classes will get an on_connector_nulled() event
 			_handler->connector(nullptr);
 			_handler = nullptr;
 		}
@@ -126,7 +126,7 @@ public:
 
 	void renew_ttl() { schedule_deadline(_ttl); }
 
-	void handler( std::shared_ptr<handler_interface> h )
+	void handler( std::shared_ptr<http_handler> h )
 	{
 		_handler = h;
         //todo: make it private;

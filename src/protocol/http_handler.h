@@ -17,15 +17,15 @@
 namespace server
 {
 class connector_interface;
-class handler_interface : public http::connection
+class http_handler : public http::connection
 {
 	std::weak_ptr<connector_interface> _connector;
 protected:
 	virtual void do_write() = 0;
 	virtual void on_connector_nulled() = 0;
-	std::shared_ptr<handler_interface> get_shared()
+	std::shared_ptr<http_handler> get_shared()
 	{
-		return std::static_pointer_cast<handler_interface>(this->shared_from_this());
+		return std::static_pointer_cast<http_handler>(this->shared_from_this());
 	}
 
 	std::shared_ptr<connector_interface> connector() noexcept
@@ -41,7 +41,7 @@ protected:
 
 
 public:
-	handler_interface() = default;
+	http_handler() = default;
 	void close() override;
     void connector( std::shared_ptr<connector_interface> conn);
 
@@ -55,7 +55,7 @@ public:
 
 	virtual void on_error(const int &) = 0;
 
-    virtual ~handler_interface() = default;
+    virtual ~http_handler() = default;
 };
 
 }

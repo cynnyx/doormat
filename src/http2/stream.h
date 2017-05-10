@@ -13,7 +13,7 @@
 #include "../http/http_structured_data.h"
 #include "../http/http_request.h"
 #include "../log/access_record.h"
-#include "../protocol/handler_interface.h"
+#include "../protocol/http_handler.h"
 
 namespace http2
 {
@@ -52,7 +52,7 @@ class stream final
 	nghttp2_nv* trailers_nva{nullptr};
 	std::size_t trailers_nvlen{0};
 
-	std::shared_ptr<server::handler_interface> const s_owner{nullptr};
+	std::shared_ptr<server::http_handler> const s_owner{nullptr};
 	session * const session_{nullptr};
 	http::http_structured_data::headers_map prepared_headers;
 	http::http_request request{};
@@ -81,7 +81,7 @@ class stream final
 public:
 
 //	stream( std::function<void(stream*, session*)> des );
-	stream(std::shared_ptr<server::handler_interface> s, std::function<void(stream*, session*)> des, std::int16_t prio = 0 );
+	stream(std::shared_ptr<server::http_handler> s, std::function<void(stream*, session*)> des, std::int16_t prio = 0 );
 	stream( const stream& ) = delete;
 	stream& operator=( const stream& ) = delete;
 	stream( stream&& o ) noexcept;
