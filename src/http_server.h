@@ -53,7 +53,6 @@ public:
 
 	void start(boost::asio::io_service &io) noexcept;
 	void stop() noexcept;
-
 };
 
 } // namespace server
