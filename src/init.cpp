@@ -212,6 +212,7 @@ int doormat( int argc, char** argv )
 		connection->on_request([](std::shared_ptr<http::request> r, std::shared_ptr<http::response> b){
             r->on_headers([r, b](http::http_request &&req){
                 auto d = req.serialize();
+                std::cout << std::string(d) << std::endl;
                 http::http_response res;
                 res.protocol(req.protocol_version());
                 res.status(200);

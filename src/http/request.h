@@ -6,13 +6,24 @@
 #include <experimental/optional>
 #include "http_request.h"
 
+namespace http2
+{
+class stream;
+}
+
+namespace server
+{
+class handler_http1;
+}
+
 namespace http {
 /** \brief the request class provides to the library user a mean through which it can subscribe to events related
  *  to the request.
  * */
 class connection;
 class request : public std::enable_shared_from_this<request> {
-    friend connection;
+    friend server::handler_http1;
+    friend http2::stream;
 public:
     request(std::shared_ptr<connection>);
     /** Callback types. */

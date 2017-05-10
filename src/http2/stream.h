@@ -54,7 +54,7 @@ class stream final
 	std::shared_ptr<server::handler_interface> const s_owner{nullptr};
 	session * const session_{nullptr};
 	http::http_structured_data::headers_map prepared_headers;
-	http::http_request *request{nullptr};
+	http::http_request request{};
 	
 	nghttp2_data_provider prd;
 	
@@ -78,10 +78,6 @@ class stream final
 
 
 public:
-	std::function<void()> _hcb;
-	std::function<void(dstring&&)> _bcb;
-	std::function<void(dstring&&, dstring&&)> _tcb;
-	std::function<void()> _ccb;
 
 //	stream( std::function<void(stream*, session*)> des );
 	stream( std::shared_ptr<server::handler_interface> s, std::function<void(stream*, session*)> des, std::int16_t prio = 0 );
@@ -90,23 +86,22 @@ public:
 	stream( stream&& o ) noexcept;
 	stream& operator=( stream&& o ) noexcept;
 	
-	void path( const dstring& p ) { request->path( p ); }
-	dstring path() const { return request->path(); }
-	void method( const dstring& p ) { request->method( p ); }
+	void path( const dstring& p ) { request.path( p ); }
+	dstring path() const { return request.path(); }
+	void method( const dstring& p ) { request.method( p ); }
 	void uri_host( const dstring& p ) noexcept;
-	void scheme( const dstring& p ) noexcept { request->schema( p ); }
-	void add_header( const dstring& key, const dstring& value ) { request->header( key, value ); }
-	void query( const dstring& query ) { request->query( query ); }
-	void fragment( const dstring& frag ) { request->fragment( frag ); }
+	void scheme( const dstring& p ) noexcept { request.schema( p ); }
+	void add_header( const dstring& key, const dstring& value ) { request.header( key, value ); }
+	void query( const dstring& query ) { request.query( query ); }
+	void fragment( const dstring& frag ) { request.fragment( frag ); }
+	void set_handlers(std::shared_ptr<http::request> req_handler, std::shared_ptr<http::response> res_handler)
+	{
+		req = req_handler;
+		res = res_handler;
+	}
 
-	void set_request(http::http_request *req_ptr)
-    {
-        request = req_ptr;
-        request->protocol( http::proto_version::HTTP11 );
-        request->channel( http::proto_version::HTTP20 );
-        request->origin( session_->find_origin() );
-    }
-	
+	std::weak_ptr<http::request> req;
+	std::weak_ptr<http::response> res;
 	bool valid() const noexcept { return id_ >= 0; }
 	void invalidate() noexcept;
 	

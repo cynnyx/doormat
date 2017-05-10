@@ -5,6 +5,8 @@
 #include "http2error.h"
 #include "../utils/log_wrapper.h"
 #include "http2alloc.h"
+#include "../http/request.h"
+#include "../http/response.h"
 
 namespace
 {
@@ -103,27 +105,28 @@ stream* session::create_stream ( std::int32_t id )
 		} }; // The pointed object will commit suicide
 
 	stream_data->id( id );
-	auto r = request_received(
-			[stream_data](http::http_response&& res){
-				stream_data->on_header(std::move(res));
-			},
-			[stream_data](dstring&& b){
-				stream_data->on_body(std::move(b));
-			},
-			[stream_data](dstring &&k, dstring&&v) {
-				stream_data->on_trailer(std::move(k), std::move(v));
-			},
-			[stream_data]() {
-				stream_data->on_eom();
-			}
-	);
-	stream_data->set_request(r);
-	auto request_callbacks = get_request_handlers();
-	stream_data->_hcb = std::get<0>(request_callbacks);
+	auto req_handler = std::make_shared<http::request>(this->shared_from_this());
+	auto res_handler = std::make_shared<http::response>([stream_data](http::http_response&& res){
+															stream_data->on_header(std::move(res));
+														},
+														[stream_data](dstring&& b){
+															stream_data->on_body(std::move(b));
+														},
+														[stream_data](dstring &&k, dstring&&v) {
+															stream_data->on_trailer(std::move(k), std::move(v));
+														},
+														[stream_data]() {
+															stream_data->on_eom();
+														});
+	request_received(req_handler, res_handler);
+    stream_data->set_handlers(req_handler, res_handler);
+    /**/
+	/*auto request_callbacks = get_request_handlers();
+	stream_data->_hcb = [req_handler, this](){ req->headers(stream_data->req); };
 	stream_data->_bcb = std::get<1>(request_callbacks);
 	stream_data->_tcb = std::get<2>(request_callbacks);
 	stream_data->_ccb = std::get<3>(request_callbacks);
-
+*/
 	int rv = nghttp2_session_set_stream_user_data( session_data.get(), id, stream_data );
 	if ( rv != 0 ) LOGERROR ( "nghttp2_session_set_stream_user_data ",  nghttp2_strerror( rv ) );
 
