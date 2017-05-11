@@ -136,6 +136,7 @@ static void parse_opt(int argc, char** argv)
 
 int doormat( int argc, char** argv )
 {
+	/*
 	int rv{EXIT_FAILURE};
 
 	parse_opt(argc,argv);
@@ -158,7 +159,6 @@ int doormat( int argc, char** argv )
 	//Init logs
 	if(log_level.size())
 		cw.set_log_level(log_level);
-	log_wrapper::init(verbose_mode, cw.get_log_level(), cw.get_log_path());
 
 	service::initializer::init_services();
 	service::initializer::set_access_log( new logging::access_log_c{ cw.get_log_path(), "access"} );
@@ -184,7 +184,6 @@ int doormat( int argc, char** argv )
 		service::locator::configuration().set_fd_limit(fdl.rlim_cur);
 	}
 
-	doormat_srv.reset(new server::http_server{service::locator::configuration().get_operation_timeout(), service::locator::configuration().get_client_connection_timeout(), service::locator::configuration().get_port(), service::locator::configuration().get_port_h()});
 
 	//Handle user fallback after successfull bind on 443 or 80
 	if(getuid() == 0)
@@ -206,27 +205,42 @@ int doormat( int argc, char** argv )
 
 	service::initializer::set_chain_factory(
 		new endpoints::chain_factory( node_factory ) );
-
+*/
+	boost::asio::io_service io;
 	//Main loop
-	doormat_srv->on_client_connect([](auto connection){
-		connection->on_request([](std::shared_ptr<http::request> r, std::shared_ptr<http::response> b){
-            r->on_headers([r, b](http::http_request &&req){
+    log_wrapper::init(false, "error", "/tmp/doormat_log.txt");
+    doormat_srv.reset(new server::http_server{2000, 1000, 0, 8888});
+
+	doormat_srv->on_client_connect([&io](auto conn){
+		conn->on_request([&io](http::connection &connection, std::shared_ptr<http::request> r, std::shared_ptr<http::response> b){
+            r->on_headers([&connection, &io](http::request& r, http::http_request &&req){
                 auto d = req.serialize();
+                std::cout << std::string(d) << std::endl;
+			});
+
+            r->on_finished([b, &connection, &io](http::request& r){
                 http::http_response res;
-                res.protocol(req.protocol_version());
+                res.protocol(http::proto_version::HTTP11);
                 res.status(200);
                 std::string body{"ciao"};
                 res.content_len(body.size());
                 b->headers(std::move(res));
                 b->body(dstring{body.c_str(), body.size()});
-				b->end();
-			});
+                b->end();
+                io.post([&connection](){
+					connection.close();
+                    doormat_srv->stop();});
+            });
         });
 	});
 
 
-	doormat_srv->start(service::locator::service_pool().get_io_service());
-    auto thread_init_local = [](boost::asio::io_service& ios)
+	doormat_srv->start(io);
+
+    io.run();
+
+    return 0;
+   /* auto thread_init_local = [](boost::asio::io_service& ios)
     {
         using namespace service;
         locator::stats_manager().register_handler();
@@ -250,7 +264,7 @@ int doormat( int argc, char** argv )
 	if(daemon_mode)
 		stop_daemon();
 
-	return rv;
+	return rv;*/
 }
 
 }

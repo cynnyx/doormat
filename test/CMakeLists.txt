@@ -10,6 +10,7 @@ set(DOORMAT_TESTCASES_SOURCES
 	codec_test.cpp
 	configuration_parser_test.cpp
 	cor_test.cpp
+	sni_solver_test.cpp
 	dstring_factory_test.cpp
 	dstring_test.cpp
 	error_test.cpp

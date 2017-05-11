@@ -27,7 +27,7 @@ namespace details {
 http_server::http_server(size_t read_timeout, size_t connect_timeout, uint16_t ssl_port, uint16_t http_port)
 	: _read_timeout(boost::posix_time::milliseconds(read_timeout)),
 	 _connect_timeout( boost::posix_time::milliseconds(connect_timeout)),
-	 _ssl{sni.load_certificates()},
+	 _ssl{ssl_port != 0},
      ssl_port{ssl_port},
      http_port{http_port}
 {}
@@ -53,13 +53,14 @@ void http_server::start(boost::asio::io_service &io) noexcept
     listen(io);
 
 	if(plain_acceptor) start_accept(*plain_acceptor);
-	if(ssl_acceptor)
+
+    if(ssl_acceptor)
 	{
 		assert(_ssl_ctx != nullptr);
 		start_accept(*_ssl_ctx, *ssl_acceptor);
 	}
 
-	LOGINFO("Starting doormat on ports ", http_port ,",", ssl_port,", with ", 1, " threads");
+	//LOGINFO("Starting doormat on ports ", http_port ,",", ssl_port,", with ", 1, " threads");
 }
 
 void http_server::stop( ) noexcept
@@ -80,7 +81,7 @@ void http_server::start_accept(ssl_context& ssl_ctx, tcp_acceptor& acceptor)
 	auto socket = std::make_shared<ssl_socket>(acceptor.get_io_service(), ssl_ctx);
 	acceptor.async_accept(socket->lowest_layer(),[this, &ssl_ctx, &acceptor, socket]( const boost::system::error_code &ec)
 	{
-		LOGTRACE("secure_accept_cb called");
+		//LOGTRACE("secure_accept_cb called");
 
 		if(ec == boost::system::errc::operation_canceled)
 			return;
@@ -96,7 +97,7 @@ void http_server::start_accept(ssl_context& ssl_ctx, tcp_acceptor& acceptor)
             });
 			auto handshake_cb = [this, connection_timer, socket](const boost::system::error_code &ec)
 			{
-				LOGTRACE("handshake_cb called");
+				//LOGTRACE("handshake_cb called");
 				if(ec != boost::system::errc::operation_canceled)
                 {
                     connection_timer->cancel();
@@ -112,13 +113,13 @@ void http_server::start_accept(ssl_context& ssl_ctx, tcp_acceptor& acceptor)
 						return (*connect_cb)(h);
 					}
 				}
-				LOGERROR(this," async accept failed:", ec.message());
+				//LOGERROR(this," async accept failed:", ec.message());
 				if(ec.category() == boost::asio::error::get_ssl_category())
 					details::log_ssl_errors(ec);
 			};
             socket->async_handshake(ssl::stream_base::server, handshake_cb);
 		}
-		else LOGERROR(ec.message());
+		else //LOGERROR(ec.message());
 
 		start_accept(ssl_ctx, acceptor);
 	});
@@ -132,7 +133,7 @@ void http_server::start_accept(tcp_acceptor& acceptor)
 	auto socket = std::make_shared<tcp_socket>(acceptor.get_io_service());
 	acceptor.async_accept(socket->lowest_layer(),[this, &acceptor, socket](const boost::system::error_code& ec)
 	{
-		LOGTRACE("accept_cb called");
+		//LOGTRACE("accept_cb called");
 		if(ec == boost::system::errc::operation_canceled)
 			return;
 
@@ -146,7 +147,7 @@ void http_server::start_accept(tcp_acceptor& acceptor)
             }
 			return start_accept(acceptor);
 		}
-		else LOGERROR(ec.message());
+		else //LOGERROR(ec.message());
 
 		start_accept(acceptor);
 	});
@@ -159,7 +160,7 @@ tcp_acceptor http_server::make_acceptor(boost::asio::io_service& io, tcp::endpoi
 	acceptor.open(endpoint.protocol(), ec);
 	if(setsockopt(acceptor.native_handle(), SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &set, sizeof(set)) != 0)
 	{
-		LOGERROR("cannot set option SO_REUSEPORT on the socket; doormat will execute in a sequential manner. Error is ", strerror(errno));
+		//LOGERROR("cannot set option SO_REUSEPORT on the socket; doormat will execute in a sequential manner. Error is ", strerror(errno));
 	}
 	if(!ec)
 		acceptor.bind(endpoint, ec);
@@ -174,7 +175,7 @@ void http_server::listen(boost::asio::io_service &io, bool ssl )
     auto port = (ssl) ? ssl_port : http_port;
     auto& acceptor = (ssl) ? ssl_acceptor : plain_acceptor;
     tcp::resolver resolver(io);
-    //make the interface addr. parametric in the constructor.
+    //todo: make the interface addr. parametric in the constructor.
 	tcp::resolver::query query("0.0.0.0", to_string(port));
 
 
@@ -195,7 +196,7 @@ void http_server::listen(boost::asio::io_service &io, bool ssl )
 
 	if(ec)
 	{
-		LOGERROR("Error while listening on ", to_string(port));
+		//LOGERROR("Error while listening on ", to_string(port));
 		throw ec;
 	}
 }

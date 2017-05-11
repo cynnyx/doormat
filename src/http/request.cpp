@@ -36,27 +36,29 @@ void request::on_error(error_callback_t ecb)
 /** Events triggers */
 void request::headers(http::http_request &&req)
 {
-    if(headers_callback) (*headers_callback)(std::move(req));
+    if(headers_callback) (*headers_callback)(*this, std::move(req));
 }
 
 void request::body(dstring&& body)
 {
-    if(body_callback) (*body_callback)(std::move(body));
+    if(body_callback) (*body_callback)(*this, std::move(body));
 }
 
 void request::trailer(dstring &&k, dstring &&v)
 {
-    if(trailer_callback) (*trailer_callback)(std::move(k), std::move(v));
+    if(trailer_callback) (*trailer_callback)(*this, std::move(k), std::move(v));
 }
 
 void request::error()
 {
-    if(error_callback) (*error_callback)();
+    if(error_callback) (*error_callback)(*this);
+    myself = nullptr;
 }
 
 void request::finished()
 {
-    if(finished_callback) (*finished_callback)();
+    if(finished_callback) (*finished_callback)(*this);
+    myself = nullptr;
 }
 
 }

@@ -8,14 +8,21 @@
 #include "../utils/dstring.h"
 #include "http_response.h"
 
+namespace server
+{
+class handler_http1;
+}
+
+namespace http2 {
+class stream;
+}
+
 namespace http
 {
-
-class connection;
-
-class response
+class response : public std::enable_shared_from_this<response>
 {
-    friend connection;
+    friend server::handler_http1;
+    friend http2::stream;
 public:
     using error_callback_t = std::function<void()>;
 
@@ -42,6 +49,8 @@ public:
     http_response get_headers();
     dstring get_body();
     std::pair<dstring, dstring> get_trailer();
+
+    ~response() = default;
 private:
 
     void error() {

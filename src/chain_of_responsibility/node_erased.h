@@ -8,6 +8,7 @@
 #include "../protocol/handler_factory.h"
 #include "../http/http_commons.h"
 #include "../http/http_response.h"
+#include "../protocol/http_handler.h"
 
 namespace http
 {
@@ -34,7 +35,7 @@ class node_erased final
 		T& node;
 		
 		using type = 
-			typename std::conditional<std::is_base_of<server::handler_interface, T>::value, std::false_type, std::true_type>::type;
+			typename std::conditional<std::is_base_of<server::http_handler, T>::value, std::false_type, std::true_type>::type;
 
 		void call_end_of_message( std::true_type ) { node.on_end_of_message(); }
 		void call_end_of_message( std::false_type ) { /* intentionally left blank*/ }

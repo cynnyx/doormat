@@ -1,16 +1,17 @@
 #include "stream.h"
 #include "http2alloc.h"
-#include "../protocol/handler_factory.h"
 #include "../utils/log_wrapper.h"
 #include "../utils/utils.h"
 #include "../http/http_structured_data.h"
 #include "../http/http_commons.h"
 #include "../service_locator/service_locator.h"
-#include "../protocol/handler_factory.h"
 #include "../endpoints/chain_factory.h"
 #include "../chain_of_responsibility/callback_initializer.h"
 #include "../log/log.h"
 #include "../log/inspector_serializer.h"
+#include "../http/request.h"
+#include "../protocol/http_handler.h"
+
 
 #define MAKE_NV(NAME, VALUE) \
 { \
@@ -46,7 +47,7 @@ stream& stream::operator=( stream&& o ) noexcept
 	return *this;
 }
 
-stream::stream( std::shared_ptr<server::handler_interface> s,  std::function<void(stream*, session*)> des, std::int16_t prio ):
+stream::stream(std::shared_ptr<server::http_handler> s, std::function<void(stream*, session*)> des, std::int16_t prio ):
 	weight_{prio}, s_owner{s}, session_{dynamic_cast<session *>(s_owner.get())}, destructor{des}
 {
 	LOGTRACE("stream ", this, " session", session_ );
@@ -57,30 +58,39 @@ stream::stream( std::shared_ptr<server::handler_interface> s,  std::function<voi
 	logger.set_request_start();
 	// Not all streams are supposed to send data - it would be better to have a
 	// lazy creation
+	request.protocol( http::proto_version::HTTP11 );
+	request.channel( http::proto_version::HTTP20 );
+	request.origin( session_->find_origin() );
 }
 
 void stream::on_request_header_complete()
 {
-	logger.request( *request );
+	logger.request( request );
 	LOGTRACE("stream headers complete!");
 /*	auto cor = service::locator::chain_factory().get_chain( request );
 	callback_cor_initializer<stream>( cor, this );
 	managed_chain = std::move( cor );
 	managed_chain->on_request_preamble( std::move( request ) );*/
 	//to send back the headers, we need to get the handlers!
-	_hcb();
+	if(auto s =req.lock())
+	{
+		s->headers(std::move(request));
+	}
 }
 
 void stream::on_request_header( http::http_request::header_t&& h )
 {
-	request->header( h.first, h.second );
+	request.header( h.first, h.second );
 }
 
 void stream::on_request_body( dstring&& c )
 {
 	logger.append_request_body( c );
 	//managed_chain->on_request_body( std::move( c ) );
-	_bcb(std::move(c));
+    if(auto s =req.lock())
+    {
+        s->body(std::move(c));
+    }
 }
 
 void stream::on_request_canceled( const errors::error_code &ec)
@@ -93,7 +103,7 @@ void stream::on_request_finished()
 {
 	LOGTRACE("stream ", this, " request end detected");
 	//managed_chain->on_request_finished();
-	_ccb();
+    if(auto s = req.lock()) s->finished();
 }
 
 void stream::on_request_ack()
@@ -395,8 +405,8 @@ void stream::uri_host( const dstring &p ) noexcept
 //	From Me:
 //	If our client uses Host, it should be managed normally. If it uses both,
 //  every behaviour is fine.
-	request->hostname( p );
-	request->urihost( p );
+	request.hostname( p );
+	request.urihost( p );
 }
 
 }

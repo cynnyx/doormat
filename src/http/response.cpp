@@ -26,7 +26,6 @@ response::response(std::function<void()> content_notification)
         ended = true;
         content_notification();
     };
-
 }
 
 response::response(std::function<void(http_response&&)> hcb, std::function<void(dstring &&)> bcb, std::function<void(dstring &&, dstring &&)> tcb,

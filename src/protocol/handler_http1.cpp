@@ -5,6 +5,8 @@
 #include "../log/inspector_serializer.h"
 #include "../service_locator/service_locator.h"
 #include "../endpoints/chain_factory.h"
+#include "../http/request.h"
+#include "../http/response.h"
 
 #include <typeinfo>
 
@@ -17,49 +19,73 @@ handler_http1::handler_http1(http::proto_version version)
 	LOGINFO("HTTP1 selected");
 }
 
-bool handler_http1::some_message_started( http::proto_version& proto ) const noexcept
-{
-	return std::any_of(th.begin(), th.end(), [](const transaction_handler& t){ return t.message_started; } );
-}
-
 bool handler_http1::start() noexcept
 {
-
-
+    init();
     auto scb = [this](http::http_structured_data** data)
 	{
-		auto r = request_received();
-        *data = r;
-        auto h = get_request_handlers();
-		_hcb = std::get<0>(h);
-        _bcb = std::get<1>(h);
-        _tcb = std::get<2>(h);
-        _ccb = std::get<3>(h);
+
+		auto req = std::make_shared<http::request>(this->shared_from_this());
+        req->init();
+        auto res = std::make_shared<http::response>([self = this->shared_from_this(), this](){
+			notify_response();
+		});
+        *data = &current_request;
+        requests.push(req);
+        responses.push(res);
+		request_received(std::move(req), std::move(res));
 	};
 
 	auto hcb = [this]()
 	{
-		_hcb();
+		if(requests.empty()) return;
+		if(auto s = requests.back().lock())
+		{
+			s->headers(std::move(current_request));
+			current_request = http::http_request{};
+			//todo: connection error
+		}
 	};
 
 	auto bcb = [this](dstring&& b)
 	{
-		_bcb(std::move(b));
+		if(requests.empty()) return;
+		if(auto s = requests.back().lock())
+		{
+			s->body(std::move(b));
+			//todo: connection error
+		}
 	};
 
 	auto tcb = [this](dstring&& k, dstring&& v)
 	{
-		_tcb(std::move(k), std::move(v));
+		if(requests.empty()) return;
+		if(auto s = requests.back().lock()) {
+			s->trailer(std::move(k), std::move(v));
+		}
 	};
 
 	auto ccb = [this]()
 	{
-		_ccb();
+		if(requests.empty()) return;
+		if(auto s = requests.back().lock()) {
+			s->finished();
+		}
 	};
 
 	auto fcb = [this](int error,bool&)
 	{
+		//failure always gets called after start...
 		LOGTRACE("Codec failure handling");
+		if(auto s = requests.back().lock())
+		{
+			s->error();
+		}
+		if(auto s = responses.back().lock()) {
+			s->error();
+		}
+		requests.pop();
+		responses.pop();
 		/*http::proto_version pv = version;
 		if ( ! error_code_distruction && some_message_started( pv ) )
 		{
@@ -107,16 +133,8 @@ bool handler_http1::start() noexcept
 
 bool handler_http1::should_stop() const noexcept
 {
-	auto finished = true;
-	for ( auto &open_transaction: th )
-	{
-		if(!open_transaction.message_ended || open_transaction.has_encoded_data())
-		{
-			finished = false;
-			break;
-		}
-	}
-	return error_happened || (finished && !persistent_connection);
+	auto finished = responses.empty();
+	return error_happened || (finished && !persistent);
 }
 
 bool handler_http1::on_read(const char* data, size_t len)
@@ -136,109 +154,16 @@ bool handler_http1::on_write(dstring& data)
 			data = std::move(serialization);
 			return true;
 		}
-
 	}
 	return false;
 }
 
-void handler_http1::transaction_handler::on_header(http::http_response&& preamble)
-{
-	access.response( preamble );
-	LOGTRACE(this," transaction_handler::on_header");
-	message_started = true;
-	preamble.keepalive(persistent);
-	encoded_data.append(encoder.encode_header(preamble));
-	enclosing->notify_write();
-}
-
-void handler_http1::transaction_handler::on_body(dstring&& chunk)
-{
-	LOGTRACE(this," transaction_handler::on_body");
-	assert(chunk.size());
-	if ( service::locator::inspector_log().active() ) access.append_response_body( chunk );
-	access.add_request_size(chunk.size());
-	encoded_data.append(encoder.encode_body(chunk));
-	enclosing->notify_write();
-}
-
-void handler_http1::transaction_handler::on_trailer(dstring&& k, dstring&& v)
-{
-	LOGTRACE(this," transaction_handler::on_trailer");
-	assert( k.size() && v.size() );
-	if ( service::locator::inspector_log().active() ) access.append_response_trailer(k, v);
-	encoded_data.append(encoder.encode_trailer(k,v));
-	enclosing->notify_write();
-}
-
-void handler_http1::transaction_handler::on_eom()
-{
-	LOGTRACE(this," transaction_handler::on_eom");
-	access.set_request_end();
-	encoded_data.append(encoder.encode_eom());
-	enclosing->notify_write();
-	message_ended = true;
-	enclosing->on_eom();
-}
-
-void handler_http1::on_eom()
-{
-	LOGTRACE(this, " on_eom");
-	if(!connector())
-	{
-		th.remove_if( [](transaction_handler &t){ return t.message_ended; });
-	}
-}
 
 void handler_http1::on_error(const int&)
 {
 	LOGTRACE(this, " on_error");
 	error_happened = true;
-	if(!connector())
-	{
-		th.remove_if([](transaction_handler &t){ return t.message_ended; });
-	}
-}
-
-void handler_http1::transaction_handler::on_request_preamble( http::http_request&& message )
-{
-	access.request(message);
-	//todo: reintroduce.
-	//if ( enclosing && enclosing->th.size() > 1 ) access.set_pipe( true );
-	LOGTRACE(this," on_request_preamble");
-	
-    cor = std::move ( service::locator::chain_factory().get_chain_and_params( message ) );
-	callback_cor_initializer( cor, this );
-	cor->on_request_preamble(std::move(message));
-}
-
-void handler_http1::transaction_handler::on_response_continue()
-{
-	LOGTRACE(this," on_response_continue");
-	access.continued();
-	continue_response.status(100);  //continue code
-	continue_response.protocol(http::proto_version::HTTP11);
-	continue_response.keepalive(persistent);
-	encoded_data.append(encoder.encode_header(continue_response));
-	encoded_data.append(encoder.encode_eom());
-	enclosing->notify_write();
-}
-
-void handler_http1::transaction_handler::on_error(const int &ec)
-{
-	LOGTRACE(this," :on_error");
-	access.error( ec );
-	access.commit();
-	message_ended = true;
-	encoded_data = {};
-	enclosing->on_error(ec);
-}
-
-void handler_http1::transaction_handler::on_request_canceled(const errors::error_code &ec)
-{
-	LOGTRACE(this," transaction_handler::on_request_canceled");
-	access.cancel();
-	if(cor)
-		cor->on_request_canceled(ec);
+	//propagate error.
 }
 
 void handler_http1::do_write()
@@ -252,9 +177,79 @@ void handler_http1::do_write()
 void handler_http1::on_connector_nulled()
 {
 	error_code_distruction = INTERNAL_ERROR_LONG(408);
-	if(handler_http1::should_stop() || th.empty()) return;
-	//delete all th no longer in use.
-	for (auto &t : th) t.on_request_canceled(error_code_distruction);
+	//should notify everybody in the connection of the error!
+    deinit();
+
 }
+
+
+bool handler_http1::poll_response(std::shared_ptr<http::response> res) {
+    auto state = res->get_state();
+    while(state != http::response::state::pending) {
+        switch(state) {
+            case http::response::state::headers_received:
+                notify_response_headers(res->get_headers()); break;
+            case http::response::state::body_received:
+                notify_response_body(res->get_body()); break;
+            case http::response::state::trailer_received:
+            {
+                auto trailer = res->get_trailer();
+                notify_response_trailer(std::move(trailer.first), std::move(trailer.second));
+                break;
+            }
+            case http::response::state::ended:
+                notify_response_end();
+                return true;
+            default: assert(0);
+        }
+        state = res->get_state();
+    }
+    return false;
+}
+
+//http1 only; move it down in the hierarchy.
+void handler_http1::notify_response()
+{
+    while(!responses.empty() && !requests.empty())
+    {
+        //replace all this with a polling mechanism!
+        auto &c = responses.front();
+        if(auto s = c.lock()) {
+            if(poll_response(s))
+            {
+                //we pop them both.
+                responses.pop();
+                requests.pop();
+            }
+            else break;
+        }
+    }
+}
+
+
+void handler_http1::notify_response_headers(http::http_response&& res)
+{
+    serialization.append(encoder.encode_header(res));
+    do_write();
+}
+
+void handler_http1::notify_response_body(dstring&& b)
+{
+    serialization.append(encoder.encode_body(b));
+    do_write();
+}
+
+void handler_http1::notify_response_trailer(dstring&&k, dstring&&v)
+{
+    serialization.append(encoder.encode_trailer(k, v));
+    do_write();
+}
+
+void handler_http1::notify_response_end()
+{
+    serialization.append(encoder.encode_eom());
+    do_write();
+}
+
 
 } //namespace

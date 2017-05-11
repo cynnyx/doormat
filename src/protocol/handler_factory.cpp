@@ -82,7 +82,7 @@ void handler_factory::register_protocol_selection_callbacks(SSL_CTX* ctx)
 	SSL_CTX_set_alpn_select_cb(ctx, alpn_select_cb, nullptr);
 }
 
-std::shared_ptr<handler_interface> handler_factory::negotiate_handler(std::shared_ptr<ssl_socket> sck, interval connect_timeout, interval read_timeout) const noexcept
+std::shared_ptr<http_handler> handler_factory::negotiate_handler(std::shared_ptr<ssl_socket> sck, interval connect_timeout, interval read_timeout) const noexcept
 {
 	const unsigned char* proto{nullptr};
 	unsigned int len{0};
@@ -112,17 +112,10 @@ std::shared_ptr<handler_interface> handler_factory::negotiate_handler(std::share
 
 	http::proto_version version = (type == handler_type::ht_h2) ? http::proto_version::HTTP20 : ((proto == nullptr ||   proto[len-1] == '0') ? http::proto_version::HTTP10 : http::proto_version::HTTP11);
 
-
 	return build_handler( type , version, connect_timeout, read_timeout, sck);
 }
 
-boost::asio::ip::address handler_interface::find_origin() const
-{
-	if(connector()) return connector()->origin();
-	return {};
-}
-
-std::shared_ptr<handler_interface> handler_factory::build_handler(handler_type type, http::proto_version proto, interval _connect_timeout, interval _read_timeout, std::shared_ptr<tcp_socket> socket) const noexcept
+std::shared_ptr<http_handler> handler_factory::build_handler(handler_type type, http::proto_version proto, interval _connect_timeout, interval _read_timeout, std::shared_ptr<tcp_socket> socket) const noexcept
 {
 	auto h = make_handler(type, proto);
 	auto conn = std::make_shared<connector<tcp_socket>>(_connect_timeout, _read_timeout, socket);
@@ -131,20 +124,16 @@ std::shared_ptr<handler_interface> handler_factory::build_handler(handler_type t
 	return h;
 }
 
-void handler_interface::close() {
-	if(auto s = _connector.lock()) s->close();
-}
-
-std::shared_ptr<handler_interface> handler_factory::build_handler(handler_type type, http::proto_version proto, interval _connect_timeout, interval _read_timeout, std::shared_ptr<ssl_socket> socket) const noexcept
+std::shared_ptr<http_handler> handler_factory::build_handler(handler_type type, http::proto_version proto, interval _connect_timeout, interval _read_timeout, std::shared_ptr<ssl_socket> socket) const noexcept
 {
 	auto conn = std::make_shared<connector<ssl_socket>>(_connect_timeout, _read_timeout, socket);
 	auto h = make_handler(type, proto);
-	conn->handler( h );
+	conn->handler(h);
 	conn->start(true);
 	return h;
 }
 
-std::shared_ptr<handler_interface> handler_factory::make_handler(handler_type type, http::proto_version proto ) const noexcept {
+std::shared_ptr<http_handler> handler_factory::make_handler(handler_type type, http::proto_version proto ) const noexcept {
 	switch(type)
 	{
 	case handler_type::ht_h2:
@@ -157,23 +146,4 @@ std::shared_ptr<handler_interface> handler_factory::make_handler(handler_type ty
 	}
 }
 
-void handler_interface::initialize_callbacks(node_interface &cor)
-{
-	header_callback hcb = [this](http::http_response&& headers){ /*on_header(move(headers)); */ };
-	body_callback bcb = [this](dstring&& chunk){ /* on_body(std::move(chunk)); */};
-	trailer_callback tcb = [this](dstring&& k, dstring&& v){ /* on_trailer(move(k),move(v)); */};
-	end_of_message_callback eomcb = [this](){on_eom();};
-	error_callback ecb = [this](const errors::error_code& ec) { on_error( ec.code() ); };
-	response_continue_callback rccb = [this](){ /*on_response_continue(); */};
-
-	cor.initialize_callbacks(hcb, bcb, tcb, eomcb, ecb, rccb);
-}
-
-void handler_interface::connector( std::shared_ptr<connector_interface>  conn )
-{
-	LOGTRACE("handler_interface::connector ", conn );
-	_connector = conn;
-	if ( ! _connector.lock() )
-		on_connector_nulled();
-}
 } //namespace

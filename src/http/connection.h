@@ -3,54 +3,33 @@
 
 #include <functional>
 #include <tuple>
+#include <iostream>
 
 #include "http_request.h"
 #include "http_response.h"
+#include "connection_error.h"
+
 namespace http {
 
 class request;
 class response;
 
 struct connection : std::enable_shared_from_this<connection> {
-	using request_callback = std::function<void(std::shared_ptr<http::request>, std::shared_ptr<http::response>)>;
-	using request_handlers_t = std::tuple<
-		std::function<void()>,
-		std::function<void(dstring&&)>,
-		std::function<void(dstring&&, dstring&&)>,
-		std::function<void()>
-	>;
-	void on_request(request_callback rcb) { request_cb = std::move(rcb); }
-	virtual void close() = 0;
-	virtual ~connection() = default;
+	using request_callback = std::function<void(connection&, std::shared_ptr<http::request>, std::shared_ptr<http::response>)>;
+	using error_callback = std::function<void(const http::connection_error &)>;
+    inline void on_request(request_callback rcb) { request_cb = std::move(rcb); }
+	inline void on_error();
+    virtual void set_persistent(bool persistent = true) = 0;
+    virtual void close() = 0;
+    virtual ~connection() = default;
+    http::connection_error current{error_code::success};
 protected:
-	http_request *request_received();
-	http_request *request_received(std::function<void(http_response&&)>, std::function<void(dstring&&)>, std::function<void(dstring&&, dstring&&)>, std::function<void()>);
-
-	request_handlers_t get_request_handlers();
-
-	//TODO: make pure virtual as soon as we get to fix http2 implementation
-	virtual void notify_response_headers(http_response &&res){}
-	virtual void notify_response_body(dstring&& body){}
-	virtual void notify_response_trailer(dstring&&k, dstring&&v){}
-	virtual void notify_response_end(){}
+	void request_received(std::shared_ptr<http::request>, std::shared_ptr<http::response>);
+    inline void init(){ myself = this->shared_from_this(); }
+    inline void deinit(){ myself = nullptr; }
 private:
-
-
-	/** Inner management of http events, so that we can send events to the request*/
-	void notify_headers();
-	void notify_body(dstring&& body);
-	void notify_finished();
-	void notify_trailers(dstring &&, dstring&&);
-	void notify_error(bool global = false);
-
-
-	bool poll_response(std::shared_ptr<response>);
-	void notify_response();
-
-	http_request current_request;
-	std::queue<std::weak_ptr<http::request>> requests;
-	std::queue<std::weak_ptr<http::response>> responses;
 	request_callback request_cb;
+    std::shared_ptr<connection> myself{nullptr};
 };
 
 }

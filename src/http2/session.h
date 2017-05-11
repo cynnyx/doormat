@@ -7,9 +7,9 @@
 #include "../connector.h"
 #include "../log/access_record.h"
 #include "../chain_of_responsibility/error_code.h"
+#include "../protocol/http_handler.h"
 
 #include <memory>
-#include <vector>
 
 namespace http2
 {
@@ -18,7 +18,7 @@ class stream;
 
 extern const std::size_t header_size_bytes;
 
-class session : public server::handler_interface
+class session : public server::http_handler
 {
 	using session_deleter = std::function<void(nghttp2_session*)>;
 
@@ -60,10 +60,9 @@ public:
 	bool on_write( dstring& chunk ) override;
 	bool should_stop() const noexcept override;
 
-	void do_write() override;
+    void do_write() override;
 	void on_connector_nulled() override;
 
-	void on_eom() override;
 	void on_error(const int &) override;
 
 	void finished_stream() noexcept;
