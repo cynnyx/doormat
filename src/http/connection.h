@@ -2,6 +2,7 @@
 #define DOORMAT_CONNECTION_H
 
 #include <functional>
+#include <tuple>
 
 #include "http_request.h"
 #include "http_response.h"
