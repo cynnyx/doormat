@@ -212,13 +212,13 @@ int doormat( int argc, char** argv )
     doormat_srv.reset(new server::http_server{2000, 1000, 0, 8888});
 
 	doormat_srv->on_client_connect([&io](auto conn){
-		conn->on_request([&io](http::connection &connection, std::shared_ptr<http::request> r, std::shared_ptr<http::response> b){
-            r->on_headers([&connection, &io](http::request& r, http::http_request &&req){
+		conn->on_request([&io](std::shared_ptr<http::connection> connection, std::shared_ptr<http::request> r, std::shared_ptr<http::response> b){
+            r->on_headers([connection, &io](http::request& r, http::http_request &&req){
                 auto d = req.serialize();
                 std::cout << std::string(d) << std::endl;
 			});
 
-            r->on_finished([b, &connection, &io](http::request& r){
+            r->on_finished([b, connection, &io](http::request& r){
                 http::http_response res;
                 res.protocol(http::proto_version::HTTP11);
                 res.status(200);
@@ -227,8 +227,8 @@ int doormat( int argc, char** argv )
                 b->headers(std::move(res));
                 b->body(dstring{body.c_str(), body.size()});
                 b->end();
-                io.post([&connection](){
-					connection.close();
+                io.post([connection](){
+					connection->close();
                     doormat_srv->stop();});
             });
         });

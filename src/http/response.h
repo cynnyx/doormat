@@ -7,6 +7,7 @@
 #include <memory>
 #include "../utils/dstring.h"
 #include "http_response.h"
+#include "connection_error.h"
 
 namespace server
 {
@@ -53,7 +54,7 @@ public:
     ~response() = default;
 private:
 
-    void error() {
+    void error(http::connection_error err) {
         if(error_callback) (*error_callback)();
     }
 

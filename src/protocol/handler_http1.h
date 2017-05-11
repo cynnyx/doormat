@@ -15,9 +15,6 @@
 namespace server
 {
 
-/**
- *
- * */
 class handler_http1 final: public http_handler
 {
 
@@ -30,12 +27,16 @@ public:
 	bool on_write(dstring&) override;
 	void on_error(const int&) override;
 
-	~handler_http1() override = default; 
+	~handler_http1() override = default;
 
-protected:
-	void do_write() override;
-	void on_connector_nulled() override;
 private:
+
+    /***/
+    boost::asio::io_service& io_service();
+
+    void do_write() override;
+    void on_connector_nulled() override;
+
     /** Method used by responses to notify availability of new content*/
     void notify_response();
     /** Method used to retrieeve new content from a response */
@@ -48,8 +49,8 @@ private:
     void notify_response_end();
 
     /** Requests and responses currently managed by this handler*/
-	std::queue<std::weak_ptr<http::request>> requests;
-    std::queue<std::weak_ptr<http::response>> responses;
+	std::list<std::weak_ptr<http::request>> requests;
+    std::list<std::weak_ptr<http::response>> responses;
 
     /** Encoder for responses*/
 	http::http_codec encoder;
@@ -65,6 +66,8 @@ private:
 	bool error_happened{false};
 
     errors::error_code error_code_distruction;
+
+
 
     http::proto_version version{http::proto_version::UNSET};
 

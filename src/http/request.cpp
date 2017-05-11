@@ -49,12 +49,6 @@ void request::trailer(dstring &&k, dstring &&v)
     if(trailer_callback) (*trailer_callback)(*this, std::move(k), std::move(v));
 }
 
-void request::error()
-{
-    if(error_callback) (*error_callback)(*this);
-    myself = nullptr;
-}
-
 void request::finished()
 {
     if(finished_callback) (*finished_callback)(*this);

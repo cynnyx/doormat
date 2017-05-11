@@ -6,6 +6,7 @@
 #include <experimental/optional>
 #include <iostream>
 #include "http_request.h"
+#include "message_error.h"
 
 namespace http2
 {
@@ -36,7 +37,7 @@ public:
     using body_callback_t = std::function<void(request&, dstring&& d)>;
     using trailer_callback_t = std::function<void(request&, dstring&&k, dstring&&v)>;
     using finished_callback_t = std::function<void(request&)>;
-    using error_callback_t = std::function<void(request&)>;
+    using error_callback_t = std::function<void(std::shared_ptr<request>, const http::connection_error &err)>;
 
     void on_headers(headers_callback_t);
     void on_body(body_callback_t);
@@ -50,7 +51,7 @@ private:
     /** External handlers allowing to trigger events to be communicated to the user */
     void headers(http::http_request &&);
     void body(dstring&& d);
-    void error();
+    void error(http::connection_error err) { conn_error =std::move(err); if(error_callback) (*error_callback)(this->shared_from_this(), conn_error); myself=nullptr; }
     void trailer(dstring&&, dstring&&);
     void finished();
     void init(){myself=this->shared_from_this();}
@@ -64,6 +65,8 @@ private:
 
     std::shared_ptr<connection> connection_keepalive;
     std::shared_ptr<request> myself;
+
+    http::connection_error conn_error{http::error_code::success};
 };
 
 

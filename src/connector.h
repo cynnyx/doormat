@@ -37,13 +37,14 @@ public:
 	virtual bool is_ssl() const noexcept = 0;
 	reusable_buffer<MAXINBYTESPERLOOP> _rb;
 	virtual void close()=0;
+    virtual boost::asio::io_service & io_service() = 0;
 protected:
 	dstring _out;
 };
 
 // http_handler will become a template!?
 template <typename socket_type>
-class connector: public connector_interface,
+class connector final: public connector_interface,
 	public std::enable_shared_from_this< connector<socket_type> >
 {
 	std::shared_ptr<socket_type> _socket;
@@ -262,6 +263,11 @@ public:
 			}
 		);
 	}
+
+
+    boost::asio::io_service& io_service() {
+        return _socket->get_io_service();
+    }
 };
 
 }
