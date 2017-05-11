@@ -1,7 +1,7 @@
 #include <stdexcept>
 #include <string>
 
-#include "../../deps/nghttp2/build/include/nghttp2/nghttp2.h"
+#include "nghttp2/nghttp2.h"
 
 namespace http2
 {

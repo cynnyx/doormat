@@ -1,7 +1,7 @@
 #ifndef STREAM__H
 #define STREAM__H
 
-#include "../../deps/nghttp2/build/include/nghttp2/nghttp2.h"
+#include "nghttp2/nghttp2.h"
 
 #include <cstdint>
 #include <cstddef>

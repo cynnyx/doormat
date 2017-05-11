@@ -1,7 +1,7 @@
 #ifndef SESSION__H
 #define SESSION__H
 
-#include "../../deps/nghttp2/build/include/nghttp2/nghttp2.h"
+#include "nghttp2/nghttp2.h"
 #include "../utils/doormat_types.h"
 #include "../protocol/handler_factory.h"
 #include "../connector.h"
