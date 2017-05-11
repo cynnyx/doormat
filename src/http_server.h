@@ -9,7 +9,6 @@
 #include <boost/system/error_code.hpp>
 
 #include "connector.h"
-#include "io_service_pool.h"
 #include "utils/sni_solver.h"
 #include "protocol/handler_factory.h"
 
