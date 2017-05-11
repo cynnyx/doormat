@@ -18,7 +18,7 @@ namespace server
 /**
  *
  * */
-class handler_http1 : public http_handler
+class handler_http1 final: public http_handler
 {
 
 public:
@@ -30,8 +30,7 @@ public:
 	bool on_write(dstring&) override;
 	void on_error(const int&) override;
 
-	virtual ~handler_http1() = default;
-
+	~handler_http1() override = default; 
 
 protected:
 	void do_write() override;
@@ -68,6 +67,7 @@ private:
     errors::error_code error_code_distruction;
 
     http::proto_version version{http::proto_version::UNSET};
+
 
 };
 

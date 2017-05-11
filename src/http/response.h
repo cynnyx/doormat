@@ -19,7 +19,7 @@ class stream;
 
 namespace http
 {
-class response
+class response : public std::enable_shared_from_this<response>
 {
     friend server::handler_http1;
     friend http2::stream;
@@ -49,6 +49,8 @@ public:
     http_response get_headers();
     dstring get_body();
     std::pair<dstring, dstring> get_trailer();
+
+    ~response() = default;
 private:
 
     void error() {

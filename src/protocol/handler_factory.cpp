@@ -112,7 +112,6 @@ std::shared_ptr<http_handler> handler_factory::negotiate_handler(std::shared_ptr
 
 	http::proto_version version = (type == handler_type::ht_h2) ? http::proto_version::HTTP20 : ((proto == nullptr ||   proto[len-1] == '0') ? http::proto_version::HTTP10 : http::proto_version::HTTP11);
 
-
 	return build_handler( type , version, connect_timeout, read_timeout, sck);
 }
 
@@ -129,7 +128,7 @@ std::shared_ptr<http_handler> handler_factory::build_handler(handler_type type, 
 {
 	auto conn = std::make_shared<connector<ssl_socket>>(_connect_timeout, _read_timeout, socket);
 	auto h = make_handler(type, proto);
-	conn->handler( h );
+	conn->handler(h);
 	conn->start(true);
 	return h;
 }

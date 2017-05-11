@@ -41,6 +41,7 @@ protected:
 	}
 
     void set_persistent(bool value) override { persistent = value; }
+
 public:
 	http_handler() = default;
 	void close() override;
@@ -54,7 +55,7 @@ public:
 
 	virtual void on_error(const int &) = 0;
 
-    virtual ~http_handler() = default;
+    ~http_handler() override = default;
 };
 
 }

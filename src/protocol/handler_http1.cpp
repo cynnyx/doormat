@@ -21,17 +21,19 @@ handler_http1::handler_http1(http::proto_version version)
 
 bool handler_http1::start() noexcept
 {
+    init();
     auto scb = [this](http::http_structured_data** data)
 	{
 
 		auto req = std::make_shared<http::request>(this->shared_from_this());
-		auto res = std::make_shared<http::response>([self = this->shared_from_this(), this](){
+        req->init();
+        auto res = std::make_shared<http::response>([self = this->shared_from_this(), this](){
 			notify_response();
 		});
         *data = &current_request;
-		request_received(req, res);
-		requests.emplace(std::move(req));
-		responses.push(std::move(res));
+        requests.push(req);
+        responses.push(res);
+		request_received(std::move(req), std::move(res));
 	};
 
 	auto hcb = [this]()
@@ -176,6 +178,7 @@ void handler_http1::on_connector_nulled()
 {
 	error_code_distruction = INTERNAL_ERROR_LONG(408);
 	//should notify everybody in the connection of the error!
+    deinit();
 
 }
 
