@@ -8,7 +8,6 @@
 #include <boost/asio.hpp>
 #include <boost/system/error_code.hpp>
 
-#include "connector.h"
 #include "utils/sni_solver.h"
 #include "protocol/handler_factory.h"
 
@@ -17,8 +16,6 @@ namespace server
 
 using ssl_context = boost::asio::ssl::context;
 using tcp_acceptor = boost::asio::ip::tcp::acceptor;
-using tcp_connector = connector<tcp_socket>;
-using ssl_connector = connector<ssl_socket>;
 
 /** \brief http_server class allows to spawn an http server listenign on a tls and on a http port.
  *  Default ports are 443 and 80.
