@@ -36,22 +36,26 @@ void request::on_error(error_callback_t ecb)
 /** Events triggers */
 void request::headers(http::http_request &&req)
 {
-    if(headers_callback) (*headers_callback)(*this, std::move(req));
+	_preamble = std::move(req);
+    if(headers_callback) (*headers_callback)(this->shared_from_this());
 }
 
 void request::body(dstring&& body)
 {
-    if(body_callback) (*body_callback)(*this, std::move(body));
+	//todo: avoid copying
+	std::unique_ptr<char> b{ new char[body.size()]};
+	std::memcpy(b.get(), body.cdata(), body.size());
+    if(body_callback) (*body_callback)(this->shared_from_this(), std::move(b), body.size());
 }
 
 void request::trailer(dstring &&k, dstring &&v)
 {
-    if(trailer_callback) (*trailer_callback)(*this, std::move(k), std::move(v));
+    if(trailer_callback) (*trailer_callback)(this->shared_from_this(), std::string(k), std::string(v));
 }
 
 void request::finished()
 {
-    if(finished_callback) (*finished_callback)(*this);
+    if(finished_callback) (*finished_callback)(this->shared_from_this());
     myself = nullptr;
 }
 

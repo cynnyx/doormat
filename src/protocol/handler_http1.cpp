@@ -27,7 +27,7 @@ bool handler_http1::start() noexcept
 
 		auto req = std::make_shared<http::request>(this->shared_from_this());
 		req->init();
-		auto res = std::make_shared<http::response>([self = this->shared_from_this(), this](){
+		auto res = std::make_shared<http::response>([this, self = this->shared_from_this()](){
 			notify_response();
 		});
 		*data = &current_request;
@@ -232,7 +232,8 @@ void handler_http1::notify_response()
 	{
 		//replace all this with a polling mechanism!
 		auto &c = responses.front();
-		if(auto s = c.lock()) {
+		if(auto s = c.lock())
+		{
 			if(poll_response(s))
 			{
 				//we pop them both.
@@ -269,7 +270,8 @@ void handler_http1::notify_response_end()
 	do_write();
 }
 
-boost::asio::io_service& handler_http1::io_service() {
+boost::asio::io_service& handler_http1::io_service()
+{
 	return connector()->io_service();
 }
 

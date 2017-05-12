@@ -33,10 +33,10 @@ public:
     request& operator=(const request&) = delete;
 
     /** Callback types. */
-    using headers_callback_t = std::function<void(request&, http::http_request &&)>;
-    using body_callback_t = std::function<void(request&, dstring&& d)>;
-    using trailer_callback_t = std::function<void(request&, dstring&&k, dstring&&v)>;
-    using finished_callback_t = std::function<void(request&)>;
+    using headers_callback_t = std::function<void(std::shared_ptr<request>)>;
+    using body_callback_t = std::function<void(std::shared_ptr<request>, std::unique_ptr<char> char_array, size_t size)>;
+    using trailer_callback_t = std::function<void(std::shared_ptr<request>, std::string k, std::string v)>;
+    using finished_callback_t = std::function<void(std::shared_ptr<request>)>;
     using error_callback_t = std::function<void(std::shared_ptr<request>, const http::connection_error &err)>;
 
     void on_headers(headers_callback_t);
@@ -44,6 +44,10 @@ public:
     void on_error(error_callback_t);
     void on_trailer(trailer_callback_t);
     void on_finished(finished_callback_t);
+
+	/** Preamble manipulation methods */
+	http::http_request & preamble() { return _preamble; }
+	void clear_preamble() { _preamble = http::http_request{}; }
 
     ~request() = default;
 private:
@@ -54,7 +58,7 @@ private:
     void error(http::connection_error err) { conn_error =std::move(err); if(error_callback) (*error_callback)(this->shared_from_this(), conn_error); myself=nullptr; }
     void trailer(dstring&&, dstring&&);
     void finished();
-    void init(){myself=this->shared_from_this();}
+    void init(){ myself = this->shared_from_this();}
 
     /* User registered events */
     std::experimental::optional<headers_callback_t> headers_callback;
@@ -67,6 +71,10 @@ private:
     std::shared_ptr<request> myself;
 
     http::connection_error conn_error{http::error_code::success};
+
+	http::http_request _preamble;
+
+
 };
 
 
