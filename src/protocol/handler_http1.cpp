@@ -26,8 +26,8 @@ bool handler_http1::start() noexcept
 	{
 		auto req = std::make_shared<http::request>(this->shared_from_this());
 		req->init();
-		auto res = std::make_shared<http::response>([this, self = this->shared_from_this()](){
-			notify_response();
+		auto res = std::make_shared<http::response>([self = std::static_pointer_cast<handler_http1>(this->shared_from_this())](){
+			self->notify_response();
 		});
 		*data = &current_request;
 		requests.push_back(req);
