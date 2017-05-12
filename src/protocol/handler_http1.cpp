@@ -24,7 +24,6 @@ bool handler_http1::start() noexcept
 	init();
 	auto scb = [this](http::http_structured_data** data)
 	{
-
 		auto req = std::make_shared<http::request>(this->shared_from_this());
 		req->init();
 		auto res = std::make_shared<http::response>([this, self = this->shared_from_this()](){
@@ -138,7 +137,7 @@ bool handler_http1::start() noexcept
 
 bool handler_http1::should_stop() const noexcept
 {
-	auto finished = responses.empty();
+	bool finished = responses.empty();
 	return error_happened || (finished && !persistent);
 }
 
@@ -238,8 +237,14 @@ void handler_http1::notify_response()
 			{
 				//we pop them both.
 				responses.pop_front();
-				requests.pop_front(); }
+				requests.pop_front();
+			}
 			else break;
+		}
+		else
+		{
+			responses.pop_front();
+			requests.pop_front();
 		}
 	}
 }

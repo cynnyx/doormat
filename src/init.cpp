@@ -215,13 +215,13 @@ int doormat( int argc, char** argv )
 		conn->on_request([&io](std::shared_ptr<http::connection> connection, std::shared_ptr<http::request> r, std::shared_ptr<http::response> b){
             r->on_headers([connection, &io](auto r){
 	            auto d = r->preamble().serialize();
-                std::cout << std::string(d) << std::endl;
+                //std::cout << std::string(d) << std::endl;
 	            r->clear_preamble();
             });
 
 			r->on_body([](auto r, std::unique_ptr<char> body, size_t s)
 			{
-				std::cout << std::string{body.get(), s} << std::endl;
+				//std::cout << std::string{body.get(), s} << std::endl;
 			});
 
             r->on_finished([b, connection, &io](auto r){
@@ -233,9 +233,6 @@ int doormat( int argc, char** argv )
                 b->headers(std::move(res));
                 b->body(dstring{body.c_str(), body.size()});
                 b->end();
-                io.post([connection](){
-					connection->close();
-                    doormat_srv->stop();});
             });
         });
 	});

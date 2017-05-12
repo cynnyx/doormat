@@ -23,6 +23,7 @@ namespace http {
  *  to the request.
  * */
 class connection;
+
 class request : public std::enable_shared_from_this<request> {
 	friend class server::handler_http1;
 	friend class http2::stream;
@@ -55,10 +56,12 @@ private:
     /** External handlers allowing to trigger events to be communicated to the user */
     void headers(http::http_request &&);
     void body(dstring&& d);
-    void error(http::connection_error err) { conn_error =std::move(err); if(error_callback) (*error_callback)(this->shared_from_this(), conn_error); myself=nullptr; }
+    void error(http::connection_error err);
     void trailer(dstring&&, dstring&&);
     void finished();
+
     void init(){ myself = this->shared_from_this();}
+
 
     /* User registered events */
     std::experimental::optional<headers_callback_t> headers_callback;
@@ -68,12 +71,12 @@ private:
     std::experimental::optional<finished_callback_t> finished_callback;
 
     std::shared_ptr<connection> connection_keepalive;
-    std::shared_ptr<request> myself;
+    /** Ptr-to-self: to grant the user that, until finished() or error() event is propagated, the request will be alive*/
+	std::shared_ptr<request> myself;
 
     http::connection_error conn_error{http::error_code::success};
 
 	http::http_request _preamble;
-
 
 };
 

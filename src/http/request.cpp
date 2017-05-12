@@ -55,8 +55,18 @@ void request::trailer(dstring &&k, dstring &&v)
 
 void request::finished()
 {
-    if(finished_callback) (*finished_callback)(this->shared_from_this());
-    myself = nullptr;
+	if(!myself) return;
+    request_finished = true;
+	if(finished_callback) (*finished_callback)(this->shared_from_this());
+	myself = nullptr;
+}
+
+void request::error(http::connection_error err)
+{
+	if(!myself) return;
+	conn_error = std::move(err);
+	if(error_callback) (*error_callback)(this->shared_from_this(), conn_error);
+	myself=nullptr;
 }
 
 }

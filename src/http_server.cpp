@@ -44,6 +44,7 @@ void http_server::start(boost::asio::io_service &io) noexcept
 {
     if(running) return;
     running = true;
+
     if(_ssl)
     {
         _ssl_ctx = &(sni.begin()->context);

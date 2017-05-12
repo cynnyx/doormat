@@ -186,14 +186,14 @@ public:
 				cancel_deadline();
 				if(!ec)
 				{
-					LOGDEBUG(this," received:",bytes_transferred," Bytes");
+					LOGTRACE(this," received:",bytes_transferred," Bytes");
 					assert(bytes_transferred);
 
 					auto tmp = _rb.produce(bytes_transferred);
 					if( _handler->on_read(tmp, bytes_transferred) )
 					{
 						_rb.consume(tmp + bytes_transferred);
-						LOGDEBUG(this," read succeded");
+						LOGTRACE(this," read succeded");
 						do_read();
 					}
 					else
@@ -209,7 +209,7 @@ public:
 				}
 				else
 				{
-					LOGTRACE(this," read canceled");
+					LOGDEBUG(this," read canceled");
 				}
 			});
 	}
@@ -222,8 +222,8 @@ public:
 		_out = dstring{};
 		if ( !_handler->on_write(_out) )
 		{
-			LOGERROR(this," error on_write - write failed");
-			return stop();
+			LOGDEBUG(this," error on_write - write failed");
+			return;
 		}
 
 		if( !_out && _handler->should_stop() )

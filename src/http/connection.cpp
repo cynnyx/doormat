@@ -21,4 +21,9 @@ void connection::on_error(error_callback ecb)
 	error_cb.emplace(std::move(ecb));
 }
 
+void connection::on_request(request_callback rcb)
+{
+	request_cb = std::move(rcb);
+}
+
 }
