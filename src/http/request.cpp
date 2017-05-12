@@ -56,7 +56,6 @@ void request::trailer(dstring &&k, dstring &&v)
 void request::finished()
 {
 	if(!myself) return;
-    request_finished = true;
 	if(finished_callback) (*finished_callback)(this->shared_from_this());
 	myself = nullptr;
 }
