@@ -30,13 +30,13 @@ public:
 	bool on_write(dstring&) override;
 	void on_error(const int&) override;
 
-	~handler_http1() override = default; 
+	~handler_http1() override = default;
 
-protected:
+private:
 	void do_write() override;
 	void on_connector_nulled() override;
-private:
-    /** Method used by responses to notify availability of new content*/
+
+	/** Method used by responses to notify availability of new content*/
     void notify_response();
     /** Method used to retrieeve new content from a response */
     bool poll_response(std::shared_ptr<http::response>);
