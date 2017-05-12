@@ -11,6 +11,7 @@
 #include "../src/protocol/handler_factory.h"
 #include "../src/protocol/handler_http1.h"
 #include "../src/network/cloudia_pool.h"
+#include "../src/http/server/server_traits.h"
 
 #include "../src/dummy_node.h"
 
@@ -103,7 +104,7 @@ TEST_F(handler, http1_persistent)
 		"date: Tue, 17 May 2016 14:53:09 GMT\r\n"
 		"\r\n";
 
-	std::shared_ptr<server::handler_http1> h1 = std::make_shared<server::handler_http1>(http::proto_version::HTTP11);
+	std::shared_ptr<server::handler_http1<http::server_traits>> h1 = std::make_shared<server::handler_http1<http::server_traits>>(http::proto_version::HTTP11);
 	h1->connector(conn);
 
 	// list of chunks that I expect to receive inside the on_write()
@@ -160,7 +161,7 @@ TEST_F(handler, http1_non_persistent)
 			"connection: close\r\n"
 			"\r\n";
 
-	std::shared_ptr<server::handler_http1> h1= std::make_shared<server::handler_http1>(http::proto_version::HTTP11);
+	std::shared_ptr<server::handler_http1<http::server_traits>> h1= std::make_shared<server::handler_http1<http::server_traits>>(http::proto_version::HTTP11);
 	h1->connector(conn);
 
 	// list of chunks that I expect to receive inside the on_write()
@@ -221,7 +222,7 @@ TEST_F(handler, http1_pipelining)
 			"connection: close\r\n"
 			"\r\n";
 
-	std::shared_ptr<server::handler_http1> h1= std::make_shared<server::handler_http1>(http::proto_version::HTTP11);
+	std::shared_ptr<server::handler_http1<http::server_traits>> h1= std::make_shared<server::handler_http1<http::server_traits>>(http::proto_version::HTTP11);
 	h1->connector(conn);
 
 	// list of chunks that I expect to receive inside the on_write()
