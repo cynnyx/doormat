@@ -21,18 +21,18 @@ handler_http1::handler_http1(http::proto_version version)
 
 bool handler_http1::start() noexcept
 {
-    init();
-    auto scb = [this](http::http_structured_data** data)
+	init();
+	auto scb = [this](http::http_structured_data** data)
 	{
 
 		auto req = std::make_shared<http::request>(this->shared_from_this());
-        req->init();
+		req->init();
 		auto res = std::make_shared<http::response>([self = this->shared_from_this(), this](){
 			notify_response();
 		});
-        *data = &current_request;
-        requests.push(req);
-        responses.push(res);
+		*data = &current_request;
+		requests.push(req);
+		responses.push(res);
 		request_received(std::move(req), std::move(res));
 	};
 
@@ -178,7 +178,7 @@ void handler_http1::on_connector_nulled()
 {
 	error_code_distruction = INTERNAL_ERROR_LONG(408);
 	//should notify everybody in the connection of the error!
-    deinit();
+	deinit();
 
 }
 
@@ -186,70 +186,70 @@ void handler_http1::on_connector_nulled()
 bool handler_http1::poll_response(http::response& res)
 {
 	auto state = res.get_state();
-    while(state != http::response::state::pending) {
-        switch(state) {
-            case http::response::state::headers_received:
-				notify_headers(res.get_headers()); break;
-            case http::response::state::body_received:
-				notify_body(res.get_body()); break;
-            case http::response::state::trailer_received:
-            {
-				auto trailer = res.get_trailer();
-				notify_trailer(std::move(trailer.first), std::move(trailer.second));
-                break;
-            }
-            case http::response::state::ended:
-				notify_end();
-                return true;
-            default: assert(0);
-        }
+	while(state != http::response::state::pending) {
+		switch(state) {
+		case http::response::state::headers_received:
+			notify_headers(res.get_headers()); break;
+		case http::response::state::body_received:
+			notify_body(res.get_body()); break;
+		case http::response::state::trailer_received:
+		{
+			auto trailer = res.get_trailer();
+			notify_trailer(std::move(trailer.first), std::move(trailer.second));
+			break;
+		}
+		case http::response::state::ended:
+			notify_end();
+			return true;
+		default: assert(0);
+		}
 		state = res.get_state();
-    }
-    return false;
+	}
+	return false;
 }
 
 //http1 only; move it down in the hierarchy.
 void handler_http1::notify_response()
 {
-    while(!responses.empty() && !requests.empty())
-    {
-        //replace all this with a polling mechanism!
-        auto &c = responses.front();
-        if(auto s = c.lock()) {
+	while(!responses.empty() && !requests.empty())
+	{
+		//replace all this with a polling mechanism!
+		auto &c = responses.front();
+		if(auto s = c.lock()) {
 			if(poll_response(*s))
-            {
-                //we pop them both.
-                responses.pop();
-                requests.pop();
-            }
-            else break;
-        }
-    }
+			{
+				//we pop them both.
+				responses.pop();
+				requests.pop();
+			}
+			else break;
+		}
+	}
 }
 
 
 void handler_http1::notify_headers(http::http_response&& res)
 {
-    serialization.append(encoder.encode_header(res));
-    do_write();
+	serialization.append(encoder.encode_header(res));
+	do_write();
 }
 
 void handler_http1::notify_body(dstring&& b)
 {
-    serialization.append(encoder.encode_body(b));
-    do_write();
+	serialization.append(encoder.encode_body(b));
+	do_write();
 }
 
 void handler_http1::notify_trailer(dstring&&k, dstring&&v)
 {
-    serialization.append(encoder.encode_trailer(k, v));
-    do_write();
+	serialization.append(encoder.encode_trailer(k, v));
+	do_write();
 }
 
 void handler_http1::notify_end()
 {
-    serialization.append(encoder.encode_eom());
-    do_write();
+	serialization.append(encoder.encode_eom());
+	do_write();
 }
 
 
