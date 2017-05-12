@@ -1,5 +1,8 @@
-#include <boost/lexical_cast.hpp>
 #include "http_server.h"
+#include "utils/log_wrapper.h"
+
+#include <boost/lexical_cast.hpp>
+
 using namespace std;
 using namespace boost::asio;
 using namespace boost::asio::ip;

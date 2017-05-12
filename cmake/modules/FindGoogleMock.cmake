@@ -73,7 +73,7 @@ function(_gmock_find_library _name)
     NAMES ${ARGN}
     HINTS
       $ENV{GMOCK_ROOT}
-      ${GMOCK_ROOT}
+      ${GMOCK_ROOT}/../build/googlemock
     PATH_SUFFIXES ${_gmock_libpath_suffixes}
   )
   mark_as_advanced(${_name})

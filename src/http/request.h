@@ -24,8 +24,8 @@ namespace http {
  * */
 class connection;
 class request : public std::enable_shared_from_this<request> {
-    friend server::handler_http1;
-    friend http2::stream;
+	friend class server::handler_http1;
+	friend class http2::stream;
 public:
     request(std::shared_ptr<connection>);
     //non-copiable object.

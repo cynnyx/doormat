@@ -30,7 +30,6 @@ public:
 	~handler_http1() override = default;
 
 private:
-
     /***/
     boost::asio::io_service& io_service();
 
@@ -52,25 +51,22 @@ private:
 	std::list<std::weak_ptr<http::request>> requests;
     std::list<std::weak_ptr<http::response>> responses;
 
-    /** Encoder for responses*/
+
+	/** Encoder for responses*/
 	http::http_codec encoder;
-    /** Encoder for requests */
-    http::http_codec decoder;
+	/** Encoder for requests */
+	http::http_codec decoder;
 
-    /** Request used by decoder to represent the received data*/
-    http::http_request current_request;
+	/** Request used by decoder to represent the received data*/
+	http::http_request current_request;
 
-    /** Dstring used to serialize the information coming from the responses*/
-    dstring serialization;
+	/** Dstring used to serialize the information coming from the responses*/
+	dstring serialization;
 
 	bool error_happened{false};
 
-    errors::error_code error_code_distruction;
-
-
-
+	errors::error_code error_code_distruction;
     http::proto_version version{http::proto_version::UNSET};
-
 
 };
 

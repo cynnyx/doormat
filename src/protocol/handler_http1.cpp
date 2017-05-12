@@ -33,6 +33,7 @@ bool handler_http1::start() noexcept
 		*data = &current_request;
 		requests.push_back(req);
 		responses.push_back(res);
+
 		request_received(std::move(req), std::move(res));
 	};
 
@@ -145,7 +146,6 @@ bool handler_http1::on_read(const char* data, size_t len)
 {
 	LOGTRACE(this, " Received chunk of size:", len);
 	auto rv = decoder.decode(data, len);
-	connector()->_rb.consume(data + len );
 	return rv;
 }
 
@@ -238,8 +238,7 @@ void handler_http1::notify_response()
 			{
 				//we pop them both.
 				responses.pop_front();
-				requests.pop_front();
-			}
+				requests.pop_front(); }
 			else break;
 		}
 	}

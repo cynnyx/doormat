@@ -26,7 +26,7 @@ if(NOT GTEST_ROOT)
 endif(NOT GTEST_ROOT)
 
 if(NOT GTEST_BUILD)
-	set(GTEST_BUILD "${GTEST_ROOT}/googletest")
+	set(GTEST_BUILD "${GTEST_ROOT}/build")
 endif(NOT GTEST_BUILD)
 
 find_path(
@@ -37,13 +37,15 @@ find_path(
 
 find_library(
 	GOOGLETEST_LIBRARY NAMES gtest
-	PATHS ${GTEST_BUILD}
+	PATHS ${GTEST_BUILD}/googletest
+	PATHS ${GTEST_BUILD}/googlemock/gtest
 	NO_DEFAULT_PATH
 )
 
 find_library(
 	GOOGLETEST_MAIN_LIBRARY NAMES gtest_main
-	PATHS ${GTEST_BUILD}
+	PATHS ${GTEST_BUILD}/googletest
+	PATHS ${GTEST_BUILD}/googlemock/gtest
 	NO_DEFAULT_PATH
 )
 

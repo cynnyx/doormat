@@ -56,7 +56,8 @@ struct node
 	}
 
 	template<typename...Args>
-	void request_canceled(Args&&... args) {
+	void request_canceled(Args&&... args)
+	{
 		t.on_request_canceled(std::forward<Args>(args)...);
 	}
 
@@ -249,6 +250,7 @@ struct node<I, 0, 0, T>
 	{
 		t.on_request_canceled(std::forward<Args>(args)...);
 	}
+
 	template<typename... Args>
 	void request_finished(Args &&... args)
 	{
@@ -373,7 +375,6 @@ struct node<I,N, N, T...>
 		t.on_end_of_message(std::forward<Args>(args)...);
 	}
 
-
 	template<typename... Args>
 	void error(Args &&... args)
 	{
@@ -435,7 +436,6 @@ struct chain<T,impl::integer_sequence<std::size_t, I...>, N...>: public T
 	{
 		node<T, 0, sizeof...(N)-1, N...>::request_canceled(std::forward<Args>(args)...);
 	}
-
 
 	template<typename... Args>
 	void request_finished(Args &&... args)
