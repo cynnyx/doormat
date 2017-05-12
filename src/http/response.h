@@ -21,8 +21,8 @@ namespace http
 {
 class response : public std::enable_shared_from_this<response>
 {
-	friend server::handler_http1;
-	friend http2::stream;
+	friend class server::handler_http1;
+	friend class http2::stream;
 public:
 	using error_callback_t = std::function<void()>;
 

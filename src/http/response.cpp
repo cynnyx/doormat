@@ -35,7 +35,7 @@ response::response(std::function<void(http_response&&)> hcb, std::function<void(
 
 
 void response::headers(http_response &&res) { hcb(std::move(res));  }
-void response::body(dstring &&d){ bcb(std::move(d));  };
+void response::body(dstring &&d){ bcb(std::move(d));  }
 void response::trailer(dstring &&k, dstring&& v) { tcb(std::move(k), std::move(v)); }
 void response::end() { ccb(); }
 
@@ -79,6 +79,6 @@ std::pair<dstring, dstring> response::get_trailer() {
 	auto trailer = trailers.front();
 	trailers.pop();
 	return trailer;
-};
+}
 
 }
