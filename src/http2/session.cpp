@@ -406,7 +406,6 @@ bool session::on_read(const char* data, size_t len)
 	}
 	assert( static_cast<unsigned int>(rv)== len );
 
-	connector()->_rb.consume(data + len );
 	if ( nghttp2_session_want_write( session_data.get() ) )
 		do_write();
 	return true;

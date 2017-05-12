@@ -141,7 +141,6 @@ bool handler_http1::on_read(const char* data, size_t len)
 {
 	LOGTRACE(this, " Received chunk of size:", len);
 	auto rv = decoder.decode(data, len);
-	connector()->_rb.consume(data + len );
 	return rv;
 }
 

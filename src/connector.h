@@ -35,9 +35,9 @@ public:
 	virtual void do_write() = 0;
 	virtual boost::asio::ip::address origin() const = 0;
 	virtual bool is_ssl() const noexcept = 0;
-	reusable_buffer<MAXINBYTESPERLOOP> _rb;
 	virtual void close()=0;
 protected:
+	reusable_buffer<MAXINBYTESPERLOOP> _rb;
 	dstring _out;
 };
 
@@ -191,6 +191,7 @@ public:
 					auto tmp = _rb.produce(bytes_transferred);
 					if( _handler->on_read(tmp, bytes_transferred) )
 					{
+						_rb.consume(tmp + bytes_transferred);
 						LOGDEBUG(this," read succeded");
 						do_read();
 					}
