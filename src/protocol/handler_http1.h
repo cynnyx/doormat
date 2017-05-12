@@ -15,13 +15,19 @@
 #include "../http/response.h"
 #include "../connector.h"
 
+// TODO: should not be in _server_ namespace
 namespace server
 {
 
+template<typename handler_traits>
 class handler_http1 final: public http_handler
 {
 
 public:
+	using request_t = typename handler_traits::request_t;
+	using response_t = typename handler_traits::response_t;
+	using incoming_t = typename handler_traits::incoming_t;
+
 	handler_http1(http::proto_version version)
 		: version{version}
 	{
@@ -34,9 +40,9 @@ public:
 		auto scb = [this](http::http_structured_data** data)
 		{
 
-			auto req = std::make_shared<http::request>(this->shared_from_this());
+			auto req = std::make_shared<request_t>(this->shared_from_this());
 			req->init();
-			auto res = std::make_shared<http::response>([this, self = this->shared_from_this()](){
+			auto res = std::make_shared<response_t>([this, self = this->shared_from_this()](){
 				notify_response();
 			});
 			*data = &current_request;
@@ -54,7 +60,7 @@ public:
 				io_service().post(
 							[s, current_request = std::move(current_request)]() mutable {s->headers(std::move(current_request));}
 				);
-				current_request = http::http_request{};
+				current_request = {};
 			}
 		};
 
@@ -288,8 +294,8 @@ private:
 	}
 
 	/** Requests and responses currently managed by this handler*/
-	std::list<std::weak_ptr<http::request>> requests;
-	std::list<std::weak_ptr<http::response>> responses;
+	std::list<std::weak_ptr<request_t>> requests;
+	std::list<std::weak_ptr<response_t>> responses;
 
 
 	/** Encoder for responses*/
@@ -298,7 +304,7 @@ private:
 	http::http_codec decoder;
 
 	/** Request used by decoder to represent the received data*/
-	http::http_request current_request;
+	incoming_t current_request;
 
 	/** Dstring used to serialize the information coming from the responses*/
 	dstring serialization;

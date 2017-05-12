@@ -11,6 +11,7 @@
 
 namespace server
 {
+template<typename handler_traits>
 class handler_http1;
 }
 
@@ -22,6 +23,7 @@ namespace http
 {
 class response : public std::enable_shared_from_this<response>
 {
+	template<typename>
 	friend class server::handler_http1;
 	friend class http2::stream;
 public:

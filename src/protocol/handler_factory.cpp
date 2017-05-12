@@ -133,6 +133,14 @@ std::shared_ptr<http_handler> handler_factory::build_handler(handler_type type, 
 	return h;
 }
 
+// TODO: this should not be here
+struct server_traits {
+	using request_t = http::request;
+	using response_t = http::response;
+	using incoming_t = http::http_request;
+};
+
+
 std::shared_ptr<http_handler> handler_factory::make_handler(handler_type type, http::proto_version proto ) const noexcept {
 	switch(type)
 	{
@@ -142,7 +150,7 @@ std::shared_ptr<http_handler> handler_factory::make_handler(handler_type type, h
 	case handler_type::ht_h1:
 	default:
 		LOGDEBUG("HTTP1 selected");
-		return std::make_shared<handler_http1>( proto );
+		return std::make_shared<handler_http1<server_traits>>( proto );
 	}
 }
 
