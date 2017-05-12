@@ -39,13 +39,13 @@ private:
 	/** Method used by responses to notify availability of new content*/
     void notify_response();
     /** Method used to retrieeve new content from a response */
-    bool poll_response(std::shared_ptr<http::response>);
+	bool poll_response(http::response&);
 
     /** Response management methods. They operate on a single response*/
-    void notify_response_headers(http::http_response&& res);
-    void notify_response_body(dstring&& b);
-    void notify_response_trailer(dstring&&k, dstring&&v);
-    void notify_response_end();
+	void notify_headers(http::http_response&& res);
+	void notify_body(dstring&& b);
+	void notify_trailer(dstring&&k, dstring&&v);
+	void notify_end();
 
     /** Requests and responses currently managed by this handler*/
 	std::queue<std::weak_ptr<http::request>> requests;

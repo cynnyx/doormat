@@ -50,7 +50,7 @@ enum class state {
     ended
 } current = state::pending;
 
-response::state response::get_state()
+response::state response::get_state() const noexcept
 {
     if(bool(response_headers)) {
         return state::headers_received;

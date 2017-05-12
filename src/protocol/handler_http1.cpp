@@ -27,7 +27,7 @@ bool handler_http1::start() noexcept
 
 		auto req = std::make_shared<http::request>(this->shared_from_this());
         req->init();
-        auto res = std::make_shared<http::response>([self = this->shared_from_this(), this](){
+		auto res = std::make_shared<http::response>([self = this->shared_from_this(), this](){
 			notify_response();
 		});
         *data = &current_request;
@@ -183,26 +183,27 @@ void handler_http1::on_connector_nulled()
 }
 
 
-bool handler_http1::poll_response(std::shared_ptr<http::response> res) {
-    auto state = res->get_state();
+bool handler_http1::poll_response(http::response& res)
+{
+	auto state = res.get_state();
     while(state != http::response::state::pending) {
         switch(state) {
             case http::response::state::headers_received:
-                notify_response_headers(res->get_headers()); break;
+				notify_headers(res.get_headers()); break;
             case http::response::state::body_received:
-                notify_response_body(res->get_body()); break;
+				notify_body(res.get_body()); break;
             case http::response::state::trailer_received:
             {
-                auto trailer = res->get_trailer();
-                notify_response_trailer(std::move(trailer.first), std::move(trailer.second));
+				auto trailer = res.get_trailer();
+				notify_trailer(std::move(trailer.first), std::move(trailer.second));
                 break;
             }
             case http::response::state::ended:
-                notify_response_end();
+				notify_end();
                 return true;
             default: assert(0);
         }
-        state = res->get_state();
+		state = res.get_state();
     }
     return false;
 }
@@ -215,7 +216,7 @@ void handler_http1::notify_response()
         //replace all this with a polling mechanism!
         auto &c = responses.front();
         if(auto s = c.lock()) {
-            if(poll_response(s))
+			if(poll_response(*s))
             {
                 //we pop them both.
                 responses.pop();
@@ -227,25 +228,25 @@ void handler_http1::notify_response()
 }
 
 
-void handler_http1::notify_response_headers(http::http_response&& res)
+void handler_http1::notify_headers(http::http_response&& res)
 {
     serialization.append(encoder.encode_header(res));
     do_write();
 }
 
-void handler_http1::notify_response_body(dstring&& b)
+void handler_http1::notify_body(dstring&& b)
 {
     serialization.append(encoder.encode_body(b));
     do_write();
 }
 
-void handler_http1::notify_response_trailer(dstring&&k, dstring&&v)
+void handler_http1::notify_trailer(dstring&&k, dstring&&v)
 {
     serialization.append(encoder.encode_trailer(k, v));
     do_write();
 }
 
-void handler_http1::notify_response_end()
+void handler_http1::notify_end()
 {
     serialization.append(encoder.encode_eom());
     do_write();

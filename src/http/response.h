@@ -45,7 +45,7 @@ public:
     void on_error(error_callback_t ecb);
 
 
-    state get_state();
+	state get_state() const noexcept;
     http_response get_headers();
     dstring get_body();
     std::pair<dstring, dstring> get_trailer();
