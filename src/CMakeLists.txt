@@ -57,8 +57,8 @@ set(DOORMAT_COMMON_SOURCES
 	requests_manager/error_producer.cpp
 	requests_manager/client_wrapper.cpp
 	http/connection.cpp
-		http/request.cpp
-		http/response.cpp
+        http/server/request.cpp
+        http/server/response.cpp
 		protocol/http_handler.cpp
 	)
 

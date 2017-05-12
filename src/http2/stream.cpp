@@ -9,7 +9,7 @@
 #include "../chain_of_responsibility/callback_initializer.h"
 #include "../log/log.h"
 #include "../log/inspector_serializer.h"
-#include "../http/request.h"
+#include "../http/server/request.h"
 #include "../protocol/http_handler.h"
 
 

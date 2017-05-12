@@ -5,8 +5,8 @@
 #include "../log/inspector_serializer.h"
 #include "../service_locator/service_locator.h"
 #include "../endpoints/chain_factory.h"
-#include "../http/request.h"
-#include "../http/response.h"
+#include "../http/server/request.h"
+#include "../http/server/response.h"
 
 #include <typeinfo>
 

@@ -22,8 +22,8 @@
 
 #include "../deps/cynnypp/include/cynnypp/async_fs.hpp"
 #include "network/communicator/dns_communicator_factory.h"
-#include "http/request.h"
-#include "http/response.h"
+#include "http/server/request.h"
+#include "http/server/response.h"
 namespace doormat
 {
 

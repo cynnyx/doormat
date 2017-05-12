@@ -1,6 +1,6 @@
 #include "connection.h"
-#include "request.h"
-#include "response.h"
+#include "server/request.h"
+#include "server/response.h"
 
 namespace http
 {

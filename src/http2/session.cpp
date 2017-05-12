@@ -5,8 +5,8 @@
 #include "http2error.h"
 #include "../utils/log_wrapper.h"
 #include "http2alloc.h"
-#include "../http/request.h"
-#include "../http/response.h"
+#include "../http/server/request.h"
+#include "../http/server/response.h"
 
 namespace
 {
