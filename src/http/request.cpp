@@ -68,4 +68,9 @@ void request::error(http::connection_error err)
 	myself=nullptr;
 }
 
+std::shared_ptr<connection> request::get_connection()
+{
+	return connection_keepalive;
+}
+
 }

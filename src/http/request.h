@@ -50,6 +50,9 @@ public:
 	http::http_request & preamble() { return _preamble; }
 	void clear_preamble() { _preamble = http::http_request{}; }
 
+	/** Connection retrieve method*/
+	std::shared_ptr<http::connection> get_connection();
+
     ~request() = default;
 private:
 
