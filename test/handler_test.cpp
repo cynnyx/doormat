@@ -33,6 +33,9 @@ struct MockConnector : public server::connector_interface
 	void close() override {}
 	boost::asio::ip::address origin() const override { return boost::asio::ip::address::from_string("127.0.0.1");}
 	bool is_ssl() const noexcept override { return true; }
+
+	boost::asio::io_service io;
+	boost::asio::io_service &io_service() { return io; }
 };
 
 struct handler: public ::testing::Test
@@ -48,21 +51,22 @@ struct handler: public ::testing::Test
 protected:
 	handler() : conn{std::make_shared<MockConnector>(cb)}
 	{
-		service::initializer::load_configuration("./etc/doormat/doormat.test.config");
-		service::initializer::init_services();
-		service::initializer::set_inspector_log( new logging::inspector_log( "", "", false ) );
-		service::locator::configuration().set_thread_number(1);
+		//service::initializer::load_configuration("./etc/doormat/doormat.test.config");
+		//service::initializer::init_services();
+		//service::initializer::set_inspector_log( new logging::inspector_log( "", "", false ) );
+		//service::locator::configuration().set_thread_number(1);
 		
-		service::initializer::set_chain_factory( 
-			new endpoints::chain_factory( node_factory ) );
+		//service::initializer::set_chain_factory(
+	//		new endpoints::chain_factory( node_factory ) );
 
-		auto& ios = service::locator::service_pool().get_thread_io_service();
-		deadline.reset(new boost::asio::deadline_timer(ios));
+	//	auto& ios = service::locator::service_pool().get_thread_io_service();+
+
+		deadline.reset(new boost::asio::deadline_timer(conn->io_service()));
 // 		server::http_handler::make_chain = []()
 // 		{
 // 			return make_unique_chain<node_interface, dummy_node>();
 // 		};
-		keep_alive = new boost::asio::io_service::work(ios);
+		keep_alive = new boost::asio::io_service::work(conn->io_service());
 	}
 
 	virtual void SetUp()
@@ -74,17 +78,17 @@ protected:
 			size_t missinghandlers = 1;
 			while(missinghandlers)
 			{
-				missinghandlers = service::locator::service_pool().get_thread_io_service().poll_one();
+				missinghandlers =conn->io_service().poll_one();
 			}
 			delete keep_alive;
-			service::locator::service_pool().stop();
+			conn->io_service().stop();
 		});
 	}
 
 	virtual void TearDown()
 	{
-		ASSERT_TRUE( service::locator::service_pool().get_thread_io_service().stopped() );
-		service::locator::service_pool().reset();
+		ASSERT_TRUE( conn->io_service().stopped() );
+		conn->io_service().reset();
 	}
 };
 
