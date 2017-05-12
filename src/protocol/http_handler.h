@@ -44,17 +44,20 @@ protected:
 
 	void set_persistent(bool value) noexcept override { persistent = value; }
 
+	void set_timeout(std::chrono::milliseconds ms) override;
+
 public:
 	http_handler() = default;
 	void close() override;
 	void connector( std::shared_ptr<connector_interface> conn);
 
 	boost::asio::ip::address find_origin() const;
+
 	virtual bool start() noexcept = 0;
 	virtual bool should_stop() const noexcept = 0;
 	virtual bool on_read(const char*, unsigned long) = 0;
 	virtual bool on_write(dstring& chunk) = 0;
-
+	virtual void trigger_timeout_event() =0;
 	virtual void on_error(const int &) = 0;
 
 	~http_handler() override = default;

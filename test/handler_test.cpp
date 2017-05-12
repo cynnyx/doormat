@@ -33,7 +33,7 @@ struct MockConnector : public server::connector_interface
 	void close() override {}
 	boost::asio::ip::address origin() const override { return boost::asio::ip::address::from_string("127.0.0.1");}
 	bool is_ssl() const noexcept override { return true; }
-
+	void set_timeout(std::chrono::milliseconds) override {}
 	boost::asio::io_service io;
 	boost::asio::io_service &io_service() { return io; }
 };

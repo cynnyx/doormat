@@ -26,4 +26,11 @@ void connection::on_request(request_callback rcb)
 	request_cb = std::move(rcb);
 }
 
+
+void connection::on_timeout(std::chrono::milliseconds ms, timeout_callback tcb)
+{
+	timeout_cb.emplace(std::move(tcb));
+	set_timeout(ms);
+}
+
 }

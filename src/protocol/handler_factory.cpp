@@ -82,7 +82,7 @@ void handler_factory::register_protocol_selection_callbacks(SSL_CTX* ctx)
 	SSL_CTX_set_alpn_select_cb(ctx, alpn_select_cb, nullptr);
 }
 
-std::shared_ptr<http_handler> handler_factory::negotiate_handler(std::shared_ptr<ssl_socket> sck, interval connect_timeout, interval read_timeout) const noexcept
+std::shared_ptr<http_handler> handler_factory::negotiate_handler(std::shared_ptr<ssl_socket> sck) const noexcept
 {
 	const unsigned char* proto{nullptr};
 	unsigned int len{0};
@@ -112,21 +112,21 @@ std::shared_ptr<http_handler> handler_factory::negotiate_handler(std::shared_ptr
 
 	http::proto_version version = (type == handler_type::ht_h2) ? http::proto_version::HTTP20 : ((proto == nullptr ||   proto[len-1] == '0') ? http::proto_version::HTTP10 : http::proto_version::HTTP11);
 
-	return build_handler( type , version, connect_timeout, read_timeout, sck);
+	return build_handler( type , version, sck);
 }
 
-std::shared_ptr<http_handler> handler_factory::build_handler(handler_type type, http::proto_version proto, interval _connect_timeout, interval _read_timeout, std::shared_ptr<tcp_socket> socket) const noexcept
+std::shared_ptr<http_handler> handler_factory::build_handler(handler_type type, http::proto_version proto, std::shared_ptr<tcp_socket> socket) const noexcept
 {
 	auto h = make_handler(type, proto);
-	auto conn = std::make_shared<connector<tcp_socket>>(_connect_timeout, _read_timeout, socket);
+	auto conn = std::make_shared<connector<tcp_socket>>(socket);
 	conn->handler(h);
 	conn->start(true);
 	return h;
 }
 
-std::shared_ptr<http_handler> handler_factory::build_handler(handler_type type, http::proto_version proto, interval _connect_timeout, interval _read_timeout, std::shared_ptr<ssl_socket> socket) const noexcept
+std::shared_ptr<http_handler> handler_factory::build_handler(handler_type type, http::proto_version proto, std::shared_ptr<ssl_socket> socket) const noexcept
 {
-	auto conn = std::make_shared<connector<ssl_socket>>(_connect_timeout, _read_timeout, socket);
+	auto conn = std::make_shared<connector<ssl_socket>>(socket);
 	auto h = make_handler(type, proto);
 	conn->handler(h);
 	conn->start(true);

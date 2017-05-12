@@ -37,6 +37,7 @@ public:
 	virtual bool is_ssl() const noexcept = 0;
 	virtual void close()=0;
     virtual boost::asio::io_service & io_service() = 0;
+	virtual void set_timeout(std::chrono::milliseconds) = 0;
 protected:
 	reusable_buffer<MAXINBYTESPERLOOP> _rb;
 	dstring _out;
@@ -50,7 +51,6 @@ class connector final: public connector_interface,
 	std::shared_ptr<socket_type> _socket;
 	std::shared_ptr<http_handler> _handler{nullptr};
 
-	interval _handshake_ttl;
 	interval _ttl;
 
 	boost::asio::deadline_timer _timer;
@@ -76,13 +76,18 @@ class connector final: public connector_interface,
 			if(!ec)
 			{
 				LOGTRACE(self.get()," deadline has expired");
-				self->stop();
+				self->_handler->trigger_timeout_event();
 			}
 			else if(ec != boost::system::errc::operation_canceled)
 			{
 				LOGERROR(self.get()," error on deadline:", ec.message());
 			}
 		});
+	}
+
+	void set_timeout(std::chrono::milliseconds ms)
+	{
+		_ttl = boost::posix_time::milliseconds{ms.count()};
 	}
 
 public:
@@ -92,10 +97,9 @@ public:
 		stop();
 	}
 	/// Construct a connection with the given io_service.
-	explicit connector(const interval& hto, const interval &ttl, std::shared_ptr<socket_type> socket) noexcept
+	explicit connector(std::shared_ptr<socket_type> socket) noexcept
 		: _socket(std::move(socket))
-		, _handshake_ttl(hto)
-		, _ttl(ttl)
+		, _ttl(boost::posix_time::milliseconds(0))
 		, _timer(_socket->get_io_service())
 	{
 		LOGTRACE(this," constructor");
@@ -125,7 +129,7 @@ public:
 	//TODO: DRM-200:this method is required by ng_h2 apis, remove it once they'll be gone
 	socket_type& socket() noexcept { return *_socket; }
 
-	void renew_ttl() { schedule_deadline(_ttl); }
+	void renew_ttl() { if(_ttl != boost::posix_time::milliseconds{0}) schedule_deadline(_ttl); }
 
 	void handler( std::shared_ptr<http_handler> h )
 	{

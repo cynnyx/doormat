@@ -108,7 +108,7 @@ void http_server::start_accept(ssl_context& ssl_ctx, tcp_acceptor& acceptor)
                 }
                 if (!ec)
 				{
-					auto h = _handlers.negotiate_handler(socket, _connect_timeout, _read_timeout);
+					auto h = _handlers.negotiate_handler(socket);
                     // the check on h != nullptr is needed, because the protocol negotiation could fail.
                     // in the case without tls, instead, it is not needed as an handler (http1.x) will
                     // always be provided.
@@ -144,7 +144,7 @@ void http_server::start_accept(tcp_acceptor& acceptor)
 		if (!ec)
 		{
 			//auto conn = std::make_shared<tcp_connector>(_connect_timeout, _read_timeout, socket);
-			auto h = _handlers.build_handler(handler_type::ht_h1, http::proto_version::UNSET, _connect_timeout, _read_timeout, socket);
+			auto h = _handlers.build_handler(handler_type::ht_h1, http::proto_version::UNSET, socket);
             if(connect_cb)
             {
                 (*connect_cb)(h);

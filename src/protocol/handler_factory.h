@@ -40,9 +40,9 @@ class handler_factory
 
 public:
 	void register_protocol_selection_callbacks(SSL_CTX* ctx);
-	std::shared_ptr<http_handler> negotiate_handler(std::shared_ptr<ssl_socket> s,interval, interval) const noexcept;
-	std::shared_ptr<http_handler> build_handler(handler_type, http::proto_version vers, interval, interval, std::shared_ptr<ssl_socket> s) const noexcept;
-	std::shared_ptr<http_handler> build_handler(handler_type, http::proto_version vers, interval, interval, std::shared_ptr<tcp_socket> socket) const noexcept;
+	std::shared_ptr<http_handler> negotiate_handler(std::shared_ptr<ssl_socket> s) const noexcept;
+	std::shared_ptr<http_handler> build_handler(handler_type, http::proto_version vers, std::shared_ptr<ssl_socket> s) const noexcept;
+	std::shared_ptr<http_handler> build_handler(handler_type, http::proto_version vers, std::shared_ptr<tcp_socket> socket) const noexcept;
 };
 
 } //namespace
