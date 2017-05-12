@@ -71,16 +71,16 @@ class connector final: public connector_interface,
 	{
 		auto self = this->shared_from_this();
 		_timer.expires_from_now(msec);
-		_timer.async_wait([this,self](const berror_code&ec)
+		_timer.async_wait([self](const berror_code&ec)
 		{
 			if(!ec)
 			{
-				LOGTRACE(this," deadline has expired");
+				LOGTRACE(self.get()," deadline has expired");
 				self->stop();
 			}
 			else if(ec != boost::system::errc::operation_canceled)
 			{
-				LOGERROR(this," error on deadline:", ec.message());
+				LOGERROR(self.get()," error on deadline:", ec.message());
 			}
 		});
 	}
@@ -181,35 +181,35 @@ public:
 		auto self = this->shared_from_this();
 		auto buf = _rb.reserve();
 		_socket->async_read_some( boost::asio::mutable_buffers_1(buf),
-			[this,self](const berror_code& ec, size_t bytes_transferred)
+			[self](const berror_code& ec, size_t bytes_transferred)
 			{
-				cancel_deadline();
+				self->cancel_deadline();
 				if(!ec)
 				{
-					LOGTRACE(this," received:",bytes_transferred," Bytes");
+					LOGTRACE(self.get()," received:",bytes_transferred," Bytes");
 					assert(bytes_transferred);
 
-					auto tmp = _rb.produce(bytes_transferred);
-					if( _handler->on_read(tmp, bytes_transferred) )
+					auto tmp = self->_rb.produce(bytes_transferred);
+					if( self->_handler->on_read(tmp, bytes_transferred) )
 					{
-						_rb.consume(tmp + bytes_transferred);
-						LOGTRACE(this," read succeded");
-						do_read();
+						self->_rb.consume(tmp + bytes_transferred);
+						LOGTRACE(self.get()," read succeded");
+						self->do_read();
 					}
 					else
 					{
-						LOGDEBUG(this," error on_read - read failed");
-						stop();
+						LOGDEBUG(self.get()," error on_read - read failed");
+						self->stop();
 					}
 				}
 				else if(ec != boost::system::errc::operation_canceled)
 				{
-					LOGERROR(this," error during read: ", ec.message());
-					stop();
+					LOGERROR(self.get()," error during read: ", ec.message());
+					self->stop();
 				}
 				else
 				{
-					LOGDEBUG(this," read canceled");
+					LOGDEBUG(self.get()," read canceled");
 				}
 			});
 	}
@@ -243,23 +243,23 @@ public:
 
 		auto self = this->shared_from_this(); //Let the connector live inside the callback
 		boost::asio::async_write(*_socket, boost::asio::buffer(_out.cdata(), _out.size()),
-			[this, self](const berror_code& ec, size_t s)
+			[self](const berror_code& ec, size_t s)
 			{
-				cancel_deadline();
-				_writing = false;
+				self->cancel_deadline();
+				self->_writing = false;
 				if(!ec)
 				{
-					LOGDEBUG(this," correctly wrote ", s," bytes");
-					do_write();
+					LOGDEBUG(self.get()," correctly wrote ", s," bytes");
+					self->do_write();
 				}
 				else if(ec != boost::system::errc::operation_canceled)
 				{
-					LOGERROR(this," error during write: ", ec.message());
-					stop();
+					LOGERROR(self.get()," error during write: ", ec.message());
+					self->stop();
 				}
 				else
 				{
-					LOGTRACE(this," write canceled");
+					LOGTRACE(self.get()," write canceled");
 				}
 			}
 		);
