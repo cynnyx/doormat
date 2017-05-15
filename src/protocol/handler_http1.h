@@ -55,9 +55,9 @@ public:
 			if(requests.empty()) return;
 			if(auto s = requests.back().lock())
 			{
-				auto keepalive = !current_request.has(http::hf_connection) ? persistent : current_request.header(http::hf_connection) == http::hv_keepalive;
+				auto keepalive = !current_request.has(http::hf_connection) ? connection_t::persistent : current_request.header(http::hf_connection) == http::hv_keepalive;
 				current_request.keepalive(keepalive);
-				persistent = keepalive;
+				connection_t::persistent = keepalive;
 				io_service().post(
 							[s, current_request = std::move(current_request)]() mutable {s->headers(std::move(current_request));}
 				);
@@ -289,7 +289,7 @@ private:
 	{
 		if(res.has(http::hf_connection))
 		{
-			persistent = res.header(http::hf_connection) == http::hv_keepalive;
+			connection_t::persistent = res.header(http::hf_connection) == http::hv_keepalive;
 		}
 		serialization.append(encoder.encode_header(res));
 		do_write();
