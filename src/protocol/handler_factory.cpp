@@ -9,9 +9,10 @@
 #include "../dummy_node.h"
 #include "../utils/likely.h"
 #include "../configuration/configuration_wrapper.h"
+#include "../connector.h"
+#include "../http/server/server_traits.h"
 
 #include <string>
-#include "../connector.h"
 
 using namespace std;
 
@@ -142,7 +143,7 @@ std::shared_ptr<http_handler> handler_factory::make_handler(handler_type type, h
 	case handler_type::ht_h1:
 	default:
 		LOGDEBUG("HTTP1 selected");
-		return std::make_shared<handler_http1>( proto );
+		return std::make_shared<handler_http1<http::server_traits>>( proto );
 	}
 }
 

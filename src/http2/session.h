@@ -54,6 +54,7 @@ class session : public server::http_handler
 public:
 	session();
 
+	void trigger_timeout_event() override {}
 	// Connector should catch exception from here and shut down connection
 	bool start() noexcept override;
 	bool on_read(const char*, size_t) override;

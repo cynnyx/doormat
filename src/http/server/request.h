@@ -13,8 +13,10 @@ namespace http2
 class stream;
 }
 
+
 namespace server
 {
+template<typename handler_traits>
 class handler_http1;
 }
 
@@ -25,6 +27,7 @@ namespace http {
 class connection;
 
 class request : public std::enable_shared_from_this<request> {
+	template<typename>
 	friend class server::handler_http1;
 	friend class http2::stream;
 public:

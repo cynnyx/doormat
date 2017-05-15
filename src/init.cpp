@@ -230,7 +230,8 @@ int doormat( int argc, char** argv )
                 res.status(200);
                 std::string body{"ciao"};
                 res.content_len(body.size());
-                b->headers(std::move(res));
+
+	            b->headers(std::move(res));
                 b->body(dstring{body.c_str(), body.size()});
                 b->end();
             });
