@@ -30,7 +30,6 @@ struct MockConnector : public server::connector_interface
 {
 	using wcb = std::function<void(void)>;
 	wcb& write_cb;
-    boost::asio::io_service io;
 
     MockConnector(wcb& cb): write_cb(cb), io{} {}
 	void do_write() override { write_cb(); }
