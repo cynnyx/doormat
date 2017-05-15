@@ -3,7 +3,7 @@
 #include <iostream>
 #include <experimental/optional>
 #include "../http/http_commons.h"
-#include "../http/connection.h"
+#include "../http/server/server_connection.h"
 #ifndef DOORMAT_HANDLER_INTERFACE_H
 #define DOORMAT_HANDLER_INTERFACE_H
 
@@ -17,7 +17,7 @@
 namespace server
 {
 class connector_interface;
-class http_handler : public http::connection
+class http_handler : public http::server_connection
 {
 	std::weak_ptr<connector_interface> _connector;
 

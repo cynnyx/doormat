@@ -51,16 +51,18 @@ set(DOORMAT_COMMON_SOURCES
 	network/buffer.cpp
 	network/connector_clear.cpp
 	network/connector_ssl.cpp
-		network/communicator/dns_communicator_factory.cpp
-	client/client_wrapper.cpp
+        network/communicator/dns_communicator_factory.cpp
+        client/client_wrapper.cpp
 	errors/error_factory.cpp
 	requests_manager/error_producer.cpp
 	requests_manager/client_wrapper.cpp
-	http/connection.cpp
+        http/connection.cpp
+        http/server/server_connection.cpp
+        http/client/client_connection.cpp
         http/server/request.cpp
         http/server/response.cpp
-		protocol/http_handler.cpp
-	)
+        protocol/http_handler.cpp
+)
 
 #
 # ----------------- doormat_common archive library -------------------
@@ -95,7 +97,7 @@ add_library(${DOORMAT_COMMON_SHARED_LIB} SHARED ${DOORMAT_COMMON_SOURCES})
 
 target_include_directories(
 		${DOORMAT_COMMON_SHARED_LIB}
-		PRIVATE ${Boost_INCLUDE_DIRS}
+                PRIVATE ${Boost_INCLUDE_DIRS}
 		PRIVATE ${OPENSSL_INCLUDE_DIR}
 		PRIVATE ${NGHTTP2_INCLUDE_DIR}
 		PRIVATE ${CYNNYPP_INCLUDE_DIRS}
@@ -133,7 +135,7 @@ set_property(TARGET ${CYNNYPP_LIB} PROPERTY IMPORTED_LOCATION ${CYNNYPP_LIBRARIE
 set_property(TARGET ${CITYHASH_LIB} PROPERTY IMPORTED_LOCATION ${CITYHASH_LIBRARIES})
 
 target_include_directories(
-	${DOORMAT_EXECUTABLE}
+        ${DOORMAT_EXECUTABLE}
 	PRIVATE ${Boost_INCLUDE_DIRS}
 	PRIVATE ${OPENSSL_INCLUDE_DIR}
 	PRIVATE ${NGHTTP2_INCLUDE_DIR}

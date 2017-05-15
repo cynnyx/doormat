@@ -14,7 +14,7 @@
 #include "../src/http/server/server_traits.h"
 #include "../src/http/server/request.h"
 #include "../src/http/server/response.h"
-#include "../src/http/connection.h"
+#include "../src/http/server/server_connection.h"
 
 #include "../src/dummy_node.h"
 
@@ -39,7 +39,6 @@ struct MockConnector : public server::connector_interface
 	boost::asio::ip::address origin() const override { return boost::asio::ip::address::from_string("127.0.0.1");}
 	bool is_ssl() const noexcept override { return true; }
 	void set_timeout(std::chrono::milliseconds) override {}
-	boost::asio::io_service io;
 	boost::asio::io_service &io_service() { return io; }
 };
 
@@ -110,7 +109,7 @@ TEST_F(handler, http1_persistent)
 
 	std::shared_ptr<server::handler_http1<http::server_traits>> h1 = std::make_shared<server::handler_http1<http::server_traits>>(http::proto_version::HTTP11);
 	h1->connector(conn);
-    std::shared_ptr<http::connection> user_connection = h1;
+	std::shared_ptr<http::server_connection> user_connection = h1;
     user_connection->set_persistent(true);
     user_connection->on_request([&](auto conn, auto req, auto res){
         req->on_finished([res](auto conn){

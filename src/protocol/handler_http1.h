@@ -28,7 +28,7 @@ public:
 	using response_t = typename handler_traits::response_t;
 	using incoming_t = typename handler_traits::incoming_t;
 
-	void trigger_timeout_event() override {};
+	void trigger_timeout_event() override {}
 
 	handler_http1(http::proto_version version)
 		: version{version}
@@ -42,9 +42,9 @@ public:
 		auto scb = [this](http::http_structured_data** data)
 		{
 
-			auto req = std::make_shared<request_t>(this->shared_from_this());
+			auto req = std::make_shared<request_t>(this->get_shared());
 			req->init();
-			auto res = std::make_shared<response_t>([this, self = this->shared_from_this()](){
+			auto res = std::make_shared<response_t>([this, self = this->get_shared()](){
 				notify_response();
 			});
 			*data = &current_request;

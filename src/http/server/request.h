@@ -24,14 +24,14 @@ namespace http {
 /** \brief the request class provides to the library user a mean through which it can subscribe to events related
  *  to the request.
  * */
-class connection;
+class server_connection;
 
 class request : public std::enable_shared_from_this<request> {
 	template<typename>
 	friend class server::handler_http1;
 	friend class http2::stream;
 public:
-    request(std::shared_ptr<connection>);
+	request(std::shared_ptr<server_connection>);
     //non-copiable object.
     request(const request&) = delete;
     request& operator=(const request&) = delete;
@@ -54,7 +54,7 @@ public:
 	void clear_preamble() { _preamble = http::http_request{}; }
 
 	/** Connection retrieve method*/
-	std::shared_ptr<http::connection> get_connection();
+	std::shared_ptr<http::server_connection> get_connection();
 
     ~request() = default;
 private:
@@ -62,7 +62,7 @@ private:
     /** External handlers allowing to trigger events to be communicated to the user */
     void headers(http::http_request &&);
     void body(dstring&& d);
-    void error(http::connection_error err);
+	void error(http::connection_error err);
     void trailer(dstring&&, dstring&&);
     void finished();
 
@@ -76,7 +76,7 @@ private:
     std::experimental::optional<trailer_callback_t> trailer_callback;
     std::experimental::optional<finished_callback_t> finished_callback;
 
-    std::shared_ptr<connection> connection_keepalive;
+	std::shared_ptr<server_connection> connection_keepalive;
     /** Ptr-to-self: to grant the user that, until finished() or error() event is propagated, the request will be alive*/
 	std::shared_ptr<request> myself;
 

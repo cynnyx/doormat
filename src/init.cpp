@@ -24,6 +24,8 @@
 #include "network/communicator/dns_communicator_factory.h"
 #include "http/server/request.h"
 #include "http/server/response.h"
+#include "http/server/server_connection.h"
+
 namespace doormat
 {
 
@@ -212,7 +214,7 @@ int doormat( int argc, char** argv )
     doormat_srv.reset(new server::http_server{2000, 1000, 0, 8888});
 
 	doormat_srv->on_client_connect([&io](auto conn){
-		conn->on_request([&io](std::shared_ptr<http::connection> connection, std::shared_ptr<http::request> r, std::shared_ptr<http::response> b){
+		conn->on_request([&io](std::shared_ptr<http::server_connection> connection, std::shared_ptr<http::request> r, std::shared_ptr<http::response> b){
             r->on_headers([connection, &io](auto r){
 	            auto d = r->preamble().serialize();
                 //std::cout << std::string(d) << std::endl;

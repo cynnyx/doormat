@@ -11,6 +11,10 @@
 #include "utils/sni_solver.h"
 #include "protocol/handler_factory.h"
 
+namespace http {
+class server_connection;
+}
+
 namespace server
 {
 
@@ -22,7 +26,7 @@ using tcp_acceptor = boost::asio::ip::tcp::acceptor;
  **/
 class http_server
 {
-	using connect_callback = std::function<void(std::shared_ptr<http::connection>)>;
+	using connect_callback = std::function<void(std::shared_ptr<http::server_connection>)>;
 	std::atomic_bool running{false};
 	handler_factory _handlers;
 	interval _read_timeout;

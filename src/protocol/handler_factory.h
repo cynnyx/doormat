@@ -6,7 +6,6 @@
 #include <boost/asio/ssl.hpp>
 #include "../../deps/openssl/include/openssl/ssl.h"
 #include "../http/http_commons.h"
-#include "../http/connection.h"
 #include "http_handler.h"
 
 
@@ -20,19 +19,18 @@ class http_response;
 
 namespace server
 {
-using interval = boost::posix_time::time_duration;
 
+class http_handler;
+
+using interval = boost::posix_time::time_duration;
+using tcp_socket = boost::asio::ip::tcp::socket;
+using ssl_socket = boost::asio::ssl::stream<tcp_socket>;
 
 enum class handler_type
 {
 	ht_h1,
 	ht_h2
 };
-
-class connector_interface;
-using tcp_socket = boost::asio::ip::tcp::socket;
-using ssl_socket = boost::asio::ssl::stream<tcp_socket>;
-
 
 class handler_factory
 {
