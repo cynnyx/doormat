@@ -108,7 +108,7 @@ TEST_F(handler, http1_persistent)
 	std::shared_ptr<http::server_connection> user_connection = h1;
     user_connection->set_persistent(true);
     user_connection->on_request([&](auto conn, auto req, auto res){
-        req->on_finished([res](auto conn){
+        req->on_finished([res](auto req){
             http::http_response r;
             r.protocol(http::proto_version::HTTP11);
             std::string body{"Ave client, dummy node says hello"};
@@ -242,7 +242,6 @@ TEST_F(handler, http1_non_persistent)
 	h1->on_read(req.data(), req.size());
     conn->io_service().run();
 	ASSERT_TRUE(h1->should_stop());
-
 	EXPECT_EQ(expected_response, response);
 }
 
@@ -268,7 +267,6 @@ TEST_F(handler, http1_pipelining)
     user_connection->on_request([&](auto conn, auto req, auto res){
         req->on_finished([res](auto req){
 	        bool keep_alive = req->preamble().keepalive();
-	        std::cout << "keepalive is " << keep_alive << std::endl;
             http::http_response r;
             r.protocol(http::proto_version::HTTP11);
             std::string body{"Ave client, dummy node says hello"};
@@ -334,5 +332,6 @@ TEST_F(handler, http1_pipelining)
 	ASSERT_TRUE(h1->start());
 	h1->on_read(req.data(), req.size());
     conn->io_service().run();
+    ASSERT_TRUE(h1->should_stop());
 	EXPECT_EQ(expected_response, response);
 }
