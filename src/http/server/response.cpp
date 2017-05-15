@@ -61,7 +61,7 @@ response::state response::get_state() const noexcept
 	return state::pending;
 }
 
-http_response response::get_headers()
+http_response response::get_preamble()
 {
 	auto empty_response = std::move(*response_headers);
 	response_headers = std::experimental::nullopt;

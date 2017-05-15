@@ -49,7 +49,7 @@ public:
 
 
 	state get_state() const noexcept;
-	http_response get_headers();
+	http_response get_preamble();
 	dstring get_body();
 	std::pair<dstring, dstring> get_trailer();
 

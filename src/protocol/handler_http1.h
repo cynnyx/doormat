@@ -21,11 +21,10 @@ class handler_http1 final: public http_handler, public handler_traits::connectio
 {
 
 public:
-	using request_t = typename handler_traits::request_t;
-	using response_t = typename handler_traits::response_t;
-	using incoming_t = typename handler_traits::incoming_t;
 	using connection_t = typename handler_traits::connection_t;
-
+	using remote_t = typename handler_traits::remote_t;
+	using local_t = typename handler_traits::local_t;
+	using local_t_object = typename std::remove_reference<decltype(((local_t*)nullptr)->get_preamble())>::type;
 	std::shared_ptr<handler_http1> get_shared()
 	{
 		return std::static_pointer_cast<handler_http1>(this->shared_from_this());
@@ -36,8 +35,7 @@ public:
 		connection_t::timeout();
 	}
 
-	handler_http1(http::proto_version version)
-		: version{version}
+	handler_http1(http::proto_version version) : version{version}
 	{
 		LOGINFO("HTTP1 selected");
 	}
@@ -52,23 +50,23 @@ public:
 
 		auto hcb = [this]()
 		{
-			if(requests.empty()) return;
-			if(auto s = requests.back().lock())
+			if(remote_objects.empty()) return;
+			if(auto s = remote_objects.back().lock())
 			{
-				auto keepalive = !current_request.has(http::hf_connection) ? connection_t::persistent : current_request.header(http::hf_connection) == http::hv_keepalive;
-				current_request.keepalive(keepalive);
+				auto keepalive = !current_decoded_object.has(http::hf_connection) ? connection_t::persistent : current_decoded_object.header(http::hf_connection) == http::hv_keepalive;
+				current_decoded_object.keepalive(keepalive);
 				connection_t::persistent = keepalive;
 				io_service().post(
-							[s, current_request = std::move(current_request)]() mutable {s->headers(std::move(current_request));}
+							[s, current_decoded_object = std::move(current_decoded_object)]() mutable {s->headers(std::move(current_decoded_object));}
 				);
-				current_request = {};
+				current_decoded_object = {};
 			}
 		};
 
 		auto bcb = [this](dstring&& b)
 		{
-			if(requests.empty()) return;
-			if(auto s = requests.back().lock())
+			if(remote_objects.empty()) return;
+			if(auto s = remote_objects.back().lock())
 			{
 				io_service().post([s, b = std::move(b)]() mutable {s->body(std::move(b));});
 			}
@@ -76,8 +74,8 @@ public:
 
 		auto tcb = [this](dstring&& k, dstring&& v)
 		{
-			if(requests.empty()) return;
-			if(auto s = requests.back().lock())
+			if(remote_objects.empty()) return;
+			if(auto s = remote_objects.back().lock())
 			{
 				io_service().post(
 							[s, k = std::move(k), v = std::move(v)]() mutable { s->trailer(std::move(k), std::move(v)); }
@@ -87,8 +85,8 @@ public:
 
 		auto ccb = [this]()
 		{
-			if(requests.empty()) return;
-			if(auto s = requests.back().lock())
+			if(remote_objects.empty()) return;
+			if(auto s = remote_objects.back().lock())
 			{
 				io_service().post([s]() { s->finished(); });
 			}
@@ -98,15 +96,15 @@ public:
 		{
 			//failure always gets called after start...
 			LOGTRACE("Codec failure handling");
-			if(auto s = requests.back().lock())
+			if(auto s = remote_objects.back().lock())
 			{
 				io_service().post([s]() { s->error(http::error_code::success); }); //fix
 			}
-			if(auto s = responses.back().lock()) {
+			if(auto s = local_objects.back().lock()) {
 				io_service().post([s]() { s->error(http::error_code::success); });
 			}
-			requests.pop_front();
-			responses.pop_front();
+			remote_objects.pop_front();
+			local_objects.pop_front();
 			/*http::proto_version pv = version;
 			if ( ! error_code_distruction && some_message_started( pv ) )
 			{
@@ -154,7 +152,7 @@ public:
 
 	bool should_stop() const noexcept override
 	{
-		auto finished = responses.empty();
+		auto finished = local_objects.empty();
 		return error_happened || (finished && !connection_t::persistent);
 	}
 
@@ -215,37 +213,37 @@ private:
 		http::connection_error err{http::error_code::closed_by_client};
 		connection_t::error(err);
 		//should notify everybody in the connection of the error!
-		for(auto &req: requests)
+		for(auto &req: remote_objects)
 		{
 			if(auto s = req.lock()) io_service().post([s, err](){s->error(err);});
 		}
-		for(auto &res: responses)
+		for(auto &res: local_objects)
 		{
 			if(auto s = res.lock()) io_service().post([s, err](){s->error(err);});
 		}
 		connection_t::deinit();
-		requests.clear();
-		responses.clear();
+		remote_objects.clear();
+		local_objects.clear();
 	}
 
 	/** Method used by responses to notify availability of new content*/
-	void notify_response()
+	void notify_local_content()
 	{
-		while(!responses.empty() && !requests.empty())
+		while(!local_objects.empty() && !remote_objects.empty())
 		{
 			//replace all this with a polling mechanism!
-			auto &c = responses.front();
+			auto &c = local_objects.front();
 			if(auto s = c.lock())
 			{
-				if(poll_response(s))
+				if(poll_local(s))
 				{
 					//we pop them both.
-					responses.pop_front();
-					requests.pop_front(); }
+					local_objects.pop_front();
+					remote_objects.pop_front(); }
 				else break;
 			} else {
-				responses.pop_front();
-				requests.pop_front();
+				local_objects.pop_front();
+				remote_objects.pop_front();
 			}
 		}
 	}
@@ -257,25 +255,25 @@ private:
 	}
 
 	/** Method used to retrieeve new content from a response */
-	bool poll_response(std::shared_ptr<http::response> res)
+	bool poll_local(std::shared_ptr<local_t> res)
 	{
 		auto state = res->get_state();
-		while(state != http::response::state::pending) {
+		while(state != local_t::state::pending) {
 			switch(state) {
-			case http::response::state::headers_received:
-				notify_response_headers(res->get_headers());
+			case local_t::state::headers_received:
+				notify_local_headers(res->get_preamble());
 				break;
-			case http::response::state::body_received:
-				notify_response_body(res->get_body());
+			case local_t::state::body_received:
+				notify_local_body(res->get_body());
 				break;
-			case http::response::state::trailer_received:
+			case local_t::state::trailer_received:
 			{
 				auto trailer = res->get_trailer();
-				notify_response_trailer(std::move(trailer.first), std::move(trailer.second));
+				notify_local_trailer(std::move(trailer.first), std::move(trailer.second));
 				break;
 			}
-			case http::response::state::ended:
-				notify_response_end();
+			case local_t::state::ended:
+				notify_local_end();
 				return true;
 			default: assert(0);
 			}
@@ -284,49 +282,49 @@ private:
 		return false;
 	}
 
-	/** Response management methods. They operate on a single response*/
-	void notify_response_headers(http::http_response&& res)
+	/** Local Object management methods. They operate on a single local object*/
+	void notify_local_headers(local_t_object &&loc)
 	{
-		if(res.has(http::hf_connection))
+		if(loc.has(http::hf_connection))
 		{
-			connection_t::persistent = res.header(http::hf_connection) == http::hv_keepalive;
+			connection_t::persistent = loc.header(http::hf_connection) == http::hv_keepalive;
 		}
-		serialization.append(encoder.encode_header(res));
+		serialization.append(encoder.encode_header(loc));
 		do_write();
 	}
 
-	void notify_response_body(dstring&& b)
+	void notify_local_body(dstring &&b)
 	{
 		serialization.append(encoder.encode_body(b));
 		do_write();
 	}
 
-	void notify_response_trailer(dstring&&k, dstring&&v)
+	void notify_local_trailer(dstring &&k, dstring &&v)
 	{
 		serialization.append(encoder.encode_trailer(k, v));
 		do_write();
 	}
 
-	void notify_response_end()
+	void notify_local_end()
 	{
 		serialization.append(encoder.encode_eom());
 		do_write();
 	}
 
 	/** Requests and responses currently managed by this handler*/
-	std::list<std::weak_ptr<request_t>> requests;
-	std::list<std::weak_ptr<response_t>> responses;
+	std::list<std::weak_ptr<remote_t>> remote_objects;
+	std::list<std::weak_ptr<local_t>> local_objects;
 
 
-	/** Encoder for responses*/
+	/** Encoder for local objects*/
 	http::http_codec encoder;
-	/** Encoder for requests */
+	/** Encoder for remote objects */
 	http::http_codec decoder;
 
 	/** Request used by decoder to represent the received data*/
-	incoming_t current_request;
+	typename std::remove_reference<decltype(((remote_t*)nullptr)->preamble())>::type current_decoded_object;
 
-	/** Dstring used to serialize the information coming from the responses*/
+	/** Dstring used to serialize the information coming from the local object*/
 	dstring serialization;
 
 	bool error_happened{false};
@@ -340,14 +338,14 @@ template<>
 inline
 void handler_http1<http::server_traits>::on_incoming_structured_data(http::http_structured_data** data)
 {
-	auto req = std::make_shared<request_t>(this->get_shared());
+	auto req = std::make_shared<remote_t>(this->get_shared());
 	req->init();
-	auto res = std::make_shared<response_t>([this, self = this->get_shared()](){
-		notify_response();
+	auto res = std::make_shared<local_t>([this, self = this->get_shared()](){
+		notify_local_content();
 	});
-	*data = &current_request;
-	requests.push_back(req);
-	responses.push_back(res);
+	*data = &current_decoded_object;
+	remote_objects.push_back(req);
+	local_objects.push_back(res);
 
 	request_received(std::move(req), std::move(res));
 }
