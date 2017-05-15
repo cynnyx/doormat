@@ -5,7 +5,6 @@
 #include <utility>
 
 #include "error_code.h"
-#include "../protocol/handler_factory.h"
 #include "../http/http_commons.h"
 #include "../http/http_response.h"
 #include "../protocol/http_handler.h"

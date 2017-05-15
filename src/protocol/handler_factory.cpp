@@ -1,11 +1,5 @@
 #include "handler_factory.h"
-#include "handler_http1.h"
-#include "../http2/session.h"
-#include "../connector.h"
-#include "../dummy_node.h"
 #include "../configuration/configuration_wrapper.h"
-#include "../connector.h"
-#include "../http/server/server_traits.h"
 
 #include <string>
 
@@ -50,25 +44,17 @@ alpn_cb alpn_select_cb = [](ssl_st *ctx, const unsigned char** out, unsigned cha
 const unsigned char* in, unsigned int inlen, void *data)
 {
 	//string local_alpn_protos[5] = (service_locator::configuration().http2_is_disabled()) ?  alpn_protos_legacy : alpn_protos_default;
-	if(service::locator::configuration().http2_is_disabled())
-	{
-		for( auto& proto : alpn_protos_legacy )
-			if(SSL_select_next_proto((unsigned char**)out, outlen, (const unsigned char*)proto.c_str(), proto.size()-1, in, inlen) == OPENSSL_NPN_NEGOTIATED)
-				return SSL_TLSEXT_ERR_OK;
-	}
-	else
-	{
-		for( auto& proto : alpn_protos_default )
-			if(SSL_select_next_proto((unsigned char**)out, outlen, (const unsigned char*)proto.c_str(), proto.size()-1, in, inlen) == OPENSSL_NPN_NEGOTIATED)
-				return SSL_TLSEXT_ERR_OK;
-	}
+	for( auto& proto : alpn_protos_default )
+		if(SSL_select_next_proto((unsigned char**)out, outlen, (const unsigned char*)proto.c_str(), proto.size()-1, in, inlen) == OPENSSL_NPN_NEGOTIATED)
+			return SSL_TLSEXT_ERR_OK;
+
 	return SSL_TLSEXT_ERR_NOACK;
 };
 
 using npn_cb = int (*) (SSL *ssl, const unsigned char** out, unsigned int* outlen, void *arg);
 npn_cb npn_adv_cb = [](ssl_st *ctx, const unsigned char** out, unsigned int* outlen, void *arg)
 {
-	*out = (service::locator::configuration().http2_is_disabled()) ? npn_protos_legacy : npn_protos;
+	*out = npn_protos;
 	*outlen = sizeof(npn_protos);
 	return SSL_TLSEXT_ERR_OK;
 };
@@ -111,41 +97,6 @@ std::shared_ptr<http::connection> handler_factory::negotiate_handler(std::shared
 	http::proto_version version = (type == handler_type::ht_h2) ? http::proto_version::HTTP20 : ((proto == nullptr ||   proto[len-1] == '0') ? http::proto_version::HTTP10 : http::proto_version::HTTP11);
 
 	return build_handler( type , version, sck);
-}
-
-std::shared_ptr<http::connection> handler_factory::build_handler(handler_type type, http::proto_version proto, std::shared_ptr<tcp_socket> socket) const noexcept
-{
-
-	auto conn = std::make_shared<connector<tcp_socket>>(socket);
-	if(type == handler_type::ht_h2)
-	{
-		auto h = std::make_shared<http2::session>();
-		conn->handler(h);
-		conn->start(true);
-		return h;
-	} else {
-		auto h = std::make_shared<handler_http1<http::server_traits>>(proto);
-		conn->handler(h);
-		conn->start(true);
-		return h;
-	}
-}
-
-std::shared_ptr<http::connection> handler_factory::build_handler(handler_type type, http::proto_version proto, std::shared_ptr<ssl_socket> socket) const noexcept
-{
-	auto conn = std::make_shared<connector<ssl_socket>>(socket);
-	if(type == handler_type::ht_h2)
-	{
-		auto h = std::make_shared<http2::session>();
-		conn->handler(h);
-		conn->start(true);
-		return h;
-	} else {
-		auto h = std::make_shared<handler_http1<http::server_traits>>(proto);
-		conn->handler(h);
-		conn->start(true);
-		return h;
-	}
 }
 
 

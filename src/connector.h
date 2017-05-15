@@ -9,7 +9,6 @@
 #include <boost/noncopyable.hpp>
 #include <boost/date_time/posix_time/posix_time_duration.hpp>
 
-#include "protocol/handler_factory.h"
 #include "utils/dstring.h"
 #include "utils/reusable_buffer.h"
 #include "utils/log_wrapper.h"

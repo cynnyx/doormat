@@ -3,7 +3,6 @@
 
 #include "../../deps/nghttp2/build/include/nghttp2/nghttp2.h"
 #include "../utils/doormat_types.h"
-#include "../protocol/handler_factory.h"
 #include "../connector.h"
 #include "../log/access_record.h"
 #include "../chain_of_responsibility/error_code.h"
