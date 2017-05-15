@@ -12,6 +12,9 @@
 #include "../src/protocol/handler_http1.h"
 #include "../src/network/cloudia_pool.h"
 #include "../src/http/server/server_traits.h"
+#include "../src/http/server/request.h"
+#include "../src/http/server/response.h"
+#include "../src/http/connection.h"
 
 #include "../src/dummy_node.h"
 
@@ -27,8 +30,9 @@ struct MockConnector : public server::connector_interface
 {
 	using wcb = std::function<void(void)>;
 	wcb& write_cb;
+    boost::asio::io_service io;
 
-	MockConnector(wcb& cb): write_cb(cb){}
+    MockConnector(wcb& cb): write_cb(cb), io{} {}
 	void do_write() override { write_cb(); }
 	void do_read() override {}
 	void close() override {}
@@ -49,6 +53,7 @@ struct handler: public ::testing::Test
 	std::string response;
 
 	boost::asio::io_service::work *keep_alive = nullptr;
+
 protected:
 	handler() : conn{std::make_shared<MockConnector>(cb)}
 	{
@@ -72,7 +77,6 @@ protected:
 
 	virtual void SetUp()
 	{
-		service::locator::service_pool().reset();
 		deadline->expires_from_now(boost::posix_time::seconds(5));
 		deadline->async_wait([this](const boost::system::error_code& ec)
 		{
@@ -106,6 +110,24 @@ TEST_F(handler, http1_persistent)
 
 	std::shared_ptr<server::handler_http1<http::server_traits>> h1 = std::make_shared<server::handler_http1<http::server_traits>>(http::proto_version::HTTP11);
 	h1->connector(conn);
+    std::shared_ptr<http::connection> user_connection = h1;
+    user_connection->set_persistent(true);
+    user_connection->on_request([&](auto conn, auto req, auto res){
+        req->on_finished([res](auto conn){
+            http::http_response r;
+            r.protocol(http::proto_version::HTTP11);
+            std::string body{"Ave client, dummy node says hello"};
+            r.status(200);
+            r.keepalive(true);
+            r.header("content-type", "text/plain");
+            r.header("date", "Tue, 17 May 2016 14:53:09 GMT");
+            r.content_len(body.size());
+            res->headers(std::move(r));
+            res->body(dstring{body.c_str(), body.size()});
+            res->end();
+        });
+    });
+
 
 	// list of chunks that I expect to receive inside the on_write()
 	std::string expected_response = "HTTP/1.1 200 OK\r\n"
@@ -117,12 +139,12 @@ TEST_F(handler, http1_persistent)
 		"Ave client, dummy node says hello";
 
 	bool simulate_connection_closed = false;
-	boost::asio::deadline_timer t{service::locator::service_pool().get_thread_io_service()};
+    boost::asio::deadline_timer t{conn->io_service()};
 	t.expires_from_now(boost::posix_time::seconds(2));
 	t.async_wait([&simulate_connection_closed](const boost::system::error_code &ec){simulate_connection_closed=true;});
 	cb = [this, &h1, &simulate_connection_closed]()
 	{
-		if(service::locator::service_pool().get_thread_io_service().stopped())
+        if(conn->io_service().stopped())
 			return;
 
 		dstring chunk;
@@ -141,13 +163,13 @@ TEST_F(handler, http1_persistent)
 
 		if(!h1->should_stop() && !simulate_connection_closed)
 		{
-			service::locator::service_pool().get_thread_io_service().post(cb);
+            conn->io_service().post(cb);
 		}
 	};
 
 	ASSERT_TRUE(h1->start());
 	h1->on_read(req.data(), req.size());
-	service::locator::service_pool().get_thread_io_service().run();
+    conn->io_service().run();
 	EXPECT_EQ(expected_response, response);
 }
 
@@ -175,7 +197,7 @@ TEST_F(handler, http1_non_persistent)
 
 	cb = [this, &h1]()
 	{
-		if(service::locator::service_pool().get_thread_io_service().stopped())
+        if(conn->io_service().stopped())
 			return;
 
 		dstring chunk;
@@ -194,14 +216,14 @@ TEST_F(handler, http1_non_persistent)
 
 		if(!h1->should_stop())
 		{
-			service::locator::service_pool().get_thread_io_service().post(cb);
+            conn->io_service().post(cb);
 		}
 
 	};
 
 	ASSERT_TRUE(h1->start());
 	h1->on_read(req.data(), req.size());
-	service::locator::service_pool().get_thread_io_service().run();
+    conn->io_service().run();
 	ASSERT_TRUE(h1->should_stop());
 
 	EXPECT_EQ(expected_response, response);
@@ -245,7 +267,7 @@ TEST_F(handler, http1_pipelining)
 
 	cb = [this, &h1]()
 	{
-		if(service::locator::service_pool().get_thread_io_service().stopped())
+        if(conn->io_service().stopped())
 			return;
 
 		dstring chunk;
@@ -263,12 +285,12 @@ TEST_F(handler, http1_pipelining)
 		}
 
 		if(!h1->should_stop())
-			service::locator::service_pool().get_thread_io_service().post(cb);
+            conn->io_service().post(cb);
 	};
 
 	ASSERT_TRUE(h1->start());
 	h1->on_read(req.data(), req.size());
-	service::locator::service_pool().get_thread_io_service().run();
+    conn->io_service().run();
 	ASSERT_TRUE(h1->should_stop());
 	EXPECT_EQ(expected_response, response);
 }
