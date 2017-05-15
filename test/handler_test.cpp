@@ -30,6 +30,7 @@ struct MockConnector : public server::connector_interface
 {
 	using wcb = std::function<void(void)>;
 	wcb& write_cb;
+    boost::asio::io_service io;
 
     MockConnector(wcb& cb): write_cb(cb), io{} {}
 	void do_write() override { write_cb(); }
@@ -183,6 +184,23 @@ TEST_F(handler, http1_non_persistent)
 
 	std::shared_ptr<server::handler_http1<http::server_traits>> h1= std::make_shared<server::handler_http1<http::server_traits>>(http::proto_version::HTTP11);
 	h1->connector(conn);
+    std::shared_ptr<http::connection> user_connection = h1;
+    user_connection->set_persistent(false);
+    user_connection->on_request([&](auto conn, auto req, auto res){
+        req->on_finished([res](auto conn){
+            http::http_response r;
+            r.protocol(http::proto_version::HTTP11);
+            std::string body{"Ave client, dummy node says hello"};
+            r.status(200);
+            r.keepalive(false);
+            r.header("content-type", "text/plain");
+            r.header("date", "Tue, 17 May 2016 14:53:09 GMT");
+            r.content_len(body.size());
+            res->headers(std::move(r));
+            res->body(dstring{body.c_str(), body.size()});
+            res->end();
+        });
+    });
 
 	// list of chunks that I expect to receive inside the on_write()
 	std::string expected_response = "HTTP/1.1 200 OK\r\n"
@@ -193,6 +211,10 @@ TEST_F(handler, http1_non_persistent)
 			"\r\n"
 			"Ave client, dummy node says hello";
 
+    bool simulate_connection_closed = false;
+    boost::asio::deadline_timer t{conn->io_service()};
+    t.expires_from_now(boost::posix_time::seconds(2));
+    t.async_wait([&simulate_connection_closed](const boost::system::error_code &ec){simulate_connection_closed=true;});
 	cb = [this, &h1]()
 	{
         if(conn->io_service().stopped())
