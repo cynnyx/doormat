@@ -1,11 +1,15 @@
+#ifndef DOORMAT_HANDLER_INTERFACE_H
+#define DOORMAT_HANDLER_INTERFACE_H
+
 #include <memory>
 #include <boost/asio.hpp>
 #include <iostream>
 #include <experimental/optional>
 #include "../http/http_commons.h"
-#include "../http/connection.h"
-#ifndef DOORMAT_HANDLER_INTERFACE_H
-#define DOORMAT_HANDLER_INTERFACE_H
+#include "../http/server/server_connection.h"
+#include "../utils/dstring.h"
+
+class dstring;
 
 /**
  * @note This "interface" violates all SOLID paradigm
@@ -17,6 +21,7 @@
 namespace server
 {
 class connector_interface;
+
 class http_handler
 {
 	std::weak_ptr<connector_interface> _connector;

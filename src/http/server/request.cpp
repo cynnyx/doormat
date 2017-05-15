@@ -1,16 +1,17 @@
 #include "request.h"
+#include "../server/server_connection.h"
 
 namespace http {
 
 /** Ctor */
-request::request(std::shared_ptr<connection> conn) : connection_keepalive{std::move(conn)}
+request::request(std::shared_ptr<server_connection> conn) : connection_keepalive{std::move(conn)}
 {}
 
 /** Events registration. */
 
 void request::on_headers(headers_callback_t hcb)
 {
-    headers_callback.emplace(std::move(hcb));
+	headers_callback.emplace(std::move(hcb));
 }
 
 void request::on_body(body_callback_t bcb)
@@ -68,7 +69,7 @@ void request::error(http::connection_error err)
 	myself=nullptr;
 }
 
-std::shared_ptr<connection> request::get_connection()
+std::shared_ptr<server_connection> request::get_connection()
 {
 	return connection_keepalive;
 }

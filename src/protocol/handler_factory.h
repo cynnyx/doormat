@@ -20,13 +20,18 @@ struct node_interface;
 
 namespace http
 {
+class server_connection;
 class http_response;
 }
 
 namespace server
 {
-using interval = boost::posix_time::time_duration;
 
+class http_handler;
+
+using interval = boost::posix_time::time_duration;
+using tcp_socket = boost::asio::ip::tcp::socket;
+using ssl_socket = boost::asio::ssl::stream<tcp_socket>;
 
 enum class handler_type
 {
@@ -34,21 +39,17 @@ enum class handler_type
 	ht_h2
 };
 
-class connector_interface;
-using tcp_socket = boost::asio::ip::tcp::socket;
-using ssl_socket = boost::asio::ssl::stream<tcp_socket>;
-
-
 class handler_factory
 {
 
 
 public:
 	void register_protocol_selection_callbacks(SSL_CTX* ctx);
-	std::shared_ptr<http::connection> negotiate_handler(std::shared_ptr<ssl_socket> s) const noexcept;
+	std::shared_ptr<http::server_connection> negotiate_handler(std::shared_ptr<ssl_socket> s) const noexcept;
 
+	// specializations
 	template<typename T>
-	std::shared_ptr<http::connection> build_handler(handler_type type, http::proto_version proto, std::shared_ptr<T> socket) const noexcept
+	std::shared_ptr<http::server_connection> build_handler(handler_type type, http::proto_version proto, std::shared_ptr<T> socket) const noexcept
 	{
 		auto conn = std::make_shared<connector<T>>(socket);
 		if(type == handler_type::ht_h2)

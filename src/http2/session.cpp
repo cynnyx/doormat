@@ -99,7 +99,7 @@ stream* session::create_stream ( std::int32_t id )
 		} }; // The pointed object will commit suicide
 
 	stream_data->id( id );
-	auto req_handler = std::make_shared<http::request>(this->shared_from_this());
+	auto req_handler = std::make_shared<http::request>(this->get_shared());
 	auto res_handler = std::make_shared<http::response>([stream_data](http::http_response&& res){
 															stream_data->on_header(std::move(res));
 														},

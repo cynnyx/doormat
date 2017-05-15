@@ -14,7 +14,7 @@
 #include "../src/http/server/server_traits.h"
 #include "../src/http/server/request.h"
 #include "../src/http/server/response.h"
-#include "../src/http/connection.h"
+#include "../src/http/server/server_connection.h"
 
 #include "../src/dummy_node.h"
 
@@ -103,9 +103,9 @@ TEST_F(handler, http1_persistent)
 		"date: Tue, 17 May 2016 14:53:09 GMT\r\n"
 		"\r\n";
 
-	std::shared_ptr<server::handler_http1<http::server_traits>> h1 = std::make_shared<server::handler_http1<http::server_traits>>(http::proto_version::HTTP11);
+	auto h1 = std::make_shared<server::handler_http1<http::server_traits>>(http::proto_version::HTTP11);
 	h1->connector(conn);
-    std::shared_ptr<http::connection> user_connection = h1;
+	std::shared_ptr<http::server_connection> user_connection = h1;
     user_connection->set_persistent(true);
     user_connection->on_request([&](auto conn, auto req, auto res){
         req->on_finished([res](auto conn){
@@ -179,9 +179,9 @@ TEST_F(handler, http1_non_persistent)
 			"connection: close\r\n"
 			"\r\n";
 
-	std::shared_ptr<server::handler_http1<http::server_traits>> h1= std::make_shared<server::handler_http1<http::server_traits>>(http::proto_version::HTTP11);
+	auto h1= std::make_shared<server::handler_http1<http::server_traits>>(http::proto_version::HTTP11);
 	h1->connector(conn);
-    std::shared_ptr<http::connection> user_connection = h1;
+	std::shared_ptr<http::server_connection> user_connection = h1;
     user_connection->set_persistent(false);
     user_connection->on_request([&](auto conn, auto req, auto res){
         req->on_finished([res](auto req){
@@ -263,7 +263,7 @@ TEST_F(handler, http1_pipelining)
 
     auto h1= std::make_shared<server::handler_http1<http::server_traits>>(http::proto_version::HTTP11);
 	h1->connector(conn);
-    std::shared_ptr<http::connection> user_connection = h1;
+	std::shared_ptr<http::server_connection> user_connection = h1;
     user_connection->set_persistent(true);
     user_connection->on_request([&](auto conn, auto req, auto res){
         req->on_finished([res](auto req){

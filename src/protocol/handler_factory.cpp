@@ -66,7 +66,7 @@ void handler_factory::register_protocol_selection_callbacks(SSL_CTX* ctx)
 }
 
 
-std::shared_ptr<http::connection> handler_factory::negotiate_handler(std::shared_ptr<ssl_socket> sck) const noexcept
+std::shared_ptr<http::server_connection> handler_factory::negotiate_handler(std::shared_ptr<ssl_socket> sck) const noexcept
 {
 	const unsigned char* proto{nullptr};
 	unsigned int len{0};
@@ -98,6 +98,5 @@ std::shared_ptr<http::connection> handler_factory::negotiate_handler(std::shared
 
 	return build_handler( type , version, sck);
 }
-
 
 } //namespace
