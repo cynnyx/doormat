@@ -83,7 +83,8 @@ void handler_factory::register_protocol_selection_callbacks(SSL_CTX* ctx)
 	SSL_CTX_set_alpn_select_cb(ctx, alpn_select_cb, nullptr);
 }
 
-std::shared_ptr<http_handler> handler_factory::negotiate_handler(std::shared_ptr<ssl_socket> sck) const noexcept
+
+std::shared_ptr<http::server_connection> handler_factory::negotiate_handler(std::shared_ptr<ssl_socket> sck) const noexcept
 {
 	const unsigned char* proto{nullptr};
 	unsigned int len{0};
@@ -116,35 +117,40 @@ std::shared_ptr<http_handler> handler_factory::negotiate_handler(std::shared_ptr
 	return build_handler( type , version, sck);
 }
 
-std::shared_ptr<http_handler> handler_factory::build_handler(handler_type type, http::proto_version proto, std::shared_ptr<tcp_socket> socket) const noexcept
+std::shared_ptr<http::server_connection> handler_factory::build_handler(handler_type type, http::proto_version proto, std::shared_ptr<tcp_socket> socket) const noexcept
 {
-	auto h = make_handler(type, proto);
+
 	auto conn = std::make_shared<connector<tcp_socket>>(socket);
-	conn->handler(h);
-	conn->start(true);
-	return h;
-}
-
-std::shared_ptr<http_handler> handler_factory::build_handler(handler_type type, http::proto_version proto, std::shared_ptr<ssl_socket> socket) const noexcept
-{
-	auto conn = std::make_shared<connector<ssl_socket>>(socket);
-	auto h = make_handler(type, proto);
-	conn->handler(h);
-	conn->start(true);
-	return h;
-}
-
-std::shared_ptr<http_handler> handler_factory::make_handler(handler_type type, http::proto_version proto ) const noexcept {
-	switch(type)
+	if(type == handler_type::ht_h2)
 	{
-	case handler_type::ht_h2:
-		LOGTRACE("HTTP2 NG selected");
-		return std::make_shared<http2::session>();
-	case handler_type::ht_h1:
-	default:
-		LOGDEBUG("HTTP1 selected");
-		return std::make_shared<handler_http1<http::server_traits>>( proto );
+		auto h = std::make_shared<http2::session>();
+		conn->handler(h);
+		conn->start();
+		return h;
+	} else {
+		auto h = std::make_shared<http2::session>();
+		conn->handler(h);
+		conn->start();
+		return h;
 	}
 }
+
+std::shared_ptr<http::server_connection> handler_factory::build_handler(handler_type type, http::proto_version proto, std::shared_ptr<ssl_socket> socket) const noexcept
+{
+	auto conn = std::make_shared<connector<ssl_socket>>(socket);
+	if(type == handler_type::ht_h2)
+	{
+		auto h = std::make_shared<http2::session>();
+		conn->handler(h);
+		conn->start();
+		return h;
+	} else {
+		auto h = std::make_shared<http2::session>();
+		conn->handler(h);
+		conn->start();
+		return h;
+	}
+}
+
 
 } //namespace

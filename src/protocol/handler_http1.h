@@ -15,20 +15,32 @@
 #include "../http/server/response.h"
 #include "../connector.h"
 
+// TODO: this and the specialization should not be here
+#include "../http/server/server_traits.h"
+
 // TODO: should not be in _server_ namespace
 namespace server
 {
 
 template<typename handler_traits>
-class handler_http1 final: public http_handler
+class handler_http1 final: public http_handler, public handler_traits::connection_t
 {
 
 public:
 	using request_t = typename handler_traits::request_t;
 	using response_t = typename handler_traits::response_t;
 	using incoming_t = typename handler_traits::incoming_t;
+	using connection_t = typename handler_traits::connection_t;
 
-	void trigger_timeout_event() override {}
+	std::shared_ptr<handler_http1> get_shared()
+	{
+		return std::static_pointer_cast<handler_http1>(this->shared_from_this());
+	}
+
+	void trigger_timeout_event() override
+	{
+		connection_t::timeout();
+	}
 
 	handler_http1(http::proto_version version)
 		: version{version}
@@ -38,20 +50,10 @@ public:
 
 	bool start() noexcept override
 	{
-		init();
+		connection_t::init();
 		auto scb = [this](http::http_structured_data** data)
 		{
-
-			auto req = std::make_shared<request_t>(this->get_shared());
-			req->init();
-			auto res = std::make_shared<response_t>([this, self = this->get_shared()](){
-				notify_response();
-			});
-			*data = &current_request;
-			requests.push_back(req);
-			responses.push_back(res);
-
-			request_received(std::move(req), std::move(res));
+			this->on_incoming_structured_data(data);
 		};
 
 		auto hcb = [this]()
@@ -156,7 +158,7 @@ public:
 	bool should_stop() const noexcept override
 	{
 		auto finished = responses.empty();
-		return error_happened || (finished && !persistent);
+		return error_happened || (finished && !connection_t::persistent);
 	}
 
 	bool on_read(const char* data, size_t len) override
@@ -189,6 +191,12 @@ public:
 	~handler_http1() override = default;
 
 private:
+
+	void on_incoming_structured_data(http::http_structured_data**);
+
+	void close() override {
+		if(auto s = connector()) s->close(); 
+	}
 	/***/
 	boost::asio::io_service& io_service()
 	{
@@ -208,7 +216,7 @@ private:
 		error_code_distruction = INTERNAL_ERROR_LONG(408);
 		/** Send back the error, to everybody */
 		http::connection_error err{http::error_code::closed_by_client};
-		error(err);
+		connection_t::error(err);
 		//should notify everybody in the connection of the error!
 		for(auto &req: requests)
 		{
@@ -218,7 +226,7 @@ private:
 		{
 			if(auto s = res.lock()) io_service().post([s, err](){s->error(err);});
 		}
-		deinit();
+		connection_t::deinit();
 		requests.clear();
 		responses.clear();
 	}
@@ -243,6 +251,12 @@ private:
 				requests.pop_front();
 			}
 		}
+	}
+
+	void set_timeout(std::chrono::milliseconds ms)
+	{
+		auto s = connector();
+		if(s) s->set_timeout(std::move(ms));
 	}
 
 	/** Method used to retrieeve new content from a response */
@@ -320,5 +334,21 @@ private:
 	http::proto_version version{http::proto_version::UNSET};
 
 };
+
+template<>
+inline
+void handler_http1<http::server_traits>::on_incoming_structured_data(http::http_structured_data** data)
+{
+	auto req = std::make_shared<request_t>(this->get_shared());
+	req->init();
+	auto res = std::make_shared<response_t>([this, self = this->get_shared()](){
+		notify_response();
+	});
+	*data = &current_request;
+	requests.push_back(req);
+	responses.push_back(res);
+
+	request_received(std::move(req), std::move(res));
+}
 
 } //namespace

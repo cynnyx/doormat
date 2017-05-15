@@ -107,7 +107,7 @@ TEST_F(handler, http1_persistent)
 		"date: Tue, 17 May 2016 14:53:09 GMT\r\n"
 		"\r\n";
 
-	std::shared_ptr<server::handler_http1<http::server_traits>> h1 = std::make_shared<server::handler_http1<http::server_traits>>(http::proto_version::HTTP11);
+	auto h1 = std::make_shared<server::handler_http1<http::server_traits>>(http::proto_version::HTTP11);
 	h1->connector(conn);
 	std::shared_ptr<http::server_connection> user_connection = h1;
     user_connection->set_persistent(true);
@@ -141,7 +141,8 @@ TEST_F(handler, http1_persistent)
     boost::asio::deadline_timer t{conn->io_service()};
 	t.expires_from_now(boost::posix_time::seconds(2));
 	t.async_wait([&simulate_connection_closed](const boost::system::error_code &ec){simulate_connection_closed=true;});
-	cb = [this, &h1, &simulate_connection_closed]()
+
+    cb = [this, &h1, &simulate_connection_closed]()
 	{
         if(conn->io_service().stopped())
 			return;
@@ -182,8 +183,25 @@ TEST_F(handler, http1_non_persistent)
 			"connection: close\r\n"
 			"\r\n";
 
-	std::shared_ptr<server::handler_http1<http::server_traits>> h1= std::make_shared<server::handler_http1<http::server_traits>>(http::proto_version::HTTP11);
+	auto h1= std::make_shared<server::handler_http1<http::server_traits>>(http::proto_version::HTTP11);
 	h1->connector(conn);
+	std::shared_ptr<http::server_connection> user_connection = h1;
+    user_connection->set_persistent(false);
+    user_connection->on_request([&](auto conn, auto req, auto res){
+        req->on_finished([res](auto conn){
+            http::http_response r;
+            r.protocol(http::proto_version::HTTP11);
+            std::string body{"Ave client, dummy node says hello"};
+            r.status(200);
+            r.keepalive(false);
+            r.header("content-type", "text/plain");
+            r.header("date", "Tue, 17 May 2016 14:53:09 GMT");
+            r.content_len(body.size());
+            res->headers(std::move(r));
+            res->body(dstring{body.c_str(), body.size()});
+            res->end();
+        });
+    });
 
 	// list of chunks that I expect to receive inside the on_write()
 	std::string expected_response = "HTTP/1.1 200 OK\r\n"
@@ -194,6 +212,10 @@ TEST_F(handler, http1_non_persistent)
 			"\r\n"
 			"Ave client, dummy node says hello";
 
+    bool simulate_connection_closed = false;
+    boost::asio::deadline_timer t{conn->io_service()};
+    t.expires_from_now(boost::posix_time::seconds(2));
+    t.async_wait([&simulate_connection_closed](const boost::system::error_code &ec){simulate_connection_closed=true;});
 	cb = [this, &h1]()
 	{
         if(conn->io_service().stopped())
@@ -243,11 +265,30 @@ TEST_F(handler, http1_pipelining)
 			"connection: close\r\n"
 			"\r\n";
 
-	std::shared_ptr<server::handler_http1<http::server_traits>> h1= std::make_shared<server::handler_http1<http::server_traits>>(http::proto_version::HTTP11);
+    auto h1= std::make_shared<server::handler_http1<http::server_traits>>(http::proto_version::HTTP11);
 	h1->connector(conn);
+	std::shared_ptr<http::server_connection> user_connection = h1;
+    user_connection->set_persistent(true);
+    user_connection->on_request([&](auto conn, auto req, auto res){
+        bool keep_alive = req -> preamble().keepalive();
+        req->on_finished([res, keep_alive](auto conn){
+            http::http_response r;
+            r.protocol(http::proto_version::HTTP11);
+            std::string body{"Ave client, dummy node says hello"};
+            r.status(200);
+            r.keepalive(keep_alive);
+            r.header("content-type", "text/plain");
+            r.header("date", "Tue, 17 May 2016 14:53:09 GMT");
+            r.content_len(body.size());
+            res->headers(std::move(r));
+            res->body(dstring{body.c_str(), body.size()});
+            res->end();
+        });
+    });
 
 	// list of chunks that I expect to receive inside the on_write()
-	std::string expected_response = "HTTP/1.1 200 OK\r\n"
+    std::string expected_response =
+            "HTTP/1.1 200 OK\r\n"
 			"connection: keep-alive\r\n"
 			"content-length: 33\r\n"
 			"content-type: text/plain\r\n"
@@ -261,35 +302,40 @@ TEST_F(handler, http1_pipelining)
 			"content-type: text/plain\r\n"
 			"date: Tue, 17 May 2016 14:53:09 GMT\r\n"
 			"\r\n"
-			"Ave client, dummy node says hello"
-	;
+			"Ave client, dummy node says hello";
 
-	cb = [this, &h1]()
-	{
+    bool simulate_connection_closed = false;
+    boost::asio::deadline_timer t{conn->io_service()};
+    t.expires_from_now(boost::posix_time::seconds(2));
+    t.async_wait([&simulate_connection_closed](const boost::system::error_code &ec){simulate_connection_closed=true;});
+
+    cb = [this, &h1, &simulate_connection_closed]()
+    {
         if(conn->io_service().stopped())
-			return;
+            return;
 
-		dstring chunk;
-		while(h1->on_write(chunk))
-		{
-			if(h1->should_stop() || chunk.empty())
-			{
-				if(h1->should_stop())
-					deadline->cancel();
-				break;
-			}
+        dstring chunk;
+        while(h1->on_write(chunk))
+        {
+            if(h1->should_stop() || chunk.empty())
+            {
+                if(h1->should_stop())
+                    deadline->cancel();
+                break;
+            }
 
-			response.append(chunk);
-			chunk = {};
-		}
+            response.append(chunk);
+            chunk = {};
+        }
 
-		if(!h1->should_stop())
+        if(!h1->should_stop() && !simulate_connection_closed)
+        {
             conn->io_service().post(cb);
-	};
+        }
+    };
 
 	ASSERT_TRUE(h1->start());
 	h1->on_read(req.data(), req.size());
     conn->io_service().run();
-	ASSERT_TRUE(h1->should_stop());
 	EXPECT_EQ(expected_response, response);
 }

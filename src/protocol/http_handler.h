@@ -1,11 +1,15 @@
+#ifndef DOORMAT_HANDLER_INTERFACE_H
+#define DOORMAT_HANDLER_INTERFACE_H
+
 #include <memory>
 #include <boost/asio.hpp>
 #include <iostream>
 #include <experimental/optional>
 #include "../http/http_commons.h"
 #include "../http/server/server_connection.h"
-#ifndef DOORMAT_HANDLER_INTERFACE_H
-#define DOORMAT_HANDLER_INTERFACE_H
+#include "../utils/dstring.h"
+
+class dstring;
 
 /**
  * @note This "interface" violates all SOLID paradigm
@@ -17,7 +21,8 @@
 namespace server
 {
 class connector_interface;
-class http_handler : public http::server_connection
+
+class http_handler
 {
 	std::weak_ptr<connector_interface> _connector;
 
@@ -25,11 +30,7 @@ class http_handler : public http::server_connection
 	virtual void on_connector_nulled() = 0;
 
 protected:
-	bool persistent{true};
-	std::shared_ptr<http_handler> get_shared()
-	{
-		return std::static_pointer_cast<http_handler>(this->shared_from_this());
-	}
+
 
 	std::shared_ptr<connector_interface> connector() noexcept
 	{
@@ -42,13 +43,10 @@ protected:
 		return nullptr;
 	}
 
-	void set_persistent(bool value) noexcept override { persistent = value; }
-
-	void set_timeout(std::chrono::milliseconds ms) override;
 
 public:
 	http_handler() = default;
-	void close() override;
+	//void close() override;
 	void connector( std::shared_ptr<connector_interface> conn);
 
 	boost::asio::ip::address find_origin() const;
@@ -60,7 +58,7 @@ public:
 	virtual void trigger_timeout_event() =0;
 	virtual void on_error(const int &) = 0;
 
-	~http_handler() override = default;
+	virtual ~http_handler() = default;
 };
 
 }

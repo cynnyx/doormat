@@ -5,15 +5,12 @@
 #include <tuple>
 #include <experimental/optional>
 #include <chrono>
+#include <memory>
 
-#include "http_request.h"
-#include "http_response.h"
 #include "connection_error.h"
 
 namespace http {
 
-class request;
-class response;
 
 struct connection : std::enable_shared_from_this<connection> {
 
@@ -30,17 +27,19 @@ struct connection : std::enable_shared_from_this<connection> {
 	}
 
 	/** Utilities provided to the user to manipulate the connection directly */
-    virtual void set_persistent(bool persistent = true) = 0;
+	virtual void set_persistent(bool persistent = true) {this->persistent = persistent; }
     virtual void close() = 0;
 
 	virtual ~connection() = default;
 
 protected:
-	void error(http::connection_error);
+	bool persistent{true};
 
-    inline void init(){ myself = this->shared_from_this(); }
-    inline void deinit(){ myself = nullptr; }
-	virtual void set_timeout(std::chrono::milliseconds) = 0;
+	virtual void set_timeout(std::chrono::milliseconds)=0;
+	void error(http::connection_error);
+	void timeout() { if(timeout_cb) (*timeout_cb)(this->shared_from_this()); }
+	inline void init(){ myself = this->shared_from_this(); }
+	inline void deinit(){ myself = nullptr; }
 
 private:
 	http::connection_error current{error_code::success};

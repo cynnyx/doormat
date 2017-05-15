@@ -6,7 +6,6 @@
 #include <boost/asio/ssl.hpp>
 #include "../../deps/openssl/include/openssl/ssl.h"
 #include "../http/http_commons.h"
-#include "http_handler.h"
 
 
 class dstring;
@@ -14,6 +13,7 @@ struct node_interface;
 
 namespace http
 {
+class server_connection;
 class http_response;
 }
 
@@ -34,13 +34,13 @@ enum class handler_type
 
 class handler_factory
 {
-	std::shared_ptr<http_handler> make_handler(handler_type, http::proto_version) const noexcept;
+
 
 public:
 	void register_protocol_selection_callbacks(SSL_CTX* ctx);
-	std::shared_ptr<http_handler> negotiate_handler(std::shared_ptr<ssl_socket> s) const noexcept;
-	std::shared_ptr<http_handler> build_handler(handler_type, http::proto_version vers, std::shared_ptr<ssl_socket> s) const noexcept;
-	std::shared_ptr<http_handler> build_handler(handler_type, http::proto_version vers, std::shared_ptr<tcp_socket> socket) const noexcept;
+	std::shared_ptr<http::server_connection> negotiate_handler(std::shared_ptr<ssl_socket> s) const noexcept;
+	std::shared_ptr<http::server_connection> build_handler(handler_type, http::proto_version vers, std::shared_ptr<ssl_socket> s) const noexcept;
+	std::shared_ptr<http::server_connection> build_handler(handler_type, http::proto_version vers, std::shared_ptr<tcp_socket> socket) const noexcept;
 };
 
 } //namespace
