@@ -84,6 +84,7 @@ public:
 	dstring& operator=( dstring&& ) noexcept;
 
 	bool operator!=( const dstring& ) const noexcept;
+    bool operator!=(const std::string&) const noexcept;
 	bool operator<( const dstring& d) const noexcept;
 
 	bool operator==(const dstring&) const noexcept;

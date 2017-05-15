@@ -228,6 +228,12 @@ bool dstring::operator!=( const dstring& other) const noexcept
 	return !operator==(other);
 }
 
+bool dstring::operator!=(const std::string& other) const noexcept
+{
+    return !operator==(other);
+}
+
+
 bool dstring::operator<( const dstring& other) const noexcept
 {
 	return std::lexicographical_compare(cbegin(), cend(), other.cbegin(), other.cend());
