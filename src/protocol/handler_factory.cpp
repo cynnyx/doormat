@@ -2,12 +2,7 @@
 #include "handler_http1.h"
 #include "../http2/session.h"
 #include "../connector.h"
-#include "../utils/log_wrapper.h"
-#include "../chain_of_responsibility/node_interface.h"
-#include "../chain_of_responsibility/error_code.h"
-#include "../chain_of_responsibility/chain_of_responsibility.h"
 #include "../dummy_node.h"
-#include "../utils/likely.h"
 #include "../configuration/configuration_wrapper.h"
 #include "../connector.h"
 #include "../http/server/server_traits.h"
@@ -18,6 +13,7 @@ using namespace std;
 
 namespace server
 {
+
 
 const static string alpn_protos_default[]
 {
@@ -125,12 +121,12 @@ std::shared_ptr<http::connection> handler_factory::build_handler(handler_type ty
 	{
 		auto h = std::make_shared<http2::session>();
 		conn->handler(h);
-		conn->start();
+		conn->start(true);
 		return h;
 	} else {
-		auto h = std::make_shared<http2::session>();
+		auto h = std::make_shared<handler_http1<http::server_traits>>(proto);
 		conn->handler(h);
-		conn->start();
+		conn->start(true);
 		return h;
 	}
 }
@@ -142,12 +138,12 @@ std::shared_ptr<http::connection> handler_factory::build_handler(handler_type ty
 	{
 		auto h = std::make_shared<http2::session>();
 		conn->handler(h);
-		conn->start();
+		conn->start(true);
 		return h;
 	} else {
-		auto h = std::make_shared<http2::session>();
+		auto h = std::make_shared<handler_http1<http::server_traits>>(proto);
 		conn->handler(h);
-		conn->start();
+		conn->start(true);
 		return h;
 	}
 }

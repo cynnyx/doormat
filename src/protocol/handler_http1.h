@@ -5,7 +5,6 @@
 #include "../http/http_structured_data.h"
 #include "../chain_of_responsibility/node_erased.h"
 #include "../log/access_record.h"
-
 #include "handler_factory.h"
 #include "../utils/log_wrapper.h"
 #include "../chain_of_responsibility/node_interface.h"
