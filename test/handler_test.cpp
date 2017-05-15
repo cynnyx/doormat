@@ -20,11 +20,7 @@
 
 namespace
 {
-	
-static std::unique_ptr<node_interface> node_factory()
-{
-	return make_unique_chain<node_interface, dummy_node>();
-}
+
 
 struct MockConnector : public server::connector_interface
 {
