@@ -14,10 +14,6 @@ boost::asio::ip::address http_handler::find_origin() const
 	return {};
 }
 
-void http_handler::close()
-{
-	if(auto s = _connector.lock()) s->close();
-}
 
 void http_handler::connector(std::shared_ptr<server::connector_interface>  conn )
 {
@@ -27,12 +23,5 @@ void http_handler::connector(std::shared_ptr<server::connector_interface>  conn 
 		on_connector_nulled();
 }
 
-void http_handler::set_timeout(std::chrono::milliseconds ms)
-{
-	if(auto s = _connector.lock())
-	{
-		s->set_timeout(std::move(ms));
-	}
-}
 
 }

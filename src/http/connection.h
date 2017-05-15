@@ -32,18 +32,19 @@ struct connection : std::enable_shared_from_this<connection> {
 	}
 
 	/** Utilities provided to the user to manipulate the connection directly */
-    virtual void set_persistent(bool persistent = true) = 0;
+    virtual void set_persistent(bool persistent = true) {this->persistent = persistent; };
     virtual void close() = 0;
 
 	virtual ~connection() = default;
 
 protected:
+	bool persistent{true};
+	virtual void set_timeout(std::chrono::milliseconds)=0;
 	void request_received(std::shared_ptr<http::request>, std::shared_ptr<http::response>);
 	void error(http::connection_error);
 	void timeout() { if(timeout_cb) (*timeout_cb)(this->shared_from_this()); }
     inline void init(){ myself = this->shared_from_this(); }
     inline void deinit(){ myself = nullptr; }
-	virtual void set_timeout(std::chrono::milliseconds) = 0;
 
 private:
 	http::connection_error current{error_code::success};

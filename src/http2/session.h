@@ -18,7 +18,7 @@ class stream;
 
 extern const std::size_t header_size_bytes;
 
-class session : public server::http_handler
+class session : public server::http_handler, public http::connection
 {
 	using session_deleter = std::function<void(nghttp2_session*)>;
 
@@ -51,6 +51,9 @@ class session : public server::http_handler
 	nghttp2_option* options;
 	bool gone{false};
 	std::int32_t stream_counter{0};
+	void set_timeout(std::chrono::milliseconds) override {}
+protected:
+	std::shared_ptr<session> get_shared() { return std::static_pointer_cast<session>(this->shared_from_this()); }
 public:
 	session();
 
@@ -68,6 +71,8 @@ public:
 
 	void finished_stream() noexcept;
 	virtual ~session() { nghttp2_option_del( options ); }
+
+	void close() override { if(auto s = connector()) s->close(); }
 
 	// Push interface to come
 

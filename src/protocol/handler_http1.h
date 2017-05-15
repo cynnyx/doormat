@@ -20,13 +20,19 @@ namespace server
 {
 
 template<typename handler_traits>
-class handler_http1 final: public http_handler
+class handler_http1 final: public http_handler, public http::connection
 {
 
 public:
 	using request_t = typename handler_traits::request_t;
 	using response_t = typename handler_traits::response_t;
 	using incoming_t = typename handler_traits::incoming_t;
+
+
+	std::shared_ptr<handler_http1> get_shared()
+	{
+		return std::static_pointer_cast<handler_http1>(this->shared_from_this());
+	}
 
 	void trigger_timeout_event() override {
 		timeout();
@@ -191,6 +197,10 @@ public:
 	~handler_http1() override = default;
 
 private:
+
+	void close() override {
+		if(auto s = connector()) s->close(); 
+	}
 	/***/
 	boost::asio::io_service& io_service()
 	{
@@ -245,6 +255,12 @@ private:
 				requests.pop_front();
 			}
 		}
+	}
+
+	void set_timeout(std::chrono::milliseconds ms)
+	{
+		auto s = connector();
+		if(s) s->set_timeout(std::move(ms));
 	}
 
 	/** Method used to retrieeve new content from a response */
