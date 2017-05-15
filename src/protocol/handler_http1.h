@@ -55,6 +55,9 @@ public:
 			if(requests.empty()) return;
 			if(auto s = requests.back().lock())
 			{
+				auto keepalive = !current_request.has(http::hf_connection) ? persistent : current_request.header(http::hf_connection) == http::hv_keepalive;
+				current_request.keepalive(keepalive);
+				persistent = keepalive;
 				io_service().post(
 							[s, current_request = std::move(current_request)]() mutable {s->headers(std::move(current_request));}
 				);
@@ -284,6 +287,10 @@ private:
 	/** Response management methods. They operate on a single response*/
 	void notify_response_headers(http::http_response&& res)
 	{
+		if(res.has(http::hf_connection))
+		{
+			persistent = res.header(http::hf_connection) == http::hv_keepalive;
+		}
 		serialization.append(encoder.encode_header(res));
 		do_write();
 	}
