@@ -11,21 +11,14 @@
 namespace
 {
 
-// @todo Sooner or later it must be moved to configuration
+// @todo member
 static constexpr const std::int32_t max_concurrent_streams = 100;
 
 }
 
 namespace http2
 {
-/*
-void session::on_eom()
-{
-	LOGTRACE("on_eom does not look useful");
-	if ( nghttp2_session_want_write( session_data.get() ) )
-		do_write();
-}
-*/
+
 void session::on_error(const int& er)
 {
 	LOGERROR( "Session error: ", er );
@@ -86,6 +79,7 @@ void session::send_connection_header()
 	int r = nghttp2_submit_settings( session_data.get(), NGHTTP2_FLAG_NONE, iv, ivlen );
 
 	// If this happens is a bug - die with fireworks
+
 	if ( r ) THROW( errors::setting_connection_failure, r );
 
 	do_write();
@@ -138,6 +132,7 @@ void session::go_away()
 	{
 		// No mem or invalid data - they look like a bug to me
 //		LOGERROR( "nghttp2_submit_goaway ", nghttp2_strerror( r ) );
+		//todo: avoid throwing
 		THROW( errors::failing_at_failing, r );
 	}
 
@@ -245,7 +240,7 @@ void session::do_write()
 }
 
 void session::on_connector_nulled()
-{
+{ //todo: send events
 	LOGTRACE("on_connector_nulled");
 // 	s->on_request_canceled(error_code_distruction)
 	// Streams should be destroyed by nghttp2
@@ -334,7 +329,7 @@ int session::frame_send_callback (nghttp2_session *session_, const nghttp2_frame
 // 	session* s_this = static_cast<session*>( user_data );
 	std::int32_t stream_id = frame->hd.stream_id;
 	LOGTRACE("frame_send_callback - Stream id: ", stream_id );
-
+//todo: for http2 push
 	//if (frame->hd.type != NGHTTP2_PUSH_PROMISE) ← only usage in his library
 // 	void* stud = nghttp2_session_get_strea_muser_data( session_, stream_id );
 //

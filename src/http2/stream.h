@@ -8,26 +8,15 @@
 #include <string>
 #include <memory>
 
-#include "../chain_of_responsibility/node_interface.h"
 #include "session.h"
 #include "../http/http_structured_data.h"
 #include "../http/http_request.h"
-#include "../log/access_record.h"
 #include "../protocol/http_handler.h"
 
 namespace http2
 {
 
-// enum class recv_state : uint8_t 
-// {
-// 	HEADER,
-// 	CHUNK_HEADER,
-// 	BODY,
-// 	CHUNK_BODY,
-// 	EOM,
-// 	EOC,
-// 	TRAILER
-// }
+
 	
 class stream final
 {
@@ -42,7 +31,6 @@ class stream final
 	// TODO Used for prioritization! In the future.
 	std::int32_t weight_{0};
 	
-	std::unique_ptr<node_interface> managed_chain{nullptr};
 
 	std::list<dstring> body;
 	std::size_t body_index{0};
@@ -128,10 +116,7 @@ public:
 	void on_response_continue();
 	void on_request_canceled(const errors::error_code &ec);
 	
-	void on_write( dstring& out );
-	void on_read( dstring&& in );
 	void flush() noexcept;
-	void closed() noexcept { closed_ = true; }
 	void die() noexcept;
 	~stream();
 };

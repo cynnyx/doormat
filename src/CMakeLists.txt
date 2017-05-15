@@ -30,8 +30,7 @@ set(DOORMAT_COMMON_SOURCES
 	log/log.cpp
 	log/access_record.cpp
 	protocol/handler_factory.cpp
-	protocol/handler_http1.cpp
-	stats/stats_manager.cpp
+        stats/stats_manager.cpp
 	service_locator/service_locator.cpp
 	utils/dstring.cpp
 	utils/dstring_factory.cpp
