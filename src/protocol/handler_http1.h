@@ -28,7 +28,9 @@ public:
 	using response_t = typename handler_traits::response_t;
 	using incoming_t = typename handler_traits::incoming_t;
 
-	void trigger_timeout_event() override {};
+	void trigger_timeout_event() override {
+		timeout();
+	};
 
 	handler_http1(http::proto_version version)
 		: version{version}

@@ -40,7 +40,7 @@ struct connection : std::enable_shared_from_this<connection> {
 protected:
 	void request_received(std::shared_ptr<http::request>, std::shared_ptr<http::response>);
 	void error(http::connection_error);
-
+	void timeout() { if(timeout_cb) (*timeout_cb)(this->shared_from_this()); }
     inline void init(){ myself = this->shared_from_this(); }
     inline void deinit(){ myself = nullptr; }
 	virtual void set_timeout(std::chrono::milliseconds) = 0;
