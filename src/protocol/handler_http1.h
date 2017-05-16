@@ -32,7 +32,7 @@ public:
 
 	void trigger_timeout_event() override
 	{
-		connection_t::timeout();
+		io_service().post([this](){connection_t::timeout()});
 	}
 
 	handler_http1(http::proto_version version) : version{version}
