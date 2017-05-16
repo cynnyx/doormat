@@ -56,7 +56,6 @@ public:
 	virtual bool on_read(const char*, unsigned long) = 0;
 	virtual bool on_write(dstring& chunk) = 0;
 	virtual void trigger_timeout_event() =0;
-	virtual void on_error(const int &) = 0;
 
 	virtual ~http_handler() = default;
 };

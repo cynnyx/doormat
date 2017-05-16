@@ -67,7 +67,6 @@ public:
     void do_write() override;
 	void on_connector_nulled() override;
 
-	void on_error(const int &) override;
 
 	void finished_stream() noexcept;
 	virtual ~session() { nghttp2_option_del( options ); }

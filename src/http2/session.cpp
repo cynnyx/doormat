@@ -19,12 +19,6 @@ static constexpr const std::int32_t max_concurrent_streams = 100;
 namespace http2
 {
 
-void session::on_error(const int& er)
-{
-	LOGERROR( "Session error: ", er );
-	/// @todo goaway ?
-	finished_stream();
-}
 
 session::session(): session_data( nullptr, [] ( nghttp2_session* s ) { if ( s ) nghttp2_session_del ( s ); } )
 {
