@@ -14,7 +14,7 @@
 #include "../src/http/server/request.h"
 #include "../src/http/server/response.h"
 #include "../src/http/server/server_connection.h"
-#include "mocks/mock_connector.hpp"
+#include "mocks/mock_connector.h"
 
 #include "../src/dummy_node.h"
 
