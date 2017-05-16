@@ -32,7 +32,7 @@ public:
 
 	void trigger_timeout_event() override
 	{
-		io_service().post([this](){connection_t::timeout()});
+		io_service().post([this](){connection_t::timeout(); });
 	}
 
 	handler_http1(http::proto_version version) : version{version}
@@ -67,12 +67,22 @@ public:
 			if(remote_objects.empty()) return;
 			if(auto s = remote_objects.back().lock())
 			{
-				auto keepalive = !current_decoded_object.has(http::hf_connection) ? connection_t::persistent : current_decoded_object.header(http::hf_connection) == http::hv_keepalive;
+				bool keepalive =
+						(!current_decoded_object.has(http::hf_connection)) ?
+							connection_t::persistent :
+							current_decoded_object.header(http::hf_connection) == http::hv_keepalive;
+
 				current_decoded_object.keepalive(keepalive);
+
 				connection_t::persistent = keepalive;
+
 				io_service().post(
-							[s, current_decoded_object = std::move(current_decoded_object)]() mutable {s->headers(std::move(current_decoded_object));}
+							[s, current_decoded_object = std::move(current_decoded_object)]() mutable
+							{
+								s->headers(std::move(current_decoded_object));
+							}
 				);
+
 				current_decoded_object = {};
 			}
 		};
@@ -82,7 +92,10 @@ public:
 			if(remote_objects.empty()) return;
 			if(auto s = remote_objects.back().lock())
 			{
-				io_service().post([s, b = std::move(b)]() mutable {s->body(std::move(b));});
+				io_service().post([s, b = std::move(b)]() mutable
+				                  {
+					                  s->body(std::move(b));
+				                  });
 			}
 		};
 
@@ -92,7 +105,10 @@ public:
 			if(auto s = remote_objects.back().lock())
 			{
 				io_service().post(
-							[s, k = std::move(k), v = std::move(v)]() mutable { s->trailer(std::move(k), std::move(v)); }
+							[s, k = std::move(k), v = std::move(v)]() mutable
+							{
+								s->trailer(std::move(k), std::move(v));
+							}
 				);
 			}
 		};
@@ -109,7 +125,6 @@ public:
 		auto fcb = [this](int error,bool&)
 		{
 			//failure always gets called after start...
-			LOGTRACE("Codec failure handling");
 			if(auto s = remote_objects.back().lock())
 			{
 				io_service().post([s]() { s->error(http::error_code::decoding); }); //fix
@@ -119,45 +134,6 @@ public:
 			}
 			remote_objects.pop_front();
 			local_objects.pop_front();
-			/*http::proto_version pv = version;
-			if ( ! error_code_distruction && some_message_started( pv ) )
-			{
-				switch ( error )
-				{
-					case HPE_CB_url:
-						errors::error_factory_async::error_response( ne,
-							static_cast<uint16_t>( errors::http_error_code::uri_too_long ), pv);
-						break;
-
-					case HPE_HEADER_OVERFLOW:
-					case HPE_INVALID_EOF_STATE:
-					case HPE_INVALID_VERSION:
-					case HPE_INVALID_STATUS:
-					case HPE_INVALID_METHOD:
-					case HPE_INVALID_URL:
-					case HPE_INVALID_HOST:
-					case HPE_INVALID_PORT:
-					case HPE_INVALID_PATH:
-					case HPE_INVALID_QUERY_STRING:
-					case HPE_INVALID_FRAGMENT:
-					case HPE_LF_EXPECTED:
-					case HPE_INVALID_HEADER_TOKEN:
-					case HPE_INVALID_CONTENT_LENGTH:
-					case HPE_UNEXPECTED_CONTENT_LENGTH:
-					case HPE_INVALID_CHUNK_SIZE:
-					case HPE_INVALID_CONSTANT:
-					case HPE_INVALID_INTERNAL_STATE:
-						errors::error_factory_async::error_response( ne,
-							static_cast<uint16_t>( errors::http_error_code::bad_request ), pv);
-						break;
-					case HPE_STRICT:
-					case HPE_PAUSED:
-					case HPE_CLOSED_CONNECTION:
-					default:
-						break;
-				}
-			}*/
-			//TODO: manage HTTP1 error.
 		};
 
 		decoder.register_callback(std::move(scb), std::move(hcb), std::move(bcb), std::move(tcb), std::move(ccb), std::move(fcb));
@@ -167,12 +143,11 @@ public:
 	bool should_stop() const noexcept override
 	{
 		auto finished = local_objects.empty();
-		return error_happened || (finished && !connection_t::persistent);
+		return finished && !connection_t::persistent;
 	}
 
 	bool on_read(const char* data, size_t len) override
 	{
-		LOGTRACE(this, " Received chunk of size:", len);
 		auto rv = decoder.decode(data, len);
 		return rv;
 	}
@@ -190,38 +165,35 @@ public:
 		return false;
 	}
 
-	void on_error(const int&) override
-	{
-		LOGTRACE(this, " on_error");
-		error_happened = true;
-		//propagate error.
-	}
 
 	~handler_http1() override = default;
 
 private:
 
+	/** Event emitted when the decoder starts; default behaviour. See specializations.*/
 	void decoder_begin(){}
 
+	/** Explicit user-requested close*/
 	void close() override
 	{
 		user_close = true;
 		if(auto s = connector()) s->close();
 	}
-	/***/
+
+	/** Handler to the io_service to post deferred callbacks*/
 	boost::asio::io_service& io_service()
 	{
 		return connector()->io_service();
 	}
 
+	/** Requires a write if a connector is still available. */
 	void do_write() override
 	{
 		if(connector())
 			connector()->do_write();
-		else
-			LOGERROR("handler_factory ", this, " connector already destroyed");
 	}
 
+	/** Reaction to connection close*/
 	void on_connector_nulled() override
 	{
 		if(user_close) return;
@@ -253,17 +225,18 @@ private:
 			{
 				if(poll_local(s))
 				{
-					//we pop them both.
 					local_objects.pop_front();
-					remote_objects.pop_front(); }
+					remote_objects.pop_front();
+				}
 				else break;
-			} else {
+			} else
+			{
 				local_objects.pop_front();
 				remote_objects.pop_front();
 			}
 		}
 	}
-
+	/** propagates the timeout request to the connector. */
 	void set_timeout(std::chrono::milliseconds ms)
 	{
 		auto s = connector();
@@ -274,7 +247,8 @@ private:
 	bool poll_local(std::shared_ptr<local_t> loc)
 	{
 		auto state = loc->get_state();
-		while(state != local_t::state::pending) {
+		while(state != local_t::state::pending)
+		{
 			switch(state) {
 			case local_t::state::headers_received:
 				notify_local_headers(loc->get_preamble());
@@ -300,7 +274,7 @@ private:
 		return false;
 	}
 
-	/** Local Object management methods. They operate on a single local object*/
+	/** Local Object management methods. They operate on a single local object. */
 	void notify_local_headers(local_t_object &&loc)
 	{
 		if(loc.has(http::hf_connection))
@@ -329,10 +303,9 @@ private:
 		do_write();
 	}
 
-	/** Requests and responses currently managed by this handler*/
+	/** Remote and local object currently being managed by the handler*/
 	std::list<std::weak_ptr<remote_t>> remote_objects;
 	std::list<std::weak_ptr<local_t>> local_objects;
-
 
 	/** Encoder for local objects*/
 	http::http_codec encoder;
@@ -344,10 +317,9 @@ private:
 
 	/** Dstring used to serialize the information coming from the local object*/
 	dstring serialization;
-
+	/** User close is set to true when an explicit connection close is required by the user, avoiding sending an error*/
 	bool user_close{false};
-	bool error_happened{false};
-
+	/** Current protocol version.*/
 	http::proto_version version{http::proto_version::UNSET};
 
 };
