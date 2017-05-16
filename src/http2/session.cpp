@@ -112,7 +112,7 @@ stream* session::create_stream ( std::int32_t id )
 														[stream_data]() {
 															stream_data->on_eom();
 														});
-	request_received(req_handler, res_handler);
+	user_feedback(req_handler, res_handler);
     stream_data->set_handlers(req_handler, res_handler);
 
 	int rv = nghttp2_session_set_stream_user_data( session_data.get(), id, stream_data );

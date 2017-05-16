@@ -28,6 +28,7 @@ class response : public std::enable_shared_from_this<response>
 	friend class http2::stream;
 public:
 	using error_callback_t = std::function<void()>;
+	using write_callback_t = std::function<void()>;
 
 	enum class state {
 		pending,
@@ -46,7 +47,7 @@ public:
 	void end();
 
 	void on_error(error_callback_t ecb);
-
+	void on_write(write_callback_t wcb);
 
 	state get_state() const noexcept;
 	http_response get_preamble();
@@ -55,16 +56,23 @@ public:
 
 	~response() = default;
 private:
-
+	std::shared_ptr<response> myself{nullptr};
 
     void error(http::connection_error err)
     {
         if(error_callback) (*error_callback)();
     }
 
+	void cleared()
+	{
+		if(write_callback) (*write_callback)();
+		myself = nullptr;
+	}
+
 	state current;
 	bool ended{false};
 	std::experimental::optional<error_callback_t> error_callback;
+	std::experimental::optional<write_callback_t> write_callback;
 	std::experimental::optional<http_response> response_headers;
 	dstring content;
 	std::queue<std::pair<dstring, dstring>> trailers;

@@ -40,12 +40,26 @@ public:
 		LOGINFO("HTTP1 selected");
 	}
 
+
+	std::pair<std::shared_ptr<remote_t>, std::shared_ptr<local_t>> get_user_handlers()
+	{
+		auto rem = std::make_shared<remote_t>(this->get_shared());
+		rem->init();
+		auto loc = std::make_shared<local_t>([this, self = this->get_shared()](){
+			notify_local_content();
+		});
+		remote_objects.push_back(rem);
+		local_objects.push_back(loc);
+		return std::make_pair(rem, loc);
+	};
+
 	bool start() noexcept override
 	{
 		connection_t::init();
 		auto scb = [this](http::http_structured_data** data)
 		{
-			this->on_incoming_structured_data(data);
+			*data = &current_decoded_object;
+			decoder_begin();
 		};
 
 		auto hcb = [this]()
@@ -98,10 +112,10 @@ public:
 			LOGTRACE("Codec failure handling");
 			if(auto s = remote_objects.back().lock())
 			{
-				io_service().post([s]() { s->error(http::error_code::success); }); //fix
+				io_service().post([s]() { s->error(http::error_code::decoding); }); //fix
 			}
 			if(auto s = local_objects.back().lock()) {
-				io_service().post([s]() { s->error(http::error_code::success); });
+				io_service().post([s]() { s->error(http::error_code::decoding); });
 			}
 			remote_objects.pop_front();
 			local_objects.pop_front();
@@ -187,10 +201,12 @@ public:
 
 private:
 
-	void on_incoming_structured_data(http::http_structured_data**);
+	void decoder_begin(){}
 
-	void close() override {
-		if(auto s = connector()) s->close(); 
+	void close() override
+	{
+		user_close = true;
+		if(auto s = connector()) s->close();
 	}
 	/***/
 	boost::asio::io_service& io_service()
@@ -208,7 +224,7 @@ private:
 
 	void on_connector_nulled() override
 	{
-		error_code_distruction = INTERNAL_ERROR_LONG(408);
+		if(user_close) return;
 		/** Send back the error, to everybody */
 		http::connection_error err{http::error_code::closed_by_client};
 		connection_t::error(err);
@@ -255,29 +271,31 @@ private:
 	}
 
 	/** Method used to retrieeve new content from a response */
-	bool poll_local(std::shared_ptr<local_t> res)
+	bool poll_local(std::shared_ptr<local_t> loc)
 	{
-		auto state = res->get_state();
+		auto state = loc->get_state();
 		while(state != local_t::state::pending) {
 			switch(state) {
 			case local_t::state::headers_received:
-				notify_local_headers(res->get_preamble());
+				notify_local_headers(loc->get_preamble());
 				break;
 			case local_t::state::body_received:
-				notify_local_body(res->get_body());
+				notify_local_body(loc->get_body());
 				break;
 			case local_t::state::trailer_received:
 			{
-				auto trailer = res->get_trailer();
+				auto trailer = loc->get_trailer();
 				notify_local_trailer(std::move(trailer.first), std::move(trailer.second));
 				break;
 			}
 			case local_t::state::ended:
 				notify_local_end();
+				//method to notify that the data has been serialized and the user no longer needs to keep it alive for data to be sent
+				loc->cleared();
 				return true;
 			default: assert(0);
 			}
-			state = res->get_state();
+			state = loc->get_state();
 		}
 		return false;
 	}
@@ -327,27 +345,22 @@ private:
 	/** Dstring used to serialize the information coming from the local object*/
 	dstring serialization;
 
+	bool user_close{false};
 	bool error_happened{false};
 
-	errors::error_code error_code_distruction;
 	http::proto_version version{http::proto_version::UNSET};
 
 };
 
+/** Specialization providing user feedback. */
 template<>
 inline
-void handler_http1<http::server_traits>::on_incoming_structured_data(http::http_structured_data** data)
+void handler_http1<http::server_traits>::decoder_begin()
 {
-	auto req = std::make_shared<remote_t>(this->get_shared());
-	req->init();
-	auto res = std::make_shared<local_t>([this, self = this->get_shared()](){
-		notify_local_content();
-	});
-	*data = &current_decoded_object;
-	remote_objects.push_back(req);
-	local_objects.push_back(res);
-
-	request_received(std::move(req), std::move(res));
+	auto f = get_user_handlers();
+	user_feedback(std::move(f.first), std::move(f.second));
 }
+
+
 
 } //namespace

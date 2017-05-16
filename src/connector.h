@@ -76,6 +76,7 @@ class connector final: public connector_interface,
 			{
 				LOGTRACE(self.get()," deadline has expired");
 				self->_handler->trigger_timeout_event();
+				self->renew_ttl();
 			}
 			else if(ec != boost::system::errc::operation_canceled)
 			{
@@ -87,6 +88,7 @@ class connector final: public connector_interface,
 	void set_timeout(std::chrono::milliseconds ms)
 	{
 		_ttl = boost::posix_time::milliseconds{ms.count()};
+		renew_ttl();
 	}
 
 public:
@@ -115,7 +117,6 @@ public:
 			_handler->connector(nullptr);
 			_handler = nullptr;
 		}
-		stop();
 		LOGTRACE(this," destructor end");
 	}
 
@@ -150,7 +151,6 @@ public:
 	{
 		if(!_stopped)
 		{
-			LOGTRACE(this," stopping");
 			berror_code ec;
 			_stopped = true;
 			_timer.cancel(ec);

@@ -20,7 +20,7 @@ public:
 	void on_request(request_callback rcb);
 
 protected:
-	void request_received(std::shared_ptr<http::request>, std::shared_ptr<http::response>);
+	void user_feedback(std::shared_ptr<http::request>, std::shared_ptr<http::response>);
 
 private:
 	request_callback request_cb;

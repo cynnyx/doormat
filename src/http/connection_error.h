@@ -5,15 +5,16 @@ namespace http {
 
 enum class error_code : int
 {   success = 0,
-    closed_by_client = 1
+	decoding = 1,
+    closed_by_client = 2
 };
 
 
 class connection_error {
 public:
     connection_error(error_code ec) : ec{ec} {}
-    error_code errc() { return ec; }
-    std::string message() { return std::string{"there was an error"};}
+    error_code errc() const noexcept { return ec; }
+    std::string message() const noexcept { return std::string{"there was an error"};}
     virtual ~connection_error() = default;
 protected:
     error_code ec;
