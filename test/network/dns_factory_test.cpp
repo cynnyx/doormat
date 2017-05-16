@@ -27,12 +27,12 @@ TEST_F(dns_factory_test, connect_http)
 {
     mock_server m;
     network::dns_communicator_factory f;
-    http::http_request request;
-    request.setParameter("hostname", "localhost");
-    request.setParameter("port", "8454");
+	auto address = "localhost";
+	auto port = 8454;
+	auto tls = false;
     int count{0};
     m.start([&count](){++count; if(count == 2) service::locator::service_pool().stop(); }, true);
-    f.get_connector(request, [&count](auto s){
+	f.get_connector(address, port, tls, [&count](auto s){
         ASSERT_TRUE(bool(s));
         ++count;
         if(count == 2)
@@ -45,12 +45,12 @@ TEST_F(dns_factory_test, connect_http)
 
 TEST_F(dns_factory_test, fail_connect)
 {
-    network::dns_communicator_factory f;
-    http::http_request request;
-    request.setParameter("hostname", "localhost");
-    request.setParameter("port", "8454");
+	network::dns_communicator_factory f;
+	auto address = "localhost";
+	auto port = 8454;
+	auto tls = false;
     int count{0};
-    f.get_connector(request, [&count](auto s){
+	f.get_connector(address, port, tls, [&count](auto s){
         FAIL() << "Should not be able to connect to invalid port.";
     }, [&count](auto s){
         service::locator::service_pool().stop();
