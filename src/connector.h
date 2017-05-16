@@ -59,11 +59,11 @@ class connector final: public connector_interface,
 
 	void cancel_deadline() noexcept
 	{
-		LOGTRACE(this, " deadline canceled");
+		//LOGTRACE(this, " deadline canceled");
 		berror_code err;
 		_timer.cancel(err);
-		if(err)
-			LOGERROR(this," ", err.message());
+		//if(err)
+			//LOGERROR(this," ", err.message());
 	}
 
 	void schedule_deadline( const interval &msec )
@@ -74,13 +74,9 @@ class connector final: public connector_interface,
 		{
 			if(!ec)
 			{
-				LOGTRACE(self.get()," deadline has expired");
+				//LOGTRACE(self.get()," deadline has expired");
 				self->_handler->trigger_timeout_event();
 				self->renew_ttl();
-			}
-			else if(ec != boost::system::errc::operation_canceled)
-			{
-				LOGERROR(self.get()," error on deadline:", ec.message());
 			}
 		});
 	}
@@ -103,21 +99,21 @@ public:
 		, _ttl(boost::posix_time::milliseconds(0))
 		, _timer(_socket->get_io_service())
 	{
-		LOGTRACE(this," constructor");
+		//LOGTRACE(this," constructor");
 	}
 
 	bool is_ssl() const noexcept override { return  std::is_same<socket_type, ssl_socket>::value; }
 
 	~connector() noexcept
 	{
-		LOGTRACE(this," destructor start");
+		//LOGTRACE(this," destructor start");
 		if(_handler)
 		{
 			// http_handler's derived classes will get an on_connector_nulled() event
 			_handler->connector(nullptr);
 			_handler = nullptr;
 		}
-		LOGTRACE(this," destructor end");
+		//LOGTRACE(this," destructor end");
 	}
 
 	boost::asio::ip::address origin() const override
@@ -164,7 +160,7 @@ public:
 	{
 		if(!_stopped)
 		{
-			LOGTRACE(this," stopping");
+			//LOGTRACE(this," stopping");
 			berror_code ec;
 			_stopped = true;
 			_timer.cancel(ec);
@@ -179,7 +175,7 @@ public:
 			return;
 
 		renew_ttl();
-		LOGTRACE(this," triggered a read");
+		//LOGTRACE(this," triggered a read");
 
 		auto self = this->shared_from_this();
 		auto buf = _rb.reserve();
@@ -189,30 +185,30 @@ public:
 				self->cancel_deadline();
 				if(!ec)
 				{
-					LOGTRACE(self.get()," received:",bytes_transferred," Bytes");
+					//LOGTRACE(self.get()," received:",bytes_transferred," Bytes");
 					assert(bytes_transferred);
 
 					auto tmp = self->_rb.produce(bytes_transferred);
 					if( self->_handler->on_read(tmp, bytes_transferred) )
 					{
 						self->_rb.consume(tmp + bytes_transferred);
-						LOGTRACE(self.get()," read succeded");
+						//LOGTRACE(self.get()," read succeded");
 						self->do_read();
 					}
 					else
 					{
-						LOGDEBUG(self.get()," error on_read - read failed");
+						//LOGDEBUG(self.get()," error on_read - read failed");
 						self->stop();
 					}
 				}
 				else if(ec != boost::system::errc::operation_canceled)
 				{
-					LOGERROR(self.get()," error during read: ", ec.message());
+					//LOGERROR(self.get()," error during read: ", ec.message());
 					self->stop();
 				}
 				else
 				{
-					LOGDEBUG(self.get()," read canceled");
+					//LOGDEBUG(self.get()," read canceled");
 				}
 			});
 	}
@@ -225,13 +221,13 @@ public:
 		_out = dstring{};
 		if ( !_handler->on_write(_out) )
 		{
-			LOGDEBUG(this," error on_write - write failed");
+			//LOGDEBUG(this," error on_write - write failed");
 			return;
 		}
 
 		if( !_out && _handler->should_stop() )
 		{
-			LOGDEBUG(this," nothing left to write, stopping");
+			//LOGDEBUG(this," nothing left to write, stopping");
 			stop();
 			return;
 		}
@@ -241,7 +237,7 @@ public:
 		if( !_out )
 			return;
 
-		LOGTRACE(this," triggered a write of ", _out.size(), " bytes");
+		//LOGTRACE(this," triggered a write of ", _out.size(), " bytes");
 		_writing = true;
 
 		auto self = this->shared_from_this(); //Let the connector live inside the callback
@@ -252,17 +248,17 @@ public:
 				self->_writing = false;
 				if(!ec)
 				{
-					LOGDEBUG(self.get()," correctly wrote ", s," bytes");
+					//LOGDEBUG(self.get()," correctly wrote ", s," bytes");
 					self->do_write();
 				}
 				else if(ec != boost::system::errc::operation_canceled)
 				{
-					LOGERROR(self.get()," error during write: ", ec.message());
+					//LOGERROR(self.get()," error during write: ", ec.message());
 					self->stop();
 				}
 				else
 				{
-					LOGTRACE(self.get()," write canceled");
+					//LOGTRACE(self.get()," write canceled");
 				}
 			}
 		);

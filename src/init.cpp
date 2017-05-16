@@ -232,7 +232,6 @@ int doormat( int argc, char** argv )
                 res.status(200);
                 std::string body{"ciao"};
                 res.content_len(body.size());
-	            b->on_write([](){ std::cout << "ok, everything has been serialized!" << std::endl; });
 	            b->headers(std::move(res));
                 b->body(dstring{body.c_str(), body.size()});
                 b->end();
@@ -241,12 +240,12 @@ int doormat( int argc, char** argv )
         });
 
 		conn->on_error([](auto conn, const http::connection_error& err){
-			std::cout << "there was an error in the connection! code is " << int(err.errc())<< std::endl;
+			//std::cout << "there was an error in the connection! code is " << int(err.errc())<< std::endl;
 		});
-
+/*
 		conn->on_timeout(5000, [](auto conn){
 			conn->close();
-		});
+		});*/
 	});
 
 

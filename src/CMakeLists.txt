@@ -24,7 +24,7 @@ set(DOORMAT_COMMON_SOURCES
 	http_parser/http_parser.c
 	http/peer.cpp
 	http_server.cpp
-	http_client.cpp
+		#http_client.cpp
 	io_service_pool.cpp
 	IPV4Network.cpp
 	log/format.cpp

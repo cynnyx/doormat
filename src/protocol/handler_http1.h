@@ -41,7 +41,7 @@ public:
 	}
 
 
-	std::pair<std::shared_ptr<remote_t>, std::shared_ptr<local_t>> get_user_handlers()
+	std::pair<std::shared_ptr<remote_t>, std::shared_ptr<local_t>> get_user_handlers() override
 	{
 		auto rem = std::make_shared<remote_t>(this->get_shared());
 		rem->init();
@@ -266,6 +266,7 @@ private:
 				notify_local_end();
 				//method to notify that the data has been serialized and the user no longer needs to keep it alive for data to be sent
 				loc->cleared();
+				connection_t::cleared();
 				return true;
 			default: assert(0);
 			}

@@ -52,6 +52,11 @@ class session : public server::http_handler, public http::server_connection
 	bool gone{false};
 	std::int32_t stream_counter{0};
 	void set_timeout(std::chrono::milliseconds) override {}
+
+	 std::pair<std::shared_ptr<http::request>, std::shared_ptr<http::response>> get_user_handlers() override
+	 {
+		 return  std::pair<std::shared_ptr<http::request>, std::shared_ptr<http::response>>{}; //fixme
+	 }
 protected:
 	std::shared_ptr<session> get_shared() { return std::static_pointer_cast<session>(this->shared_from_this()); }
 public:
