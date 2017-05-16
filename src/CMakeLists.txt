@@ -24,13 +24,14 @@ set(DOORMAT_COMMON_SOURCES
 	http_parser/http_parser.c
 	http/peer.cpp
 	http_server.cpp
+	http_client.cpp
 	io_service_pool.cpp
 	IPV4Network.cpp
 	log/format.cpp
 	log/log.cpp
 	log/access_record.cpp
 	protocol/handler_factory.cpp
-        stats/stats_manager.cpp
+	stats/stats_manager.cpp
 	service_locator/service_locator.cpp
 	utils/dstring.cpp
 	utils/dstring_factory.cpp
@@ -41,8 +42,8 @@ set(DOORMAT_COMMON_SOURCES
 	errors/internal_error.cpp
 	http2/session.cpp
 	http2/stream.cpp
-        http2/http2alloc.cpp
-        configuration/doormat_proxy_configuration_maker.cpp
+	http2/http2alloc.cpp
+	configuration/doormat_proxy_configuration_maker.cpp
 	configuration/abstract_configuration_maker.cpp
 	log/inspector_serializer.cpp
 	endpoints/chain_factory.cpp
@@ -50,17 +51,19 @@ set(DOORMAT_COMMON_SOURCES
 	network/buffer.cpp
 	network/connector_clear.cpp
 	network/connector_ssl.cpp
-        network/communicator/dns_communicator_factory.cpp
-        client/client_wrapper.cpp
+	network/communicator/dns_communicator_factory.cpp
+	client/client_wrapper.cpp
 	errors/error_factory.cpp
 	requests_manager/error_producer.cpp
 	requests_manager/client_wrapper.cpp
-        http/connection.cpp
-        http/server/server_connection.cpp
-        http/client/client_connection.cpp
-        http/server/request.cpp
-        http/server/response.cpp
-        protocol/http_handler.cpp
+	http/connection.cpp
+	http/server/server_connection.cpp
+	http/server/request.cpp
+	http/server/response.cpp
+	http/client/client_connection.cpp
+	http/client/request.cpp
+	http/client/response.cpp
+	protocol/http_handler.cpp
 )
 
 #
@@ -95,26 +98,26 @@ target_link_libraries(
 add_library(${DOORMAT_COMMON_SHARED_LIB} SHARED ${DOORMAT_COMMON_SOURCES})
 
 target_include_directories(
-		${DOORMAT_COMMON_SHARED_LIB}
-                PRIVATE ${Boost_INCLUDE_DIRS}
-		PRIVATE ${OPENSSL_INCLUDE_DIR}
-		PRIVATE ${NGHTTP2_INCLUDE_DIR}
-		PRIVATE ${CYNNYPP_INCLUDE_DIRS}
-		PRIVATE ${CITYHASH_INCLUDE_DIRS}
-		PRIVATE ${ZLIB_INCLUDE_DIRS}
-		PRIVATE ${SPDLOG_INCLUDE_DIR}
+	${DOORMAT_COMMON_SHARED_LIB}
+	PRIVATE ${Boost_INCLUDE_DIRS}
+	PRIVATE ${OPENSSL_INCLUDE_DIR}
+	PRIVATE ${NGHTTP2_INCLUDE_DIR}
+	PRIVATE ${CYNNYPP_INCLUDE_DIRS}
+	PRIVATE ${CITYHASH_INCLUDE_DIRS}
+	PRIVATE ${ZLIB_INCLUDE_DIRS}
+	PRIVATE ${SPDLOG_INCLUDE_DIR}
 )
 
 target_link_libraries(
-		${DOORMAT_COMMON_SHARED_LIB}
-		PRIVATE ${CMAKE_THREAD_LIBS_INIT}
-		PRIVATE ${Boost_LIBRARIES}
-		PRIVATE ${OPENSSL_LIBRARIES}
-		PRIVATE ${NGHTTP2_LIB}
-		PRIVATE ${NGHTTP2_ASIO_LIB}
-		PRIVATE ${CYNNYPP_LIB}
-		PRIVATE ${CITYHASH_LIB}
-		PRIVATE ${ZLIB_LIBRARIES}
+	${DOORMAT_COMMON_SHARED_LIB}
+	PRIVATE ${CMAKE_THREAD_LIBS_INIT}
+	PRIVATE ${Boost_LIBRARIES}
+	PRIVATE ${OPENSSL_LIBRARIES}
+	PRIVATE ${NGHTTP2_LIB}
+	PRIVATE ${NGHTTP2_ASIO_LIB}
+	PRIVATE ${CYNNYPP_LIB}
+	PRIVATE ${CITYHASH_LIB}
+	PRIVATE ${ZLIB_LIBRARIES}
 )
 
 #
