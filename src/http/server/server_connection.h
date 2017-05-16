@@ -21,6 +21,8 @@ public:
 
 protected:
 	void user_feedback(std::shared_ptr<http::request>, std::shared_ptr<http::response>);
+	virtual std::pair<std::shared_ptr<http::request>, std::shared_ptr<http::response>> get_user_handlers()= 0;
+	void cleared() override {}
 
 private:
 	request_callback request_cb;

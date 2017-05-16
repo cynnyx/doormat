@@ -24,6 +24,7 @@ set(DOORMAT_TESTCASES_SOURCES
 	testcommon.cpp
 	utils_test.cpp
 	mock_server/mock_server.cpp
+        mocks/mock_connector.cpp
 	network/communicator_test.cpp
 	nodes/common.cpp
 	cloudiapooltest.cpp
