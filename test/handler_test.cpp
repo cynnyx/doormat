@@ -7,7 +7,6 @@
 #include <boost/asio/ssl.hpp>
 
 #include "../src/service_locator/service_initializer.h"
-#include "../src/connector.h"
 #include "../src/protocol/handler_factory.h"
 #include "../src/protocol/handler_http1.h"
 #include "../src/network/cloudia_pool.h"
@@ -15,28 +14,12 @@
 #include "../src/http/server/request.h"
 #include "../src/http/server/response.h"
 #include "../src/http/server/server_connection.h"
+#include "mocks/mock_connector.hpp"
 
 #include "../src/dummy_node.h"
 
 namespace
 {
-
-
-struct MockConnector : public server::connector_interface
-{
-	using wcb = std::function<void(void)>;
-	wcb& write_cb;
-    boost::asio::io_service io;
-
-    MockConnector(wcb& cb): write_cb(cb), io{} {}
-	void do_write() override { write_cb(); }
-	void do_read() override {}
-	void close() override {}
-	boost::asio::ip::address origin() const override { return boost::asio::ip::address::from_string("127.0.0.1");}
-	bool is_ssl() const noexcept override { return true; }
-	void set_timeout(std::chrono::milliseconds) override {}
-	boost::asio::io_service &io_service() { return io; }
-};
 
 struct handler: public ::testing::Test
 {
