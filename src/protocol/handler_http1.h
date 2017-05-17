@@ -47,6 +47,7 @@ public:
 		rem->init();
 		auto loc = std::make_shared<local_t>([this, self = this->get_shared()](){
 			notify_local_content();
+
 		});
 		remote_objects.push_back(rem);
 		local_objects.push_back(loc);
@@ -64,7 +65,7 @@ public:
 
 		auto hcb = [this]()
 		{
-			if(remote_objects.empty()) return;
+			if(remote_objects.empty()) return connection_t::error(http::error_code::invalid_read);
 			if(auto s = remote_objects.back().lock())
 			{
 				bool keepalive =
@@ -89,7 +90,7 @@ public:
 
 		auto bcb = [this](dstring&& b)
 		{
-			if(remote_objects.empty()) return;
+			if(remote_objects.empty()) return connection_t::error(http::error_code::invalid_read);
 			if(auto s = remote_objects.back().lock())
 			{
 				io_service().post([s, b = std::move(b)]() mutable
@@ -101,7 +102,7 @@ public:
 
 		auto tcb = [this](dstring&& k, dstring&& v)
 		{
-			if(remote_objects.empty()) return;
+			if(remote_objects.empty()) return connection_t::error(http::error_code::invalid_read);
 			if(auto s = remote_objects.back().lock())
 			{
 				io_service().post(
@@ -115,7 +116,7 @@ public:
 
 		auto ccb = [this]()
 		{
-			if(remote_objects.empty()) return;
+			if(remote_objects.empty()) return connection_t::error(http::error_code::invalid_read);
 			if(auto s = remote_objects.back().lock())
 			{
 				io_service().post([s]() { s->finished(); });
@@ -125,6 +126,7 @@ public:
 		auto fcb = [this](int error,bool&)
 		{
 			//failure always gets called after start...
+			if(remote_objects.empty()) return connection_t::error(http::error_code::invalid_read);
 			if(auto s = remote_objects.back().lock())
 			{
 				io_service().post([s]() { s->error(http::error_code::decoding); }); //fix
@@ -264,8 +266,8 @@ private:
 			}
 			case local_t::state::ended:
 				notify_local_end();
-				//method to notify that the data has been serialized and the user no longer needs to keep it alive for data to be sent
-				loc->cleared();
+				loc->cleared();  //with this event we send the wrong message to the user. She will believe we sent the request, but it is not true.
+								//defer invocation of this method in order to make it real.
 				connection_t::cleared();
 				return true;
 			default: assert(0);

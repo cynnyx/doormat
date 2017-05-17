@@ -52,10 +52,16 @@ public:
 	dstring get_body();
 	std::pair<dstring, dstring> get_trailer();
 
+
 private:
 	void error(http::connection_error err)
 	{
 		if(error_callback) (*error_callback)();
+	}
+
+	void cleared()
+	{
+
 	}
 
 	state current;
