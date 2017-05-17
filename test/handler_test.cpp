@@ -21,7 +21,7 @@
 namespace
 {
 
-struct handler: public ::testing::Test
+struct HandlerTest: public ::testing::Test
 {
 	std::unique_ptr<boost::asio::deadline_timer> deadline;
 
@@ -33,7 +33,7 @@ struct handler: public ::testing::Test
 	boost::asio::io_service::work *keep_alive = nullptr;
 
 protected:
-	handler() : conn{std::make_shared<MockConnector>(cb)}
+    HandlerTest() : conn{std::make_shared<MockConnector>(cb, nullptr)}
 	{
 		//service::initializer::load_configuration("./etc/doormat/doormat.test.config");
 		//service::initializer::init_services();
@@ -78,7 +78,7 @@ protected:
 }
 
 
-TEST_F(handler, http1_persistent)
+TEST_F(HandlerTest, http1_persistent)
 {
 	std::string req =
 		"GET / HTTP/1.1\r\n"
@@ -121,12 +121,11 @@ TEST_F(handler, http1_persistent)
 	t.expires_from_now(boost::posix_time::seconds(2));
 	t.async_wait([&simulate_connection_closed](const boost::system::error_code &ec){simulate_connection_closed=true;});
 
-    cb = [this, &h1, &simulate_connection_closed]()
+    cb = [this, &h1, &simulate_connection_closed](dstring chunk)
 	{
         if(conn->io_service().stopped())
 			return;
 
-		dstring chunk;
 		while(h1->on_write(chunk))
 		{
 			if(h1->should_stop() || chunk.empty())
@@ -140,10 +139,6 @@ TEST_F(handler, http1_persistent)
 			chunk = {};
 		}
 
-		if(!h1->should_stop() && !simulate_connection_closed)
-		{
-            conn->io_service().post(cb);
-		}
 	};
 
 	ASSERT_TRUE(h1->start());
@@ -153,7 +148,7 @@ TEST_F(handler, http1_persistent)
 }
 
 
-TEST_F(handler, http1_non_persistent)
+TEST_F(HandlerTest, http1_non_persistent)
 {
 	std::string req =
 			"GET / HTTP/1.1\r\n"
@@ -195,12 +190,11 @@ TEST_F(handler, http1_non_persistent)
     boost::asio::deadline_timer t{conn->io_service()};
     t.expires_from_now(boost::posix_time::seconds(2));
     t.async_wait([&simulate_connection_closed](const boost::system::error_code &ec){simulate_connection_closed=true;});
-	cb = [this, &h1]()
+    cb = [this, &h1](dstring chunk)
 	{
         if(conn->io_service().stopped())
 			return;
 
-		dstring chunk;
 		while(h1->on_write(chunk))
 		{
 			if(h1->should_stop() || chunk.empty())
@@ -213,12 +207,6 @@ TEST_F(handler, http1_non_persistent)
 			response.append(chunk);
 			chunk = {};
 		}
-
-		if(!h1->should_stop())
-		{
-            conn->io_service().post(cb);
-		}
-
 	};
 
 	ASSERT_TRUE(h1->start());
@@ -229,7 +217,7 @@ TEST_F(handler, http1_non_persistent)
 }
 
 
-TEST_F(handler, http1_pipelining)
+TEST_F(HandlerTest, http1_pipelining)
 {
 
 	std::string req =
@@ -287,12 +275,11 @@ TEST_F(handler, http1_pipelining)
     t.expires_from_now(boost::posix_time::seconds(2));
     t.async_wait([&simulate_connection_closed](const boost::system::error_code &ec){simulate_connection_closed=true;});
 
-    cb = [this, &h1, &simulate_connection_closed]()
+    cb = [this, &h1, &simulate_connection_closed](dstring chunk)
     {
         if(conn->io_service().stopped())
             return;
 
-        dstring chunk;
         while(h1->on_write(chunk))
         {
             if(h1->should_stop() || chunk.empty())
@@ -304,11 +291,6 @@ TEST_F(handler, http1_pipelining)
 
             response.append(chunk);
             chunk = {};
-        }
-
-        if(!h1->should_stop() && !simulate_connection_closed)
-        {
-            conn->io_service().post(cb);
         }
     };
 
