@@ -3,7 +3,7 @@
 #include "mock_connector.h"
 
 MockConnector::MockConnector(wcb& cb)
-    : write_cb(cb), io{}
+    : write_cb(cb), _handler{nullptr}, io{}
 {}
 
 void MockConnector::do_write()
@@ -44,7 +44,6 @@ void MockConnector::read(std::string request)
 
 void MockConnector::handler(std::shared_ptr<server::http_handler> h)
 {
-
 	_handler = std::move(h);
 	_handler->connector(this->shared_from_this());
 	_handler->start();
