@@ -28,8 +28,8 @@ namespace details {
     }
 }
 
-http_server::http_server(size_t read_timeout, size_t connect_timeout, uint16_t ssl_port, uint16_t http_port)
-	: _read_timeout(boost::posix_time::milliseconds(read_timeout)),
+http_server::http_server(size_t connect_timeout, uint16_t ssl_port, uint16_t http_port)
+	:
 	 _connect_timeout( boost::posix_time::milliseconds(connect_timeout)),
 	 _ssl{ssl_port != 0},
      ssl_port{ssl_port},

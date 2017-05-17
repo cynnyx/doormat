@@ -68,8 +68,9 @@ private:
 
     void init(){ myself = this->shared_from_this();}
 
+	bool ended() { return myself == nullptr; }
 
-    /* User registered events */
+	/* User registered events */
     std::experimental::optional<headers_callback_t> headers_callback;
     std::experimental::optional<body_callback_t> body_callback;
     std::experimental::optional<error_callback_t> error_callback;
