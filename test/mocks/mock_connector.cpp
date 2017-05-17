@@ -2,14 +2,14 @@
 #include "../src/connector.h"
 #include "mock_connector.h"
 
-MockConnector::MockConnector(wcb& cb, std::shared_ptr<server::http_handler> handler)
-    : write_cb(cb), handler{handler}, io{}
+MockConnector::MockConnector(wcb& cb)
+    : write_cb(cb), io{}
 {}
 
 void MockConnector::do_write()
 {
     dstring chunk;
-    handler->on_write(chunk);
+    _handler->on_write(chunk);
     write_cb(chunk);
 }
 
@@ -37,7 +37,14 @@ boost::asio::io_service& MockConnector::io_service()
     return io;
 }
 
-void MockConnector::read(std::string request) {
-    handler->on_read(request.data(), request.size());
+void MockConnector::read(std::string request)
+{
+    _handler->on_read(request.data(), request.size());
 }
 
+void MockConnector::handler(std::shared_ptr<server::http_handler> h)
+{
+
+	_handler = std::move(h);
+	_handler->connector(this->shared_from_this());
+}
