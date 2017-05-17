@@ -32,6 +32,7 @@ set(DOORMAT_TESTCASES_SOURCES
 	endpoints/chain_factory.cpp
 	network/dns_factory_test.cpp
 	nodes/client_wrapper_test.cpp
+        http/server/server_connection_test.cpp
 	)
 
 add_executable(${DOORMAT_TEST_EXECUTABLE} ${DOORMAT_TESTCASES_SOURCES})
