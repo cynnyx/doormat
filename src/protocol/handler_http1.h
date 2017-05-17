@@ -36,9 +36,7 @@ public:
 	}
 
 	handler_http1(http::proto_version version) : version{version}
-	{
-		LOGINFO("HTTP1 selected");
-	}
+    {}
 
 
 	std::pair<std::shared_ptr<remote_t>, std::shared_ptr<local_t>> get_user_handlers() override
@@ -52,6 +50,7 @@ public:
 		local_objects.push_back(loc);
 		return std::make_pair(rem, loc);
 	};
+
 
 	bool start() noexcept override
 	{

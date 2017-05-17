@@ -46,4 +46,5 @@ void MockConnector::handler(std::shared_ptr<server::http_handler> h)
 {
 	_handler = std::move(h);
 	_handler->connector(this->shared_from_this());
+    _handler->start();
 }
