@@ -156,4 +156,3 @@ TEST(client_connection, pingpong)
 	ASSERT_EQ(expected_request, received_data);
 	ASSERT_TRUE(finished_request && response_events == 3);
 }
-
