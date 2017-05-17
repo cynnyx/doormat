@@ -1,12 +1,15 @@
 #include "dns_communicator_factory.h"
 #include "../../io_service_pool.h"
-#include "communicator.h"
+#include "../../connector.h"
 #include "../../service_locator/service_locator.h"
+#include "../../configuration/configuration_wrapper.h"
+
+#include <chrono>
 
 namespace network 
 {
 
-void dns_communicator_factory::get_connector(const std::string& address, uint16_t port, bool tls,
+void dns_connector_factory::get_connector(const std::string& address, uint16_t port, bool tls,
 	connector_callback_t connector_cb, error_callback_t error_cb)
 {
 	if ( stopping ) return error_cb(1);
@@ -14,7 +17,7 @@ void dns_communicator_factory::get_connector(const std::string& address, uint16_
 	dns_resolver(address, port, tls, std::move(connector_cb), std::move(error_cb));
 }
 
-void dns_communicator_factory::dns_resolver(const std::string& address, uint16_t port, bool tls,
+void dns_connector_factory::dns_resolver(const std::string& address, uint16_t port, bool tls,
 	connector_callback_t connector_cb, error_callback_t error_cb)
 {
 	auto&& io = service::locator::service_pool().get_thread_io_service();
@@ -61,7 +64,7 @@ void dns_communicator_factory::dns_resolver(const std::string& address, uint16_t
 		});
 }
 
-void dns_communicator_factory::endpoint_connect(boost::asio::ip::tcp::resolver::iterator it, 
+void dns_connector_factory::endpoint_connect(boost::asio::ip::tcp::resolver::iterator it, 
 	std::shared_ptr<boost::asio::ip::tcp::socket> socket, connector_callback_t connector_cb, error_callback_t error_cb)
 {
 	if(it == boost::asio::ip::tcp::resolver::iterator() || stopping) //finished
@@ -86,12 +89,15 @@ void dns_communicator_factory::endpoint_connect(boost::asio::ip::tcp::resolver::
 				LOGERROR(ec.message());
 				return endpoint_connect(std::move(it), std::move(socket), std::move(connector_cb), std::move(error_cb));
 			}
-			return connector_cb ( std::unique_ptr<communicator_interface> (
-				new communicator<>(socket, service::locator::configuration().get_board_timeout() ) ) );
+
+			auto connector = std::make_shared<server::connector<server::tcp_socket>>(std::move(socket));
+			auto btimeout = service::locator::configuration().get_board_timeout();
+			connector->set_timeout(std::chrono::milliseconds{btimeout});
+			connector_cb(std::move(connector));
 		});
 }
 
-void dns_communicator_factory::endpoint_connect(boost::asio::ip::tcp::resolver::iterator it,
+void dns_connector_factory::endpoint_connect(boost::asio::ip::tcp::resolver::iterator it,
 	std::shared_ptr<boost::asio::ssl::stream<boost::asio::ip::tcp::socket>> stream, 
 	connector_callback_t connector_cb, error_callback_t error_cb)
 {
@@ -133,8 +139,9 @@ void dns_communicator_factory::endpoint_connect(boost::asio::ip::tcp::resolver::
 						return;
 					}
 					int64_t btimeout = static_cast<int64_t>( service::locator::configuration().get_board_timeout() );
-					return connector_cb ( std::unique_ptr<communicator_interface> (
-						new communicator<boost::asio::ssl::stream<boost::asio::ip::tcp::socket> >(stream,  btimeout ) ) );
+					auto connector = std::make_shared<server::connector<server::ssl_socket>>(std::move(stream));
+					connector->set_timeout(std::chrono::milliseconds{btimeout});
+					connector_cb(std::move(connector));
 				});
 	});
 }

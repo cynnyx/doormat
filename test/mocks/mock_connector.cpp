@@ -32,5 +32,11 @@ void MockConnector::set_timeout(std::chrono::milliseconds)
 
 boost::asio::io_service& MockConnector::io_service()
 {
-    return io;
+	return io;
 }
+
+void MockConnector::handler(std::shared_ptr<server::http_handler>)
+{}
+
+void MockConnector::start(bool)
+{}

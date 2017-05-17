@@ -51,7 +51,7 @@ public:
 		remote_objects.push_back(rem);
 		local_objects.push_back(loc);
 		return std::make_pair(rem, loc);
-	};
+	}
 
 	bool start() noexcept override
 	{

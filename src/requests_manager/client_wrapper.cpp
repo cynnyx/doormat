@@ -1,3 +1,6 @@
+#include "../http/client/client_connection.h"
+#include "../http/client/request.h"
+#include "../http/client/response.h"
 #include "client_wrapper.h"
 #include "../io_service_pool.h"
 #include "../service_locator/service_locator.h"
@@ -7,6 +10,7 @@
 #include "../constants.h"
 #include "../http/http_commons.h"
 #include "../network/communicator/communicator_factory.h"
+#include "../connector.h"
 #include <limits>
 
 namespace nodes
@@ -29,131 +33,81 @@ client_wrapper::client_wrapper (
 					 std::move(request_canceled), std::move(request_finished),
 					 std::move(hcb), std::move(bcb), std::move(tcb), std::move(eomcb),
 					 std::move(ecb), std::move(rccb), aclogger)
-	, codec{}
-	, received_parsed_message{}
 {
 	LOGTRACE("client_wrapper ",this," constructor");
-/** Response callbacks: used to return control by the decoder.  **/
-	auto codec_scb = [this](http::http_structured_data** data)
-	{
-		if(managing_continue)  //reset to initial state.
-		{
-			managing_continue = false;
-			received_parsed_message = http::http_response{};
-		}
-		LOGTRACE("client_wrapper ",this," codec start cb triggered");
-		*data = &received_parsed_message;
-	};
-
-	auto codec_hcb = [this]()
-	{
-		assert(!finished_response);
-		LOGTRACE("client_wrapper ",this," codec header cb triggered");
-		if (received_parsed_message.status_code() == 100)
-		{
-			managing_continue = true;
-			//continue management;
-			return;
-		}
-		//received_parsed_message.set_destination_header(addr);
-		on_header(std::move(received_parsed_message));
-	};
-
-	auto codec_bcb = [this](dstring&& d)
-	{
-		assert(!finished_response);
-		LOGTRACE("client_wrapper ",this," codec body cb triggered");
-		if(!managing_continue) on_body(std::move(d));
-	};
-
-	auto codec_tcb = [this](dstring&& k,dstring&& v)
-	{
-		assert(!finished_response);
-		LOGTRACE("client_wrapper ",this," codec trailer cb triggered");
-		if(!managing_continue) on_trailer(std::move(k),std::move(v));
-	};
-
-	auto codec_ccb = [this]()
-	{
-		assert(!finished_response);
-		LOGTRACE("client_wrapper ",this," codec completion cb triggered");
-		if(managing_continue)
-		{
-			return on_response_continue();
-		}
-		finished_response = true;
-		stop(); //we already received our response; hence we can stop the client wrapper.
-	};
-
-	auto codec_fcb = [this](int err, bool& fatal)
-	{
-		LOGTRACE("client_wrapper ",this," codec error cb triggered");
-		switch(err)
-		{
-			case HPE_UNEXPECTED_CONTENT_LENGTH:
-				fatal = false;
-				codec.ingnore_content_len();
-				break;
-			default:
-				fatal = true;
-		}
-		errcode = INTERNAL_ERROR_LONG(errors::http_error_code::internal_server_error);
-		stop();
-	};
-
-	codec.register_callback(std::move(codec_scb), std::move(codec_hcb), std::move(codec_bcb), std::move(codec_tcb),
-		std::move(codec_ccb), std::move(codec_fcb));
 }
 
 client_wrapper::~client_wrapper()
 {
 	assert(waiting_count == 0);
 	LOGTRACE("client_wrapper ",this," destructor");
+	stop();
 }
 
 void client_wrapper::on_request_preamble(http::http_request&& preamble)
 {
 	LOGTRACE("client_wrapper ",this," on_request_preamble");
 	start = std::chrono::high_resolution_clock::now();
-	local_request = std::move(preamble);
 	++waiting_count;
 	//retrieve a connector to talk with remote destination.
-	if(!local_request.hasParameter("hostname"))
+	if(!preamble.hasParameter("hostname"))
 		return on_error(INTERNAL_ERROR_LONG(errors::http_error_code::unprocessable_entity));
 
-	auto address = local_request.getParameter("hostname");
-	auto port = local_request.hasParameter("port") ? std::stoi(local_request.getParameter("port")) : 0;
-	auto tsl = local_request.ssl();
-	service::locator::communicator_factory().get_connector(address, port, tsl, [this]
-		(std::shared_ptr<network::communicator_interface> ci)
+	auto address = preamble.getParameter("hostname");
+	auto port = preamble.hasParameter("port") ? std::stoi(preamble.getParameter("port")) : 0;
+	auto tls = preamble.ssl();
+	// TODO: check whether you should connect
+	client.connect([this, preamble=std::move(preamble)](auto connection_ptr) mutable
+	{
+		connection = std::move(connection_ptr);
+		auto p = connection->create_request();
+		this->local_request = std::move(p.first);
+		this->local_request->headers(std::move(preamble));
+		auto& res = p.second;
+		res->on_headers([this](auto res)
 		{
-			--waiting_count;
-			LOGTRACE("client_wrapper ", this, " received communicator");
-			ci->set_callbacks([this](const char *data, size_t size)
-			{
-				if(!codec.decode(data, size))
-				{
-					errcode = INTERNAL_ERROR_LONG( errors::http_error_code::internal_server_error );
-					stop();
-				}
-			},[this](errors::error_code errc)
-			{
-				if(errc.code() > 1)
-					errcode = errc; //todo: this is a porchetta.
-				stop();
-				termination_handler();
-			});
-
-			write_proxy.set_communicator(ci);
-		}, [this](int e){
-			LOGTRACE("client_wrapper ", this, " could not retrieve a communicator for the specified endpoint");
-			--waiting_count;
-			errcode = INTERNAL_ERROR_LONG(errors::http_error_code::not_found);
-			canceled = true;
-			stop();
-			termination_handler();
+			assert(!this->finished_response);
+			LOGTRACE("client_wrapper ",this," response headers cb triggered");
+			this->managing_continue = res->preamble().status_code() == 100 ? true : false;
+			this->on_header(std::move(res->preamble()));
 		});
-	write_proxy.enqueue_for_write(codec.encode_header(local_request));
+		res->on_body([this](auto res, auto data, auto length)
+		{
+			assert(!finished_response);
+			LOGTRACE("client_wrapper ",this," response body cb triggered");
+			if(!managing_continue)
+				this->on_body(dstring{data.get(), length});
+		});
+		res->on_trailer([this](auto res, auto k, auto v)
+		{
+			assert(!finished_response);
+			LOGTRACE("client_wrapper ",this," response trailer cb triggered");
+			if(!managing_continue)
+				this->on_trailer(dstring{k.data(), k.size()}, dstring{v.data(), v.size()});
+		});
+		res->on_finished([this](auto res)
+		{
+			assert(!finished_response);
+			LOGTRACE("client_wrapper ",this," response completion cb triggered");
+			if(managing_continue)
+			{
+				return this->on_response_continue();
+			}
+			finished_response = true;
+			this->stop(); //we already received our response; hence we can stop the client wrapper.
+		});
+		res->on_error([this](auto res, auto&& error)
+		{
+			LOGTRACE("client_wrapper ",this," response error cb triggered: ", error.message());
+			errcode = INTERNAL_ERROR_LONG(errors::http_error_code::internal_server_error);
+			this->stop();
+		});
+	}, [this](auto&& error)
+	{
+		LOGTRACE("client_wrapper ",this," connect error cb triggered");
+		errcode = INTERNAL_ERROR_LONG(errors::http_error_code::internal_server_error);
+		this->stop();
+	}, tls, address, static_cast<uint16_t>(port));
 }
 
 void client_wrapper::on_request_body(dstring&& chunk)
@@ -161,7 +115,8 @@ void client_wrapper::on_request_body(dstring&& chunk)
 	LOGTRACE("client_wrapper ",this," on_request_body");
 	if(!errcode)
 	{
-		write_proxy.enqueue_for_write(codec.encode_body(chunk));
+		assert(local_request);
+		local_request->body(std::move(chunk));
 	}
 }
 
@@ -169,7 +124,7 @@ void client_wrapper::on_request_trailer(dstring&& k, dstring&& v)
 {
 	if(!errcode)
 	{
-		write_proxy.enqueue_for_write(codec.encode_trailer(k,v));
+		local_request->trailer(std::move(k), std::move(v));
 	}
 }
 
@@ -179,7 +134,7 @@ void client_wrapper::on_request_finished()
 	finished_request = true;
 	if(!errcode)
 	{
-		write_proxy.enqueue_for_write(codec.encode_eom());
+		local_request->end();
 		return;
 	}
 	//in some cases, response could have arrived before the end of the request; in this case, we shall react accordingly.
@@ -228,7 +183,7 @@ void client_wrapper::stop()
 	LOGTRACE("client_wrapper ",this," stop!");
 	if(!stopping)
 	{
-		write_proxy.shutdown_communicator();
+		connection->close();
 		LOGDEBUG("client_wrapper ",this," stopping");
 		stopping = true;
 	}

@@ -58,6 +58,8 @@ private:
 		if(error_callback) (*error_callback)();
 	}
 
+	void cleared() {}
+
 	state current;
 	bool ended{false};
 	std::experimental::optional<error_callback_t> error_callback;

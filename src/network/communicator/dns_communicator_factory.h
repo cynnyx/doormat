@@ -8,7 +8,7 @@
 namespace network
 {
 
-class dns_communicator_factory : public communicator_factory
+class dns_connector_factory : public connector_factory
 {
 public:
 	void get_connector(const std::string& address, uint16_t port, bool tls, connector_callback_t, error_callback_t) override;

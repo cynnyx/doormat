@@ -3,6 +3,8 @@
 #include "connector_clear.h"
 #include "connector_ssl.h"
 
+// TODO: kill me?
+
 namespace network
 {
 

@@ -1,3 +1,6 @@
+#include "src/http/client/request.h"
+#include "src/http/client/response.h"
+#include "src/http/client/client_connection.h"
 #include "../src/requests_manager/client_wrapper.h"
 #include "common.h"
 #include "mock_server/mock_server.h"

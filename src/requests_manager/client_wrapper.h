@@ -2,17 +2,18 @@
 #define DOOR_MAT_CLIENT_WRAPPER_H
 
 #include "../chain_of_responsibility/node_interface.h"
-#include "../service_locator/service_locator.h"
-#include "../utils/log_wrapper.h"
-#include "../http/http_codec.h"
 #include "../errors/error_codes.h"
 #include "../log/access_record.h"
-#include "../utils/reusable_buffer.h"
-#include "../network/communicator/communicator.h"
 #include "../network/cloudia_pool.h"
+#include "../http_client.h"
+#include "../network/communicator/dns_communicator_factory.h"
 
 #include <chrono>
-#include <boost/asio.hpp>
+
+namespace http
+{
+class client_request;
+}
 
 namespace nodes
 {
@@ -43,50 +44,9 @@ public:
 	void on_request_canceled(const errors::error_code &err);
 	void on_request_finished();
 
-
-	/** procedure to be performed when the socket is acquired. */
-	void on_connect(std::unique_ptr<boost::asio::ip::tcp::socket> socket);
-
-	~client_wrapper();
+	~client_wrapper() override;
 
 private:
-
-	class communicator_proxy
-	{
-		//todo: replace with optional as soon as possible.
-		std::shared_ptr<network::communicator_interface> _communicator{nullptr};
-		dstring temporary_string;
-	public:
-		void enqueue_for_write(dstring d)
-		{
-			if(_communicator)
-				_communicator->write(std::move(d));
-			else
-				temporary_string.append(d);
-		}
-
-		void set_communicator(std::shared_ptr<network::communicator_interface> comm)
-		{
-			assert(!_communicator);
-			_communicator = comm;
-			_communicator->start();
-			if(temporary_string.size())
-				_communicator->write( std::move(temporary_string) );
-			//Not sure that's needed
-			temporary_string = {};
-		}
-
-		void shutdown_communicator()
-		{
-			if(_communicator) _communicator->stop();
-		}
-
-        operator bool() const {
-            return bool(_communicator);
-        }
-
-	} write_proxy;
-
 	/**
 	 * @brief termination_handler checks whether a termination condition (an error or an EOM)
 	 * has been triggered and handles the communication of the relative event back to the chain.
@@ -101,8 +61,20 @@ private:
 
 	void stop();
 
-	//static routing::abstract_destination_provider::address get_custom_address(const http::http_request &req);
+	class connector_factory {
+		network::dns_connector_factory f_;
+	public:
+		using connector_ptr = std::shared_ptr<server::connector_interface>;
+		using connector_callback_t = network::dns_connector_factory::connector_callback_t;
+		using error_callback_t = network::dns_connector_factory::error_callback_t;
 
+		void operator()(const std::string& address, uint16_t port, bool tls, connector_callback_t ccb, error_callback_t ecb)
+		{
+			f_.get_connector(address, port, tls, std::move(ccb), std::move(ecb));
+		}
+	};
+
+	client::http_client<connector_factory> client;
 	bool stopping{false};
 	bool finished_request{false};
 	bool finished_response{false};
@@ -110,17 +82,11 @@ private:
 	bool canceled{false};
 
 	errors::error_code errcode;
-
-	//routing::abstract_destination_provider::address addr;
-	//bool custom_addr{false};
-
 	uint8_t connection_attempts{0};
 
-	http::http_codec codec;
-	//message received from the decoder
-	http::http_response received_parsed_message;
 	//used in order to manage connect.
-	http::http_request local_request;
+	std::shared_ptr<http::client_connection> connection;
+	std::shared_ptr<http::client_request> local_request;
 
 	uint8_t waiting_count{0};
 	std::unique_ptr<network::socket_factory<boost::asio::ip::tcp::socket>> factory;
