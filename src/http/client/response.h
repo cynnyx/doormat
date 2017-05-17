@@ -65,8 +65,9 @@ private:
 	void trailer(dstring&&, dstring&&);
 	void finished();
 
-	void init(){ myself = this->shared_from_this();}
+	bool ended() { return myself == nullptr; }
 
+	void init(){ myself = this->shared_from_this();}
 
 	/* User registered events */
 	std::experimental::optional<headers_callback_t> headers_callback;

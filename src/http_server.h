@@ -29,7 +29,6 @@ class http_server
 	using connect_callback = std::function<void(std::shared_ptr<http::server_connection>)>;
 	std::atomic_bool running{false};
 	handler_factory _handlers;
-	interval _read_timeout;
 	interval _connect_timeout;
 	ssl_context* _ssl_ctx = nullptr; // a non-owner pointer to the ssl_context
 	ssl_utils::sni_solver sni;
@@ -46,10 +45,12 @@ class http_server
 public:
 	// If ssl_port is 0 tls is disabled
 	//todo remove read_timeout and connect_timeout
-	explicit http_server(size_t read_timeout, size_t connect_timeout, uint16_t ssl_port = 443, uint16_t http_port = 80);
+	explicit http_server(size_t connect_timeout, uint16_t ssl_port, uint16_t http_port);
 
 	http_server(const http_server&) = delete;
 	http_server& operator=(const http_server&) = delete;
+
+
 
 	void on_client_connect(connect_callback cb) noexcept;
 

@@ -36,9 +36,7 @@ public:
 	}
 
 	handler_http1(http::proto_version version) : version{version}
-	{
-		LOGINFO("HTTP1 selected");
-	}
+    {}
 
 
 	std::pair<std::shared_ptr<remote_t>, std::shared_ptr<local_t>> get_user_handlers() override
@@ -47,11 +45,13 @@ public:
 		rem->init();
 		auto loc = std::make_shared<local_t>([this, self = this->get_shared()](){
 			notify_local_content();
+
 		});
 		remote_objects.push_back(rem);
 		local_objects.push_back(loc);
 		return std::make_pair(rem, loc);
 	};
+
 
 	bool start() noexcept override
 	{
@@ -64,9 +64,10 @@ public:
 
 		auto hcb = [this]()
 		{
-			if(remote_objects.empty()) return;
+			if(remote_objects.empty()) return connection_t::error(http::error_code::invalid_read);
 			if(auto s = remote_objects.back().lock())
 			{
+				if(s->ended()) return connection_t::error(http::error_code::invalid_read);
 				bool keepalive =
 						(!current_decoded_object.has(http::hf_connection)) ?
 							connection_t::persistent :
@@ -89,9 +90,10 @@ public:
 
 		auto bcb = [this](dstring&& b)
 		{
-			if(remote_objects.empty()) return;
+			if(remote_objects.empty()) return connection_t::error(http::error_code::invalid_read);
 			if(auto s = remote_objects.back().lock())
 			{
+				if(s->ended()) return connection_t::error(http::error_code::invalid_read);
 				io_service().post([s, b = std::move(b)]() mutable
 				                  {
 					                  s->body(std::move(b));
@@ -101,9 +103,11 @@ public:
 
 		auto tcb = [this](dstring&& k, dstring&& v)
 		{
-			if(remote_objects.empty()) return;
+
+			if(remote_objects.empty()) return connection_t::error(http::error_code::invalid_read);
 			if(auto s = remote_objects.back().lock())
 			{
+				if(s->ended()) return connection_t::error(http::error_code::invalid_read);
 				io_service().post(
 							[s, k = std::move(k), v = std::move(v)]() mutable
 							{
@@ -115,9 +119,10 @@ public:
 
 		auto ccb = [this]()
 		{
-			if(remote_objects.empty()) return;
+			if(remote_objects.empty()) return connection_t::error(http::error_code::invalid_read);
 			if(auto s = remote_objects.back().lock())
 			{
+				if(s->ended()) return connection_t::error(http::error_code::invalid_read);
 				io_service().post([s]() { s->finished(); });
 			}
 		};
@@ -125,11 +130,14 @@ public:
 		auto fcb = [this](int error,bool&)
 		{
 			//failure always gets called after start...
+			if(remote_objects.empty()) return connection_t::error(http::error_code::invalid_read);
 			if(auto s = remote_objects.back().lock())
 			{
+				if(s->ended()) return connection_t::error(http::error_code::invalid_read);
 				io_service().post([s]() { s->error(http::error_code::decoding); }); //fix
 			}
-			if(auto s = local_objects.back().lock()) {
+			if(auto s = local_objects.back().lock())
+			{
 				io_service().post([s]() { s->error(http::error_code::decoding); });
 			}
 			remote_objects.pop_front();
@@ -264,8 +272,8 @@ private:
 			}
 			case local_t::state::ended:
 				notify_local_end();
-				//method to notify that the data has been serialized and the user no longer needs to keep it alive for data to be sent
-				loc->cleared();
+				loc->cleared();  //with this event we send the wrong message to the user. She will believe we sent the request, but it is not true.
+								//defer invocation of this method in order to make it real.
 				connection_t::cleared();
 				return true;
 			default: assert(0);
