@@ -67,6 +67,7 @@ public:
 			if(remote_objects.empty()) return connection_t::error(http::error_code::invalid_read);
 			if(auto s = remote_objects.back().lock())
 			{
+				if(s->ended()) return connection_t::error(http::error_code::invalid_read);
 				bool keepalive =
 						(!current_decoded_object.has(http::hf_connection)) ?
 							connection_t::persistent :
@@ -92,6 +93,7 @@ public:
 			if(remote_objects.empty()) return connection_t::error(http::error_code::invalid_read);
 			if(auto s = remote_objects.back().lock())
 			{
+				if(s->ended()) return connection_t::error(http::error_code::invalid_read);
 				io_service().post([s, b = std::move(b)]() mutable
 				                  {
 					                  s->body(std::move(b));
@@ -101,9 +103,11 @@ public:
 
 		auto tcb = [this](dstring&& k, dstring&& v)
 		{
+
 			if(remote_objects.empty()) return connection_t::error(http::error_code::invalid_read);
 			if(auto s = remote_objects.back().lock())
 			{
+				if(s->ended()) return connection_t::error(http::error_code::invalid_read);
 				io_service().post(
 							[s, k = std::move(k), v = std::move(v)]() mutable
 							{
@@ -118,6 +122,7 @@ public:
 			if(remote_objects.empty()) return connection_t::error(http::error_code::invalid_read);
 			if(auto s = remote_objects.back().lock())
 			{
+				if(s->ended()) return connection_t::error(http::error_code::invalid_read);
 				io_service().post([s]() { s->finished(); });
 			}
 		};
@@ -128,9 +133,11 @@ public:
 			if(remote_objects.empty()) return connection_t::error(http::error_code::invalid_read);
 			if(auto s = remote_objects.back().lock())
 			{
+				if(s->ended()) return connection_t::error(http::error_code::invalid_read);
 				io_service().post([s]() { s->error(http::error_code::decoding); }); //fix
 			}
-			if(auto s = local_objects.back().lock()) {
+			if(auto s = local_objects.back().lock())
+			{
 				io_service().post([s]() { s->error(http::error_code::decoding); });
 			}
 			remote_objects.pop_front();
