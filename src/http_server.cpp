@@ -49,7 +49,6 @@ void http_server::start(boost::asio::io_service &io) noexcept
     if(_ssl)
     {
         _ssl_ctx = &(sni.begin()->context);
-	    std::cout << "context ptr is " << _ssl_ctx << std::endl;
         for(auto&& iter = sni.begin(); iter != sni.end(); ++iter)
             _handlers.register_protocol_selection_callbacks(iter->context.native_handle());
         listen(io, true);

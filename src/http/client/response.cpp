@@ -56,17 +56,17 @@ void client_response::trailer(dstring &&k, dstring &&v)
 
 void client_response::finished()
 {
-	if(!myself) return;
+	if(response_ended) return;
 	if(finished_callback) (*finished_callback)(this->shared_from_this());
-	myself = nullptr;
+	response_ended = true;
 }
 
 void client_response::error(http::connection_error err)
 {
-	if(!myself) return;
+	if(response_ended) return;
 	conn_error = std::move(err);
 	if(error_callback) (*error_callback)(this->shared_from_this(), conn_error);
-	myself=nullptr;
+	response_ended = true;
 }
 
 std::shared_ptr<client_connection> client_response::get_connection()

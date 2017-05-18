@@ -50,7 +50,7 @@ TEST(client_connection, send_request)
 	req->headers(std::move(preamble));
 	req->body("ciao");
 	req->end();
-	res->abort();
+	//res->abort();
 	res->get_connection()->close();
 	mock->io_service().run();
 	ASSERT_EQ(expected_request, received_data);
@@ -71,11 +71,11 @@ TEST(client_connection, request_sent_event)
 	auto &res = user_handlers.first;
 	tested_object->on_request_sent([&called, &res](auto conn){
 		called = true;
-		res->abort();
+		//res->abort();
 	});
 	req->headers(std::move(preamble));
 	req->end();
-	res->get_connection()->close(); 
+	res->get_connection()->close();
 	mock->io_service().run();
 	ASSERT_TRUE(called);
 }
@@ -168,5 +168,6 @@ TEST(client_connection, pingpong)
 	req->end();
 	mock->io_service().run();
 	ASSERT_EQ(expected_request, received_data);
-	ASSERT_TRUE(finished_request && response_events == 3);
+	ASSERT_TRUE(finished_request);
+	ASSERT_EQ(response_events, 3);
 }

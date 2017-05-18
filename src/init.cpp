@@ -211,11 +211,14 @@ int doormat( int argc, char** argv )
 	boost::asio::io_service io;
 	//Main loop
     log_wrapper::init(false, "error", "/tmp/doormat_log.txt");
-    doormat_srv.reset(new server::http_server{1000, 1443, 8888});
-	doormat_srv->load_certificate("./etc/doormat/certificates/npn/newcert.pem", "./etc/doormat/certificates/npn/newkey.pem", "./etc/doormat/certificates/npn/keypass");
+    doormat_srv.reset(new server::http_server{1000, 0, 8888});
+	//doormat_srv->load_certificate("./etc/doormat/certificates/npn/newcert.pem", "./etc/doormat/certificates/npn/newkey.pem", "./etc/doormat/certificates/npn/keypass");
 	doormat_srv->on_client_connect([&io](auto conn){
+		std::cout << "new connection!" << std::endl;
 		conn->on_request([&io](std::shared_ptr<http::server_connection> connection, std::shared_ptr<http::request> r, std::shared_ptr<http::response> b){
-            r->on_headers([connection, &io](auto r){
+            std::cout << "received request!" << std::endl;
+			r->on_headers([connection, &io](auto r){
+				std::cout << "received headers" << std::endl;
 	            auto d = r->preamble().serialize();
                 //std::cout << std::string(d) << std::endl;
 	            r->clear_preamble();
@@ -223,10 +226,12 @@ int doormat( int argc, char** argv )
 
 			r->on_body([](auto r, std::unique_ptr<char> body, size_t s)
 			{
+				std::cout << "received body" << std::endl;
 				//std::cout << std::string{body.get(), s} << std::endl;
 			});
 
             r->on_finished([b, connection, &io](auto r){
+	            std::cout << "finished" << std::endl;
                 http::http_response res;
                 res.protocol(http::proto_version::HTTP11);
                 res.status(200);

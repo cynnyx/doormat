@@ -25,6 +25,7 @@ public:
 	using remote_t = typename handler_traits::remote_t;
 	using local_t = typename handler_traits::local_t;
 	using local_t_object = typename std::remove_reference<decltype(((local_t*)nullptr)->get_preamble())>::type;
+
 	std::shared_ptr<handler_http1> get_shared()
 	{
 		return std::static_pointer_cast<handler_http1>(this->shared_from_this());
@@ -42,12 +43,11 @@ public:
 	std::pair<std::shared_ptr<remote_t>, std::shared_ptr<local_t>> get_user_handlers() override
 	{
 		auto rem = std::make_shared<remote_t>(this->get_shared());
-		rem->init();
 		auto loc = std::make_shared<local_t>([this, self = this->get_shared()](){
 			notify_local_content();
 
 		});
-		remote_objects.push_back(rem);
+		current_remote = rem;
 		local_objects.push_back(loc);
 		return std::make_pair(rem, loc);
 	};
@@ -65,90 +65,95 @@ public:
 
 		auto hcb = [this]()
 		{
-			if(remote_objects.empty()) {
+			std::cout << "something!" << current_remote.get() << std::endl;
+			if(!current_remote) {
+
 				decoding_error = true;
 				return connection_t::error(http::error_code::invalid_read);
 			}
-			if(auto s = remote_objects.back().lock())
-			{
-				if(s->ended()) return connection_t::error(http::error_code::invalid_read);
-				bool keepalive =
+			if(current_remote->ended()) return connection_t::error(http::error_code::invalid_read);
+			bool keepalive =
 						(!current_decoded_object.has(http::hf_connection)) ?
 							connection_t::persistent :
 							current_decoded_object.header(http::hf_connection) == http::hv_keepalive;
 
-				current_decoded_object.keepalive(keepalive);
+			current_decoded_object.keepalive(keepalive);
 
-				connection_t::persistent = keepalive;
+			connection_t::persistent = keepalive;
 
-				io_service().post(
-							[s, current_decoded_object = std::move(current_decoded_object)]() mutable
-							{
-								s->headers(std::move(current_decoded_object));
-							}
-				);
+			io_service().post(
+					[s = current_remote, current_decoded_object = std::move(current_decoded_object)]() mutable
+					{
+						s->headers(std::move(current_decoded_object));
+					}
+			);
 
-				current_decoded_object = {};
-			}
+			current_decoded_object = {};
+
 		};
 
 		auto bcb = [this](dstring&& b)
 		{
 			if(decoding_error) return;
-			if(auto s = remote_objects.back().lock())
-			{
-				if(s->ended()) return connection_t::error(http::error_code::invalid_read);
-				io_service().post([s, b = std::move(b)]() mutable
-				                  {
-					                  s->body(std::move(b));
-				                  });
+			if(!current_remote) {
+				decoding_error = true;
+				return connection_t::error(http::error_code::invalid_read);
 			}
+
+			if(current_remote->ended()) return connection_t::error(http::error_code::invalid_read);
+			io_service().post([s = current_remote, b = std::move(b)]() mutable
+			                  {
+				                  s->body(std::move(b));
+			                  });
+
 		};
 
 		auto tcb = [this](dstring&& k, dstring&& v)
 		{
 
 			if(decoding_error) return;
-			if(auto s = remote_objects.back().lock())
-			{
-				if(s->ended()) return connection_t::error(http::error_code::invalid_read);
-				io_service().post(
-							[s, k = std::move(k), v = std::move(v)]() mutable
+			if(!current_remote) {
+				decoding_error = true;
+				return connection_t::error(http::error_code::invalid_read);
+			}
+			if(current_remote->ended()) return connection_t::error(http::error_code::invalid_read);
+			io_service().post([s = current_remote, k = std::move(k), v = std::move(v)]() mutable
 							{
 								s->trailer(std::move(k), std::move(v));
-							}
-				);
-			}
+							});
+
 		};
 
 		auto ccb = [this]()
 		{
 			if(decoding_error) return;
-			if(auto s = remote_objects.back().lock())
-			{
-				if(s->ended()) return connection_t::error(http::error_code::invalid_read);
-				io_service().post([s]() { s->finished(); });
-			}
+			if(!current_remote) return;
+			if(current_remote->ended()) return connection_t::error(http::error_code::invalid_read);
+			io_service().post([current_remote = std::move(current_remote)]() { current_remote->finished(); });
+			current_remote = nullptr;
 		};
 
-		auto fcb = [this](int error,bool&)
+		auto ecb = [this](int error,bool&)
 		{
 			//failure always gets called after start...
 			if(decoding_error) return;
-			if(auto s = remote_objects.back().lock())
-			{
-				if(s->ended()) return connection_t::error(http::error_code::invalid_read);
-				io_service().post([s]() { s->error(http::error_code::decoding); }); //fix
+			if(!current_remote) {
+				decoding_error = true;
+				return connection_t::error(http::error_code::invalid_read);
 			}
+
+			if(current_remote->ended()) return connection_t::error(http::error_code::invalid_read);
+			io_service().post([s = std::move(current_remote)]() { s->error(http::error_code::decoding); }); //fix
+			current_remote = nullptr;
+
 			if(auto s = local_objects.back().lock())
 			{
 				io_service().post([s]() { s->error(http::error_code::decoding); });
 			}
-			remote_objects.pop_front();
 			local_objects.pop_front();
 		};
 
-		decoder.register_callback(std::move(scb), std::move(hcb), std::move(bcb), std::move(tcb), std::move(ccb), std::move(fcb));
+		decoder.register_callback(std::move(scb), std::move(hcb), std::move(bcb), std::move(tcb), std::move(ccb), std::move(ecb));
 		return true;
 	}
 
@@ -185,18 +190,34 @@ private:
 	/** Event emitted when the decoder starts; default behaviour. See specializations.*/
 	void decoder_begin(){}
 
+	void notify_all(http::error_code err) {
+		if(current_remote) {
+			current_remote->error(err);
+			current_remote = nullptr;
+		}
+		for(auto &res: local_objects)
+		{
+			if(auto s = res.lock()) s->error(err);
+		}
+
+		local_objects.clear();
+	}
+
+
 	/** Explicit user-requested close*/
 	void close() override
 	{
 		user_close = true;
+		current_remote = nullptr;
 		if(auto s = connector()) s->close();
+		notify_all(http::error_code::connection_closed);
 		connection_t::deinit();
 	}
 
 	/** Handler to the io_service to post deferred callbacks*/
 	boost::asio::io_service& io_service()
 	{
-		return connector()->io_service();
+		return connector()->io_service(); //hmmm :D
 	}
 
 	/** Requires a write if a connector is still available. */
@@ -210,27 +231,19 @@ private:
 	void on_connector_nulled() override
 	{
 		if(user_close) return;
+		current_remote = nullptr;
 		/** Send back the error, to everybody */
 		http::connection_error err{http::error_code::closed_by_client};
 		connection_t::error(err);
 		//should notify everybody in the connection of the error!
-		for(auto &req: remote_objects)
-		{
-            if(auto s = req.lock()) s->error(err);
-		}
-		for(auto &res: local_objects)
-		{
-            if(auto s = res.lock()) s->error(err);
-		}
+		notify_all(err.errc());
 		connection_t::deinit();
-		remote_objects.clear();
-		local_objects.clear();
 	}
 
 	/** Method used by responses to notify availability of new content*/
 	void notify_local_content()
 	{
-		while(!local_objects.empty() && !remote_objects.empty())
+		while(!local_objects.empty())
 		{
 			//replace all this with a polling mechanism!
 			auto &c = local_objects.front();
@@ -239,13 +252,11 @@ private:
 				if(poll_local(s))
 				{
 					local_objects.pop_front();
-					remote_objects.pop_front();
 				}
 				else break;
 			} else
 			{
 				local_objects.pop_front();
-				remote_objects.pop_front();
 			}
 		}
 	}
@@ -318,7 +329,6 @@ private:
 	}
 
 	/** Remote and local object currently being managed by the handler*/
-	std::list<std::weak_ptr<remote_t>> remote_objects;
 	std::list<std::weak_ptr<local_t>> local_objects;
 
 	/** Encoder for local objects*/
@@ -336,7 +346,8 @@ private:
 	bool decoding_error{false};
 	/** Current protocol version.*/
 	http::proto_version version{http::proto_version::UNSET};
-
+	/** Current used request; shared ptr*/
+	std::shared_ptr<remote_t> current_remote{nullptr};
 };
 
 /** Specialization providing user feedback. */

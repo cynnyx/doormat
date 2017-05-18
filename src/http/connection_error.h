@@ -7,7 +7,8 @@ enum class error_code : int
 {   success = 0,
 	decoding = 1,
     closed_by_client = 2,
-	invalid_read = 3
+	invalid_read = 3,
+	connection_closed = 4
 };
 
 
