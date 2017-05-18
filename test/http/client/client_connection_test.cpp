@@ -147,7 +147,7 @@ TEST(client_connection, pingpong)
 		++response_events;
 	});
 
-	res->on_body([&](auto r, std::unique_ptr<char> body, size_t s){
+    res->on_body([&](auto r, std::unique_ptr<char[]> body, size_t s){
 		std::string rcvd{body.get(), s};
 		ASSERT_EQ(rcvd, "Ave client, dummy node says hello");
 		++response_events;

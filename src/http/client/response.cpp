@@ -44,7 +44,7 @@ void client_response::headers(http::http_response &&res)
 void client_response::body(dstring&& body)
 {
 	//todo: avoid copying
-	std::unique_ptr<char> b{ new char[body.size()]};
+    std::unique_ptr<char[]> b{ new char[body.size()]};
 	std::memcpy(b.get(), body.cdata(), body.size());
 	if(body_callback) (*body_callback)(this->shared_from_this(), std::move(b), body.size());
 }
