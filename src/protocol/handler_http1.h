@@ -211,11 +211,11 @@ private:
 		//should notify everybody in the connection of the error!
 		for(auto &req: remote_objects)
 		{
-			if(auto s = req.lock()) io_service().post([s, err](){s->error(err);});
+            if(auto s = req.lock()) s->error(err);
 		}
 		for(auto &res: local_objects)
 		{
-			if(auto s = res.lock()) io_service().post([s, err](){s->error(err);});
+            if(auto s = res.lock()) s->error(err);
 		}
 		connection_t::deinit();
 		remote_objects.clear();
