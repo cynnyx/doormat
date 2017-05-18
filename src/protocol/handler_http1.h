@@ -190,6 +190,7 @@ private:
 	{
 		user_close = true;
 		if(auto s = connector()) s->close();
+		connection_t::deinit();
 	}
 
 	/** Handler to the io_service to post deferred callbacks*/
@@ -221,7 +222,6 @@ private:
 		{
             if(auto s = res.lock()) s->error(err);
 		}
-		connection_t::deinit();
 		remote_objects.clear();
 		local_objects.clear();
 	}

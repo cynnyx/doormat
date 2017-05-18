@@ -49,6 +49,9 @@ public:
 	void on_trailer(trailer_callback_t);
 	void on_finished(finished_callback_t);
 
+
+	void abort(){ myself = nullptr; }
+
 	/** Preamble manipulation methods */
 	http::http_response & preamble() { return _preamble; }
 	void clear_preamble() { _preamble = http::http_response{}; }
