@@ -222,6 +222,7 @@ private:
 		{
             if(auto s = res.lock()) s->error(err);
 		}
+		connection_t::deinit();
 		remote_objects.clear();
 		local_objects.clear();
 	}
