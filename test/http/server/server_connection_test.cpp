@@ -26,7 +26,6 @@ TEST(server_connection, invalid_request) {
     connector->io_service().post([connector](){ connector->read("GET /prova HTTP_WRONG!!!/1.1"); });
     connector->io_service().run();
 
-    ASSERT_TRUE(handler_test->start());
     ASSERT_TRUE(ok);
 }
 
@@ -56,7 +55,6 @@ TEST(server_connection, valid_request) {
                                                                 "date: Tue, 17 May 2016 14:53:09 GMT\r\n"
                                                                 "\r\n"); });
     connector->io_service().run();
-    ASSERT_TRUE(handler_test->start());
     ASSERT_EQ(cb_counter, expected_cb_counter);
 }
 
@@ -75,8 +73,6 @@ TEST(server_connection, on_connector_nulled) {
 
 
     handler_test->on_request([&cb_counter, &ok, &connector](auto conn, auto req, auto resp) {
-
-
         req->on_headers([&cb_counter, &connector](auto req){
             ++cb_counter;
 
@@ -97,10 +93,6 @@ TEST(server_connection, on_connector_nulled) {
             ASSERT_EQ(error.errc(), http::error_code::closed_by_client);
             ok = true;
         });
-/*
-        resp->on_error([](auto conn){
-
-        });*/
     });
 
     connector->io_service().post([connector](){

@@ -38,7 +38,7 @@ public:
 
 	/** Callback types. */
 	using headers_callback_t = std::function<void(std::shared_ptr<client_response>)>;
-	using body_callback_t = std::function<void(std::shared_ptr<client_response>, std::unique_ptr<char> char_array, size_t size)>;
+    using body_callback_t = std::function<void(std::shared_ptr<client_response>, std::unique_ptr<char[]> char_array, size_t size)>;
 	using trailer_callback_t = std::function<void(std::shared_ptr<client_response>, std::string k, std::string v)>;
 	using finished_callback_t = std::function<void(std::shared_ptr<client_response>)>;
 	using error_callback_t = std::function<void(std::shared_ptr<client_response>, const http::connection_error &err)>;
