@@ -67,7 +67,7 @@ TEST(server_connection, on_connector_nulled) {
 	connector->handler(handler_test);
 
 	size_t expected_req_cb_counter{2};
-	size_t expected_error_cb_counter{2};
+	size_t expected_error_cb_counter{1};
 
 	size_t req_cb_counter{0};
 	size_t error_cb_counter{0};
@@ -83,15 +83,10 @@ TEST(server_connection, on_connector_nulled) {
 			resp->headers(http::http_response{});
 		});
 
-		req->on_error([&error_cb_counter](auto conn, auto &error){
-			ASSERT_TRUE(conn);
-			ASSERT_EQ(error.errc(), http::error_code::closed_by_client);
-			++error_cb_counter;
-		});
-
 		conn->on_error([&error_cb_counter](auto conn, const http::connection_error &error){
 			ASSERT_TRUE(conn);
 			ASSERT_EQ(error.errc(), http::error_code::closed_by_client);
+			std::cout << "conn on error" << std::endl;
 			++error_cb_counter;
 		});
 	});

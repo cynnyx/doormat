@@ -65,7 +65,6 @@ public:
 
 		auto hcb = [this]()
 		{
-			std::cout << "something!" << current_remote.get() << std::endl;
 			if(!current_remote) {
 
 				decoding_error = true;
@@ -208,7 +207,6 @@ private:
 	void close() override
 	{
 		user_close = true;
-		current_remote = nullptr;
 		if(auto s = connector()) s->close();
 		notify_all(http::error_code::connection_closed);
 		connection_t::deinit();
@@ -231,12 +229,11 @@ private:
 	void on_connector_nulled() override
 	{
 		if(user_close) return;
-		current_remote = nullptr;
 		/** Send back the error, to everybody */
 		http::connection_error err{http::error_code::closed_by_client};
+		notify_all(err.errc());
 		connection_t::error(err);
 		//should notify everybody in the connection of the error!
-		notify_all(err.errc());
 		connection_t::deinit();
 	}
 
