@@ -49,7 +49,7 @@ void http_server::start(boost::asio::io_service &io) noexcept
     if(_ssl)
     {
         _ssl_ctx = &(sni.begin()->context);
-
+	    std::cout << "context ptr is " << _ssl_ctx << std::endl;
         for(auto&& iter = sni.begin(); iter != sni.end(); ++iter)
             _handlers.register_protocol_selection_callbacks(iter->context.native_handle());
         listen(io, true);
@@ -82,7 +82,7 @@ void http_server::start_accept(ssl_context& ssl_ctx, tcp_acceptor& acceptor)
 {
 	if(running.load() == false)
 		return;
-
+	std::cout << "context ptr is " << _ssl_ctx << std::endl;
 	auto socket = std::make_shared<ssl_socket>(acceptor.get_io_service(), ssl_ctx);
 	acceptor.async_accept(socket->lowest_layer(),[this, &ssl_ctx, &acceptor, socket]( const boost::system::error_code &ec)
 	{

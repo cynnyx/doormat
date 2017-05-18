@@ -58,13 +58,17 @@ public:
 		connection_t::init();
 		auto scb = [this](http::http_structured_data** data)
 		{
+			decoding_error = false;
 			*data = &current_decoded_object;
 			decoder_begin();
 		};
 
 		auto hcb = [this]()
 		{
-			if(remote_objects.empty()) return connection_t::error(http::error_code::invalid_read);
+			if(remote_objects.empty()) {
+				decoding_error = true;
+				return connection_t::error(http::error_code::invalid_read);
+			}
 			if(auto s = remote_objects.back().lock())
 			{
 				if(s->ended()) return connection_t::error(http::error_code::invalid_read);
@@ -90,7 +94,7 @@ public:
 
 		auto bcb = [this](dstring&& b)
 		{
-			if(remote_objects.empty()) return connection_t::error(http::error_code::invalid_read);
+			if(decoding_error) return;
 			if(auto s = remote_objects.back().lock())
 			{
 				if(s->ended()) return connection_t::error(http::error_code::invalid_read);
@@ -104,7 +108,7 @@ public:
 		auto tcb = [this](dstring&& k, dstring&& v)
 		{
 
-			if(remote_objects.empty()) return connection_t::error(http::error_code::invalid_read);
+			if(decoding_error) return;
 			if(auto s = remote_objects.back().lock())
 			{
 				if(s->ended()) return connection_t::error(http::error_code::invalid_read);
@@ -119,7 +123,7 @@ public:
 
 		auto ccb = [this]()
 		{
-			if(remote_objects.empty()) return connection_t::error(http::error_code::invalid_read);
+			if(decoding_error) return;
 			if(auto s = remote_objects.back().lock())
 			{
 				if(s->ended()) return connection_t::error(http::error_code::invalid_read);
@@ -130,7 +134,7 @@ public:
 		auto fcb = [this](int error,bool&)
 		{
 			//failure always gets called after start...
-			if(remote_objects.empty()) return connection_t::error(http::error_code::invalid_read);
+			if(decoding_error) return;
 			if(auto s = remote_objects.back().lock())
 			{
 				if(s->ended()) return connection_t::error(http::error_code::invalid_read);
@@ -211,11 +215,11 @@ private:
 		//should notify everybody in the connection of the error!
 		for(auto &req: remote_objects)
 		{
-			if(auto s = req.lock()) io_service().post([s, err](){s->error(err);});
+            if(auto s = req.lock()) s->error(err);
 		}
 		for(auto &res: local_objects)
 		{
-			if(auto s = res.lock()) io_service().post([s, err](){s->error(err);});
+            if(auto s = res.lock()) s->error(err);
 		}
 		connection_t::deinit();
 		remote_objects.clear();
@@ -328,6 +332,7 @@ private:
 	dstring serialization;
 	/** User close is set to true when an explicit connection close is required by the user, avoiding sending an error*/
 	bool user_close{false};
+	bool decoding_error{false};
 	/** Current protocol version.*/
 	http::proto_version version{http::proto_version::UNSET};
 

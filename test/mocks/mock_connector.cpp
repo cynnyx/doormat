@@ -2,8 +2,8 @@
 #include "../src/connector.h"
 #include "mock_connector.h"
 
-MockConnector::MockConnector(wcb& cb)
-    : write_cb(cb), _handler{nullptr}, io{}
+MockConnector::MockConnector(boost::asio::io_service &io, wcb& cb)
+    :  io{io}, write_cb(cb), _handler{nullptr}
 {}
 
 void MockConnector::do_write()

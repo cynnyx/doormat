@@ -133,7 +133,6 @@ TEST_F(client_wrapper_test, custom_destination_fail)
 	submitted_req.header(http::hf_cyn_dest_port, fake_port);
 	submitted_req.setParameter("hostname", "::");
 	submitted_req.setParameter("port", std::string(fake_port));
-	auto d1 = submitted_req.serialize();
 	boost::asio::deadline_timer dt{service::locator::service_pool().get_thread_io_service()};
 	auto init_fn = [this, submitted_req, &dt](boost::asio::io_service& ios) mutable
 	{

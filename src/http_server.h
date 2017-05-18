@@ -7,6 +7,7 @@
 #include <experimental/optional>
 #include <boost/asio.hpp>
 #include <boost/system/error_code.hpp>
+#include <fstream>
 
 #include "utils/sni_solver.h"
 #include "protocol/handler_factory.h"
@@ -50,7 +51,15 @@ public:
 	http_server(const http_server&) = delete;
 	http_server& operator=(const http_server&) = delete;
 
-
+	bool load_certificate(const std::string& cert, const std::string& key, const std::string &pass ) noexcept
+	{
+		std::ifstream pwdfile;
+		pwdfile.open(pass);
+		std::string pwd{};
+		std::string c;
+		while(std::getline(pwdfile, c)) pwd +=c;
+		return sni.load_certificate(cert, key, pass);
+	}
 
 	void on_client_connect(connect_callback cb) noexcept;
 

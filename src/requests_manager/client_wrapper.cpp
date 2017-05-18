@@ -54,7 +54,8 @@ void client_wrapper::on_request_preamble(http::http_request&& preamble)
 		return on_error(INTERNAL_ERROR_LONG(errors::http_error_code::unprocessable_entity));
 
 	auto address = preamble.getParameter("hostname");
-	auto port = preamble.hasParameter("port") ? std::stoi(preamble.getParameter("port")) : 0;
+	auto port = preamble.hasParameter("port") && !preamble.getParameter("port").empty() ?
+				std::stoi(preamble.getParameter("port")) : 0;
 	auto tls = preamble.ssl();
 	// TODO: check whether you should connect
 	client.connect([this, preamble=std::move(preamble)](auto connection_ptr) mutable

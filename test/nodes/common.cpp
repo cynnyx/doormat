@@ -184,7 +184,6 @@ namespace preset
 /// @note if this grow up in parameters let's use a fluent builder!
 void setup( configuration::configuration_wrapper* cw, logging::inspector_log* il )
 {
-	service::initializer::set_service_pool( new server::io_service_pool(1) );
 	service::initializer::set_socket_pool_factory( new network::cloudia_pool_factory() );
 	service::initializer::set_configuration(cw);
 	service::initializer::set_service_pool(new server::io_service_pool{ cw->get_thread_number() });
