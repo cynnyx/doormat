@@ -27,10 +27,9 @@ std::string get_expected(http::http_request &req, const std::string &body){
 }
 
 
-TEST(client_connection_test, send_request)
+TEST(client_connection, send_request)
 {
     boost::asio::io_service io;
-
 	auto tested_object = std::make_shared<client_connection_t>(http::proto_version::HTTP11);
 	//now register a mock connector; than go on.
 
@@ -46,11 +45,13 @@ TEST(client_connection_test, send_request)
 	mock->handler(tested_object);
 
 	auto user_handlers = tested_object->get_user_handlers();
-	auto req = user_handlers.second;
-
+	auto &req = user_handlers.second;
+	auto &res = user_handlers.first;
 	req->headers(std::move(preamble));
 	req->body("ciao");
 	req->end();
+	res->abort();
+	res->get_connection()->close();
 	mock->io_service().run();
 	ASSERT_EQ(expected_request, received_data);
 }
@@ -61,18 +62,20 @@ TEST(client_connection, request_sent_event)
 
 	auto tested_object = std::make_shared<client_connection_t>(http::proto_version::HTTP11);
 	bool called;
-	tested_object->on_request_sent([&called](auto conn){
-		called = true;
-	});
-
 	http::http_request preamble = make_dumb_request();
 	MockConnector::wcb write_callback = [](dstring d){};
     auto mock = std::make_shared<MockConnector>(io, write_callback);
 	mock->handler(tested_object);
 	auto user_handlers = tested_object->get_user_handlers();
-	auto req = user_handlers.second;
+	auto &req = user_handlers.second;
+	auto &res = user_handlers.first;
+	tested_object->on_request_sent([&called, &res](auto conn){
+		called = true;
+		res->abort();
+	});
 	req->headers(std::move(preamble));
 	req->end();
+	res->get_connection()->close(); 
 	mock->io_service().run();
 	ASSERT_TRUE(called);
 }
@@ -80,16 +83,17 @@ TEST(client_connection, request_sent_event)
 TEST(client_connection, read_before_write_failure)
 {
     boost::asio::io_service io;
-
 	auto tested_object = std::make_shared<client_connection_t>(http::proto_version::HTTP11);
+	MockConnector::wcb write_callback = [](dstring){};
+	auto mock = std::make_shared<MockConnector>(io, write_callback);
 	bool called;
-	tested_object->on_error([&called](auto conn, const http::connection_error &ec){
+	tested_object->on_error([&called, &mock](auto conn, const http::connection_error &ec){
 		ASSERT_EQ(ec.errc(), http::error_code::invalid_read);
 		called = true;
 		conn->close();
+		mock = nullptr;
 	});
-	MockConnector::wcb write_callback = [](dstring){};
-    auto mock = std::make_shared<MockConnector>(io, write_callback);
+
 	mock->handler(tested_object);
 	std::string unexpected_response = "HTTP/1.1 200 OK\r\n"
 		"connection: keep-alive\r\n"
@@ -99,7 +103,7 @@ TEST(client_connection, read_before_write_failure)
 		"\r\n"
 		"Ave client, dummy node says hello";
 	mock->read(unexpected_response);
-	mock->io_service().run();
+	io.run();
 	ASSERT_TRUE(called);
 }
 
@@ -156,6 +160,7 @@ TEST(client_connection, pingpong)
 
 	res->on_finished([&](auto response){
 		++response_events;
+		response->get_connection()->close();
 	});
 
 	req->headers(std::move(preamble));
