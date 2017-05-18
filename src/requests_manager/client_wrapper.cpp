@@ -122,7 +122,8 @@ void client_wrapper::on_request_preamble(http::http_request&& preamble)
 		return on_error(INTERNAL_ERROR_LONG(errors::http_error_code::unprocessable_entity));
 
 	auto address = local_request.getParameter("hostname");
-	auto port = local_request.hasParameter("port") ? std::stoi(local_request.getParameter("port")) : 0;
+	auto port = local_request.hasParameter("port") && !local_request.getParameter("port").empty() ?
+				std::stoi(local_request.getParameter("port")) : 0;
 	auto tsl = local_request.ssl();
 	service::locator::communicator_factory().get_connector(address, port, tsl, [this]
 		(std::shared_ptr<network::communicator_interface> ci)
