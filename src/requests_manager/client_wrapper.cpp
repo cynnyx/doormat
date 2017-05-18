@@ -48,7 +48,7 @@ void client_wrapper::on_request_preamble(http::http_request&& preamble)
 {
 	LOGTRACE("client_wrapper ",this," on_request_preamble");
 	start = std::chrono::high_resolution_clock::now();
-	++waiting_count;
+//	++waiting_count;
 	//retrieve a connector to talk with remote destination.
 	if(!preamble.hasParameter("hostname"))
 		return on_error(INTERNAL_ERROR_LONG(errors::http_error_code::unprocessable_entity));
@@ -135,7 +135,8 @@ void client_wrapper::on_request_finished()
 	finished_request = true;
 	if(!errcode)
 	{
-		local_request->end();
+		if(local_request)
+			local_request->end();
 		return;
 	}
 	//in some cases, response could have arrived before the end of the request; in this case, we shall react accordingly.
@@ -184,7 +185,8 @@ void client_wrapper::stop()
 	LOGTRACE("client_wrapper ",this," stop!");
 	if(!stopping)
 	{
-		connection->close();
+		if(connection)
+			connection->close();
 		LOGDEBUG("client_wrapper ",this," stopping");
 		stopping = true;
 	}
