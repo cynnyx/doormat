@@ -8,7 +8,7 @@ struct MockConnector : server::connector_interface, std::enable_shared_from_this
 {
     using wcb = std::function<void(dstring)>;
 
-    MockConnector(wcb& cb);
+    MockConnector(boost::asio::io_service &io, wcb& cb);
 
     void do_write() override;
     void do_read() override;
@@ -20,7 +20,11 @@ struct MockConnector : server::connector_interface, std::enable_shared_from_this
 	void read(std::string request);
 	void handler(std::shared_ptr<server::http_handler> h);
 
+    ~MockConnector() {
+        _handler->connector(nullptr);
+    }
+
+    boost::asio::io_service &io;
     wcb& write_cb;
     std::shared_ptr<server::http_handler> _handler;
-    boost::asio::io_service io;
 };

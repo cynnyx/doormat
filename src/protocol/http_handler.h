@@ -34,14 +34,14 @@ protected:
 
 	std::shared_ptr<connector_interface> connector() noexcept
 	{
-		if(auto s = _connector.lock()) return s;
+        if(auto s = _connector.lock()) return s;
 		return nullptr;
-	}
-	const std::shared_ptr<connector_interface> connector() const noexcept
-	{
-		if(auto s = _connector.lock()) return s;
-		return nullptr;
-	}
+    }
+    const std::shared_ptr<connector_interface> connector() const noexcept
+    {
+        if(auto s = _connector.lock()) return s;
+        return nullptr;
+    }
 
 
 public:
