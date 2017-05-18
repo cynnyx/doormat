@@ -1,36 +1,29 @@
 #include "dns_communicator_factory.h"
-#include "../../http/http_request.h"
 #include "../../io_service_pool.h"
 #include "communicator.h"
 #include "../../service_locator/service_locator.h"
 
 namespace network 
 {
-void dns_communicator_factory::get_connector(const http::http_request &req, 
+
+void dns_communicator_factory::get_connector(const std::string& address, uint16_t port, bool tls,
 	connector_callback_t connector_cb, error_callback_t error_cb)
 {
 	if ( stopping ) return error_cb(1);
 
-	if ( req.hasParameter("hostname") )
-		return dns_resolver(req, std::move(connector_cb), std::move(error_cb));
-	return error_cb(2); //fixme with a proper error code.
+	dns_resolver(address, port, tls, std::move(connector_cb), std::move(error_cb));
 }
 
-void dns_communicator_factory::dns_resolver(const http::http_request &req,
+void dns_communicator_factory::dns_resolver(const std::string& address, uint16_t port, bool tls,
 	connector_callback_t connector_cb, error_callback_t error_cb)
 {
 	auto&& io = service::locator::service_pool().get_thread_io_service();
 	std::shared_ptr<boost::asio::ip::tcp::resolver> r = std::make_shared<boost::asio::ip::tcp::resolver>(io);
-	bool tls = req.ssl();
-	std::string port =
-		(req.hasParameter("port") && req.getParameter("port").size()) ? 
-			req.getParameter("port") : ( tls ? "443" : "80");
-			
-	/** For now we will consider only the case without ssl*/
-	//if(req.ssl()) return error_cb(2); //fixme
-	
-	LOGTRACE("resolving ", req.getParameter("hostname"), "with port ", port);
-	boost::asio::ip::tcp::resolver::query q( req.getParameter("hostname"),  port );
+	if(!port)
+		port = tls ? 443 : 80;
+
+	LOGTRACE("resolving ", address, "with port ", port);
+	boost::asio::ip::tcp::resolver::query q( address,  std::to_string(port) );
 	auto resolve_timer =
 		std::make_shared<boost::asio::deadline_timer>(service::locator::service_pool().get_thread_io_service());
 	resolve_timer->expires_from_now(boost::posix_time::milliseconds(resolve_timeout));
@@ -56,13 +49,13 @@ void dns_communicator_factory::dns_resolver(const http::http_request &req,
 				// FIXME we need to initialize it somewhere else! Locator?
 				static thread_local boost::asio::ssl::context ctx(boost::asio::ssl::context::sslv23);
 				return endpoint_connect(std::move(iterator),
-					std::make_shared<boost::asio::ssl::stream<boost::asio::ip::tcp::socket>> 	
+					std::make_shared<boost::asio::ssl::stream<boost::asio::ip::tcp::socket>>
 						(service::locator::service_pool().get_thread_io_service(), ctx ),
 							std::move(connector_cb), std::move(error_cb));
 			}
 			else
 				return endpoint_connect(std::move(iterator),
-					std::make_shared<boost::asio::ip::tcp::socket> 	
+					std::make_shared<boost::asio::ip::tcp::socket>
 						(service::locator::service_pool().get_thread_io_service()),
 							std::move(connector_cb), std::move(error_cb));
 		});

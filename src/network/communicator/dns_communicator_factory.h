@@ -11,11 +11,11 @@ namespace network
 class dns_communicator_factory : public communicator_factory
 {
 public:
-	void get_connector(const http::http_request &, connector_callback_t, error_callback_t) override;
-	void stop() override { stopping = true; };
-	virtual ~dns_communicator_factory() = default;
+	void get_connector(const std::string& address, uint16_t port, bool tls, connector_callback_t, error_callback_t) override;
+	void stop() override { stopping = true; }
+
 private:
-	void dns_resolver(const http::http_request &req, connector_callback_t, error_callback_t);
+	void dns_resolver(const std::string& address, uint16_t port, bool tls, connector_callback_t, error_callback_t);
 	//template<typename T> // boost::asio::ip::tcp::socket
 	void endpoint_connect(boost::asio::ip::tcp::resolver::iterator, std::shared_ptr<boost::asio::ip::tcp::socket>, 
 		connector_callback_t, error_callback_t);
