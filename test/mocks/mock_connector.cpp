@@ -16,6 +16,11 @@ void MockConnector::do_write()
 	dstring chunk;
 	_handler->on_write(chunk);
 	write_cb(chunk);
+	auto all_cbs = _handler->write_feedbacks();
+	for(auto &cb : all_cbs)
+	{
+		io_service().post(cb);
+	}
 }
 
 void MockConnector::do_read()
