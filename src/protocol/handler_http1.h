@@ -233,6 +233,7 @@ private:
 		connection_t::error(err);
 		//should notify everybody in the connection of the error!
 		connection_t::deinit();
+		pending_clear_callbacks.clear(); 
 	}
 
 	/** Method used by responses to notify availability of new content*/
@@ -282,9 +283,9 @@ private:
 				break;
 			}
 			case local_t::state::ended:
+				pending_clear_callbacks.push_back([loc](){ loc->cleared(); });
 				notify_local_end();
 				//delaying this is very important; otherwise the client could send another request while the state is wrong.
-				io_service().post([loc](){loc->cleared();});
 				connection_t::cleared();
 				return true;
 			default: assert(0);
@@ -292,6 +293,13 @@ private:
 			state = loc->get_state();
 		}
 		return false;
+	}
+
+
+	std::vector<std::function<void()>> write_feedbacks() override {
+		auto d = std::move(pending_clear_callbacks);
+		pending_clear_callbacks = {};
+		return d;
 	}
 
 	/** Local Object management methods. They operate on a single local object. */
@@ -330,7 +338,7 @@ private:
 	std::list<std::weak_ptr<local_t>> local_objects;
 
 	/** remote objects currently awaiting for reception*/
-	std::list<std::shared_ptr<remote_t>> remote_objects; 
+	std::list<std::shared_ptr<remote_t>> remote_objects;
 	/** Encoder for local objects*/
 	http::http_codec encoder;
 	/** Encoder for remote objects */
@@ -346,6 +354,9 @@ private:
 	bool decoding_error{false};
 	/** Current protocol version.*/
 	http::proto_version version{http::proto_version::UNSET};
+
+	/** List of callbacks to be called when the next write is successful. */
+	std::vector<std::function<void()>> pending_clear_callbacks{};
 
 };
 

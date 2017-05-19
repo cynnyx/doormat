@@ -238,7 +238,6 @@ TEST(client_connection, multiple_requests_multiple_responses)
 		});
 
 		second_response->on_headers([&received_second_response, &received_responses](auto response) mutable {
-			ASSERT_TRUE(response);
 			ASSERT_EQ(received_responses, 3);
 			++received_responses;
 			received_second_response = std::string(response->preamble().serialize());

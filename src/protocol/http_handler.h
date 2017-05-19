@@ -48,7 +48,6 @@ public:
 	http_handler() = default;
 	//void close() override;
 	void connector( std::shared_ptr<connector_interface> conn);
-
 	boost::asio::ip::address find_origin() const;
 
 	virtual bool start() noexcept = 0;
@@ -56,6 +55,7 @@ public:
 	virtual bool on_read(const char*, unsigned long) = 0;
 	virtual bool on_write(dstring& chunk) = 0;
 	virtual void trigger_timeout_event() =0;
+	virtual std::vector<std::function<void()>> write_feedbacks(){ return {}; };
 
 	virtual ~http_handler() = default;
 };
