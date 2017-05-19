@@ -47,11 +47,26 @@ public:
 			notify_local_content();
 
 		});
-		current_remote = rem;
+		remote_objects.push_back(rem);
 		local_objects.push_back(loc);
 		return std::make_pair(rem, loc);
 	}
 
+	std::shared_ptr<remote_t> get_current() {
+		if(decoding_error) return nullptr;
+		if(!remote_objects.size()) {
+			decoding_error = true;
+			connection_t::error(http::error_code::invalid_read);
+			return nullptr;
+		}
+		auto current_remote = remote_objects.front();
+		if(current_remote->ended())
+		{
+			connection_t::error(http::error_code::invalid_read);
+			return nullptr;
+		}
+		return current_remote;
+	}
 
 	bool start() noexcept override
 	{
@@ -65,12 +80,8 @@ public:
 
 		auto hcb = [this]()
 		{
-			if(!current_remote) {
-
-				decoding_error = true;
-				return connection_t::error(http::error_code::invalid_read);
-			}
-			if(current_remote->ended()) return connection_t::error(http::error_code::invalid_read);
+			auto current_remote = get_current();
+			if(!current_remote) return;
 			bool keepalive =
 						(!current_decoded_object.has(http::hf_connection)) ?
 							connection_t::persistent :
@@ -93,13 +104,10 @@ public:
 
 		auto bcb = [this](dstring&& b)
 		{
-			if(decoding_error) return;
-			if(!current_remote) {
-				decoding_error = true;
-				return connection_t::error(http::error_code::invalid_read);
-			}
 
-			if(current_remote->ended()) return connection_t::error(http::error_code::invalid_read);
+			auto current_remote = get_current();
+			if(!current_remote) return;
+
 			io_service().post([s = current_remote, b = std::move(b)]() mutable
 			                  {
 				                  s->body(std::move(b));
@@ -110,12 +118,8 @@ public:
 		auto tcb = [this](dstring&& k, dstring&& v)
 		{
 
-			if(decoding_error) return;
-			if(!current_remote) {
-				decoding_error = true;
-				return connection_t::error(http::error_code::invalid_read);
-			}
-			if(current_remote->ended()) return connection_t::error(http::error_code::invalid_read);
+			auto current_remote = get_current();
+			if(!current_remote) return;
 			io_service().post([s = current_remote, k = std::move(k), v = std::move(v)]() mutable
 							{
 								s->trailer(std::move(k), std::move(v));
@@ -125,26 +129,20 @@ public:
 
 		auto ccb = [this]()
 		{
-			if(decoding_error) return;
+			auto current_remote = get_current();
 			if(!current_remote) return;
-			if(current_remote->ended()) return connection_t::error(http::error_code::invalid_read);
 			io_service().post([current_remote = std::move(current_remote)]() { current_remote->finished(); });
-			current_remote = nullptr;
+			remote_objects.pop_front(); //finished, hence we remove the current decoded remote object from the queue.
 		};
 
 		auto ecb = [this](int error,bool&)
 		{
 			//failure always gets called after start...
-			if(decoding_error) return;
-			if(!current_remote) {
-				decoding_error = true;
-				return connection_t::error(http::error_code::invalid_read);
-			}
+			auto current_remote = get_current();
+			if(!current_remote) return;
 
-			if(current_remote->ended()) return connection_t::error(http::error_code::invalid_read);
 			io_service().post([s = std::move(current_remote)]() { s->error(http::error_code::decoding); }); //fix
-			current_remote = nullptr;
-
+			remote_objects.pop_front();
 			if(auto s = local_objects.back().lock())
 			{
 				io_service().post([s]() { s->error(http::error_code::decoding); });
@@ -190,15 +188,15 @@ private:
 	void decoder_begin(){}
 
 	void notify_all(http::error_code err) {
-		if(current_remote) {
+
+		for(auto current_remote: remote_objects) {
 			current_remote->error(err);
-			current_remote = nullptr;
 		}
 		for(auto &res: local_objects)
 		{
 			if(auto s = res.lock()) s->error(err);
 		}
-
+		remote_objects.clear();
 		local_objects.clear();
 	}
 
@@ -328,9 +326,11 @@ private:
 		do_write();
 	}
 
-	/** Remote and local object currently being managed by the handler*/
+	/** local objects currently being managed by the handler*/
 	std::list<std::weak_ptr<local_t>> local_objects;
 
+	/** remote objects currently awaiting for reception*/
+	std::list<std::shared_ptr<remote_t>> remote_objects; 
 	/** Encoder for local objects*/
 	http::http_codec encoder;
 	/** Encoder for remote objects */
@@ -346,8 +346,7 @@ private:
 	bool decoding_error{false};
 	/** Current protocol version.*/
 	http::proto_version version{http::proto_version::UNSET};
-	/** Current used request; shared ptr*/
-	std::shared_ptr<remote_t> current_remote{nullptr};
+
 };
 
 /** Specialization providing user feedback. */
