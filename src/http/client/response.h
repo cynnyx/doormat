@@ -42,12 +42,14 @@ public:
 	using trailer_callback_t = std::function<void(std::shared_ptr<client_response>, std::string k, std::string v)>;
 	using finished_callback_t = std::function<void(std::shared_ptr<client_response>)>;
 	using error_callback_t = std::function<void(std::shared_ptr<client_response>, const http::connection_error &err)>;
+	using continue_callback_t = std::function<void(std::shared_ptr<client_response>)>;
 
 	void on_headers(headers_callback_t);
 	void on_body(body_callback_t);
 	void on_error(error_callback_t);
 	void on_trailer(trailer_callback_t);
 	void on_finished(finished_callback_t);
+	void on_response_continue(continue_callback_t);
 
 	/** Preamble manipulation methods */
 	http::http_response & preamble() { return _preamble; }
@@ -64,6 +66,7 @@ private:
 	void error(http::connection_error err);
 	void trailer(dstring&&, dstring&&);
 	void finished();
+	void response_continue();
 
 	bool ended() { return response_ended; }
 
@@ -73,6 +76,7 @@ private:
 	std::experimental::optional<error_callback_t> error_callback;
 	std::experimental::optional<trailer_callback_t> trailer_callback;
 	std::experimental::optional<finished_callback_t> finished_callback;
+	std::experimental::optional<continue_callback_t> continue_callback;
 
 	std::shared_ptr<client_connection> connection_keepalive;
 	/** Ptr-to-self: to grant the user that, until finished() or error() event is propagated, the client_response will be alive*/

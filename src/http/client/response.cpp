@@ -29,6 +29,11 @@ void client_response::on_finished(finished_callback_t fcb)
 	finished_callback.emplace(std::move(fcb));
 }
 
+void client_response::on_response_continue(continue_callback_t ccb)
+{
+	continue_callback.emplace(std::move(ccb));
+}
+
 void client_response::on_error(error_callback_t ecb)
 {
 	error_callback.emplace(std::move(ecb));
@@ -59,6 +64,12 @@ void client_response::finished()
 	if(response_ended) return;
 	if(finished_callback) (*finished_callback)(this->shared_from_this());
 	response_ended = true;
+}
+
+void client_response::response_continue()
+{
+	if(response_ended) return;
+	if(continue_callback) (*continue_callback)(this->shared_from_this());
 }
 
 void client_response::error(http::connection_error err)

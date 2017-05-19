@@ -1,7 +1,7 @@
 #include "http_server.h"
 #include "utils/log_wrapper.h"
 #include "http/server/server_connection.h"
-
+#include "http/client/client_connection.h"
 #include <boost/lexical_cast.hpp>
 
 using namespace std;
