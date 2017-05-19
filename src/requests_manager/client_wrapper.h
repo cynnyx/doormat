@@ -47,6 +47,7 @@ public:
 	~client_wrapper() override;
 
 private:
+	void perform_request(http::http_request&& preamble);
 	/**
 	 * @brief termination_handler checks whether a termination condition (an error or an EOM)
 	 * has been triggered and handles the communication of the relative event back to the chain.
@@ -87,6 +88,7 @@ private:
 	//used in order to manage connect.
 	std::shared_ptr<http::client_connection> connection;
 	std::shared_ptr<http::client_request> local_request;
+	dstring tmp_body;
 
 	uint8_t waiting_count{0};
 	std::unique_ptr<network::socket_factory<boost::asio::ip::tcp::socket>> factory;

@@ -44,6 +44,53 @@ client_wrapper::~client_wrapper()
 	stop();
 }
 
+void client_wrapper::perform_request(http::http_request&& preamble)
+{
+	auto p = connection->create_request();
+	this->local_request = std::move(p.first);
+	this->local_request->headers(std::move(preamble));
+	this->local_request->body(std::move(tmp_body));
+	auto& res = p.second;
+	res->on_headers([this](auto res)
+	{
+		assert(!this->finished_response);
+		LOGTRACE("client_wrapper ",this," response headers cb triggered");
+		this->managing_continue = res->preamble().status_code() == 100 ? true : false;
+		this->on_header(std::move(res->preamble()));
+	});
+	res->on_body([this](auto res, auto data, auto length)
+	{
+		assert(!finished_response);
+		LOGTRACE("client_wrapper ",this," response body cb triggered");
+		if(!managing_continue)
+			this->on_body(dstring{data.get(), length});
+	});
+	res->on_trailer([this](auto res, auto k, auto v)
+	{
+		assert(!finished_response);
+		LOGTRACE("client_wrapper ",this," response trailer cb triggered");
+		if(!managing_continue)
+			this->on_trailer(dstring{k.data(), k.size()}, dstring{v.data(), v.size()});
+	});
+	res->on_finished([this](auto res)
+	{
+		assert(!finished_response);
+		LOGTRACE("client_wrapper ",this," response completion cb triggered");
+		if(managing_continue)
+		{
+			return this->on_response_continue();
+		}
+		finished_response = true;
+		this->stop(); //we already received our response; hence we can stop the client wrapper.
+	});
+	res->on_error([this](auto res, auto&& error)
+	{
+		LOGTRACE("client_wrapper ",this," response error cb triggered: ", error.message());
+		errcode = INTERNAL_ERROR_LONG(errors::http_error_code::internal_server_error);
+		this->stop();
+	});
+}
+
 void client_wrapper::on_request_preamble(http::http_request&& preamble)
 {
 	LOGTRACE("client_wrapper ",this," on_request_preamble");
@@ -57,52 +104,14 @@ void client_wrapper::on_request_preamble(http::http_request&& preamble)
 	auto port = preamble.hasParameter("port") && !preamble.getParameter("port").empty() ?
 				std::stoi(preamble.getParameter("port")) : 0;
 	auto tls = preamble.ssl();
-	// TODO: check whether you should connect
+
+	if(connection)
+		return perform_request(std::move(preamble));
+
 	client.connect([this, preamble=std::move(preamble)](auto connection_ptr) mutable
 	{
 		connection = std::move(connection_ptr);
-		auto p = connection->create_request();
-		this->local_request = std::move(p.first);
-		this->local_request->headers(std::move(preamble));
-		auto& res = p.second;
-		res->on_headers([this](auto res)
-		{
-			assert(!this->finished_response);
-			LOGTRACE("client_wrapper ",this," response headers cb triggered");
-			this->managing_continue = res->preamble().status_code() == 100 ? true : false;
-			this->on_header(std::move(res->preamble()));
-		});
-		res->on_body([this](auto res, auto data, auto length)
-		{
-			assert(!finished_response);
-			LOGTRACE("client_wrapper ",this," response body cb triggered");
-			if(!managing_continue)
-				this->on_body(dstring{data.get(), length});
-		});
-		res->on_trailer([this](auto res, auto k, auto v)
-		{
-			assert(!finished_response);
-			LOGTRACE("client_wrapper ",this," response trailer cb triggered");
-			if(!managing_continue)
-				this->on_trailer(dstring{k.data(), k.size()}, dstring{v.data(), v.size()});
-		});
-		res->on_finished([this](auto res)
-		{
-			assert(!finished_response);
-			LOGTRACE("client_wrapper ",this," response completion cb triggered");
-			if(managing_continue)
-			{
-				return this->on_response_continue();
-			}
-			finished_response = true;
-			this->stop(); //we already received our response; hence we can stop the client wrapper.
-		});
-		res->on_error([this](auto res, auto&& error)
-		{
-			LOGTRACE("client_wrapper ",this," response error cb triggered: ", error.message());
-			errcode = INTERNAL_ERROR_LONG(errors::http_error_code::internal_server_error);
-			this->stop();
-		});
+		this->perform_request(std::move(preamble));
 	}, [this](auto&& error)
 	{
 		LOGTRACE("client_wrapper ",this," connect error cb triggered");
@@ -116,8 +125,10 @@ void client_wrapper::on_request_body(dstring&& chunk)
 	LOGTRACE("client_wrapper ",this," on_request_body");
 	if(!errcode)
 	{
-		assert(local_request);
-		local_request->body(std::move(chunk));
+		if(local_request)
+			local_request->body(std::move(chunk));
+		else
+			tmp_body.append(std::move(chunk));
 	}
 }
 
