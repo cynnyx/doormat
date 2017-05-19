@@ -72,7 +72,7 @@ void dns_connector_factory::endpoint_connect(boost::asio::ip::tcp::resolver::ite
 	auto&& endpoint = *it;
 	auto connect_timer = 
 		std::make_shared<boost::asio::deadline_timer>(service::locator::service_pool().get_thread_io_service());
-	connect_timer->expires_from_now(boost::posix_time::milliseconds(10000));
+	connect_timer->expires_from_now(boost::posix_time::milliseconds(connect_timeout));
 	connect_timer->async_wait([socket, connect_timer](const boost::system::error_code &ec)
 	{
 		if(!ec) socket->cancel();
@@ -108,7 +108,7 @@ void dns_connector_factory::endpoint_connect(boost::asio::ip::tcp::resolver::ite
 
 	auto connect_timer = 
 		std::make_shared<boost::asio::deadline_timer>(service::locator::service_pool().get_thread_io_service());
-	connect_timer->expires_from_now(boost::posix_time::milliseconds(10000));
+	connect_timer->expires_from_now(boost::posix_time::milliseconds(connect_timeout));
 	connect_timer->async_wait([stream, connect_timer](const boost::system::error_code &ec)
 	{
 		if ( !ec ) //stream->cancel();
@@ -119,10 +119,9 @@ void dns_connector_factory::endpoint_connect(boost::asio::ip::tcp::resolver::ite
 	});
 	
 	boost::asio::async_connect( stream->lowest_layer(), it, [ this, stream, connector_cb = std::move(connector_cb), 
-		error_cb = std::move(error_cb), connect_timer ]( const boost::system::error_code &ec,
+		error_cb = std::move(error_cb), connect_timer=std::move(connect_timer) ]( const boost::system::error_code &ec,
 			boost::asio::ip::tcp::resolver::iterator it )
 	{
-		connect_timer->cancel();
 		if ( ec ) 
 		{
 			LOGERROR(ec.message());
@@ -130,9 +129,10 @@ void dns_connector_factory::endpoint_connect(boost::asio::ip::tcp::resolver::ite
 			return endpoint_connect(std::move(it), std::move(stream), std::move(connector_cb), std::move(error_cb));
 		}
 		stream->async_handshake( boost::asio::ssl::stream_base::client, 
-			[ this, stream, connector_cb = std::move(connector_cb), error_cb = std::move(error_cb) ]
+			[ this, stream, connector_cb = std::move(connector_cb), error_cb = std::move(error_cb), connect_timer=std::move(connect_timer) ]
 				( const boost::system::error_code &ec )
 				{
+					connect_timer->cancel();
 					if ( ec )
 					{
 						LOGERROR( ec.message() );
