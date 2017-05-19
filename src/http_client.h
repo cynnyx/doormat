@@ -55,7 +55,7 @@ public:
 	template<typename... connector_args_t>
 	void connect(connect_callback_t ccb, error_callback_t ecb, http::proto_version v, bool tls, connector_args_t&&... args)
 	{
-		connector_factory_(std::forward<connector_args_t>(args)..., tls, detail::handler_factory(v, std::move(ccb)),
+		connector_factory_.get_connector(std::forward<connector_args_t>(args)..., tls, detail::handler_factory(v, std::move(ccb)),
 		[ecb](const auto& error)
 		{
 			ecb(error);

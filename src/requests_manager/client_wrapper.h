@@ -62,20 +62,7 @@ private:
 
 	void stop();
 
-	class connector_factory {
-		network::dns_connector_factory f_;
-	public:
-		using connector_ptr = std::shared_ptr<server::connector_interface>;
-		using connector_callback_t = network::dns_connector_factory::connector_callback_t;
-		using error_callback_t = network::dns_connector_factory::error_callback_t;
-
-		void operator()(const std::string& address, uint16_t port, bool tls, connector_callback_t ccb, error_callback_t ecb)
-		{
-			f_.get_connector(address, port, tls, std::move(ccb), std::move(ecb));
-		}
-	};
-
-	client::http_client<connector_factory> client;
+	client::http_client<network::dns_connector_factory> client;
 	bool stopping{false};
 	bool finished_request{false};
 	bool finished_response{false};
