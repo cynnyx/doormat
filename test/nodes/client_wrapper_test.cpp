@@ -23,7 +23,7 @@ struct client_wrapper_test : public ::testing::Test
 	std::string received_request_body;
 
 	http::http_codec decoder;
-	std::unique_ptr<mock_server> server;
+	std::unique_ptr<mock_server<>> server;
 	std::unique_ptr<node_interface> ch;
 
 	std::function<void(std::string)> read_fn;
@@ -140,7 +140,7 @@ TEST_F(client_wrapper_test, custom_destination_fail)
 		preset::init_thread_local();
 		ch = make_unique_chain<node_interface, first_node, nodes::client_wrapper, blocked_node>();
 		stop_condition = [this](){ throw std::invalid_argument("shit"); return true; };
-		server.reset( new mock_server{port} );
+		server.reset( new mock_server<>{port} );
 		server->start([this](){ server->read( 1, read_fn ); });
 		ch->on_request_preamble( std::move(submitted_req) );
 		dt.expires_from_now(boost::posix_time::seconds{1});
@@ -309,7 +309,7 @@ TEST_F(client_wrapper_test, request_response)
 			EXPECT_TRUE(d == res_d);
 		};
 
-		server.reset( new mock_server{port} );
+		server.reset( new mock_server<>{port} );
 
 		server->start([this, expected_bytes]()
 		{
