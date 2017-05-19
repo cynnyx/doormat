@@ -13,6 +13,8 @@ namespace server
 {
 template<typename handler_traits>
 class handler_http1;
+
+class connection;
 }
 
 namespace http2 {
@@ -28,7 +30,7 @@ class client_request : public std::enable_shared_from_this<client_request>
 	friend class http2::stream;
 public:
 	using error_callback_t = std::function<void()>;
-
+	using write_callback_t = std::function<void(std::shared_ptr<client_request>)>;
 	enum class state {
 		pending,
 		headers_received,
@@ -46,14 +48,15 @@ public:
 	void end();
 
 	void on_error(error_callback_t ecb);
+	void on_write(write_callback_t wcb);
 
-	state get_state() const noexcept;
 	http_request get_preamble();
+
+private:
+	state get_state() const noexcept;
 	dstring get_body();
 	std::pair<dstring, dstring> get_trailer();
 
-
-private:
 	void error(http::connection_error err)
 	{
 		if(error_callback) (*error_callback)();
@@ -61,22 +64,26 @@ private:
 
 	void cleared()
 	{
-
+		if(write_callback) (*write_callback)(this->shared_from_this());
 	}
 
 	state current;
 	bool ended{false};
+
 	std::experimental::optional<error_callback_t> error_callback;
+	std::experimental::optional<write_callback_t> write_callback;
+
 	std::experimental::optional<http_request> request_headers;
 	dstring content;
+
 	std::queue<std::pair<dstring, dstring>> trailers;
 	std::function<void()> content_notification;
-
 
 	std::function<void(http_request&&)> hcb;
 	std::function<void(dstring&&)> bcb;
 	std::function<void(dstring &&, dstring&&)> tcb;
 	std::function<void()> ccb;
+
 };
 
 }

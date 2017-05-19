@@ -285,8 +285,8 @@ private:
 			}
 			case local_t::state::ended:
 				notify_local_end();
-				loc->cleared();  //with this event we send the wrong message to the user. She will believe we sent the request, but it is not true.
-								//defer invocation of this method in order to make it real.
+				//delaying this is very important; otherwise the client could send another request while the state is wrong.
+				io_service().post([loc](){loc->cleared();});
 				connection_t::cleared();
 				return true;
 			default: assert(0);
@@ -309,18 +309,21 @@ private:
 
 	void notify_local_body(dstring &&b)
 	{
+
 		serialization.append(encoder.encode_body(b));
 		do_write();
 	}
 
 	void notify_local_trailer(dstring &&k, dstring &&v)
 	{
+
 		serialization.append(encoder.encode_trailer(k, v));
 		do_write();
 	}
 
 	void notify_local_end()
 	{
+
 		serialization.append(encoder.encode_eom());
 		do_write();
 	}
