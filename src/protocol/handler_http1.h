@@ -7,10 +7,14 @@
 #include "../utils/log_wrapper.h"
 #include "../http/server/request.h"
 #include "../http/server/response.h"
+#include "../http/client/request.h"
+#include "../http/client/response.h"
+#include "../http/client/client_connection.h"
 #include "../connector.h"
 
-// TODO: this and the specialization should not be here
+// TODO: these and the specialization should not be here
 #include "../http/server/server_traits.h"
+#include "../http/client/client_traits.h"
 
 // TODO: should not be in _server_ namespace
 namespace server
@@ -36,8 +40,7 @@ public:
 		io_service().post([this](){connection_t::timeout(); });
 	}
 
-	handler_http1(http::proto_version version) : version{version}
-    {}
+	handler_http1(http::proto_version version) : version{version} {}
 
 
 	std::pair<std::shared_ptr<remote_t>, std::shared_ptr<local_t>> get_user_handlers() override
@@ -101,7 +104,7 @@ public:
 	{
 		auto current_remote = get_current();
 		if(!current_remote) return;
-		io_service().post([current_remote = ::std::move(current_remote)]() { current_remote->finished(); });
+		io_service().post([current_remote = std::move(current_remote)]() { current_remote->finished(); });
 		remote_objects.pop_front(); //finished, hence we remove the current decoded remote object from the queue.
 	}
 
@@ -109,6 +112,7 @@ public:
 	{
 		auto current_remote = get_current();
 		if(!current_remote) return;
+		if(managing_continue) return;
 		io_service().post([s = current_remote, k = ::std::move(k), v = ::std::move(v)]() mutable
 							{
 								s->trailer(std::move(k), std::move(v));
@@ -130,6 +134,7 @@ public:
 	{
 		auto current_remote = get_current();
 		if(!current_remote) return;
+
 		bool keepalive =
 						(!current_decoded_object.has(http::hf_connection)) ?
 							connection_t::persistent :
@@ -152,6 +157,7 @@ public:
 	void decoding_start(http::http_structured_data **data)
 	{
 		decoding_error = false;
+		managing_continue = false;
 		*data = &current_decoded_object;
 		decoder_begin();
 	}
@@ -359,6 +365,7 @@ private:
 
 	/** List of callbacks to be called when the next write is successful. */
 	std::vector<std::function<void()>> pending_clear_callbacks{};
+	bool managing_continue{false};
 
 };
 
@@ -369,6 +376,48 @@ void handler_http1<http::server_traits>::decoder_begin()
 {
 	auto f = get_user_handlers();
 	user_feedback(std::move(f.first), std::move(f.second));
+}
+
+template<>
+inline
+void handler_http1<http::client_traits>::decoded_headers()
+{
+	auto current_remote = get_current();
+	if(!current_remote) return;
+
+	bool keepalive =
+			(!current_decoded_object.has(http::hf_connection)) ?
+			connection_t::persistent :
+			current_decoded_object.header(http::hf_connection) == http::hv_keepalive;
+
+	current_decoded_object.keepalive(keepalive);
+
+	connection_t::persistent = keepalive;
+	managing_continue = current_decoded_object.status_code() == 100;
+	if(!managing_continue)
+		io_service().post(
+			[s = current_remote, current_decoded_object = ::std::move(current_decoded_object)]() mutable
+			{
+				s->headers(::std::move(current_decoded_object));
+			}
+		);
+	current_decoded_object = {};
+}
+
+
+
+template<>
+inline
+void handler_http1<http::client_traits>::decoding_end()
+{
+	auto current_remote = get_current();
+	if(!current_remote) return;
+	if(managing_continue) return io_service().post([current_remote = std::move(current_remote)]()
+	    {
+			current_remote->response_continue();
+		});
+	io_service().post([current_remote = std::move(current_remote)]() { current_remote->finished(); });
+	remote_objects.pop_front(); //finished, hence we remove the current decoded remote object from the queue.
 }
 
 
