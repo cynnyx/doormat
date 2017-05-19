@@ -288,3 +288,41 @@ TEST(client_connection, multiple_requests_multiple_responses)
 
 	io.run();
 }
+
+
+TEST(client_connection, response_continue)
+{
+	boost::asio::io_service io;
+
+
+	auto tested_object = std::make_shared<client_connection_t>(http::proto_version::HTTP11);
+	//now register a mock connector; than go on.
+
+	std::string body{"ciao"};
+	http::http_request preamble = make_dumb_request();
+	std::string received_data{};
+	std::string expected_request = get_expected(preamble, body);
+
+	MockConnector::wcb write_callback;
+	auto mock = std::make_shared<MockConnector>(io, write_callback);
+	write_callback = [](auto &&d) {};
+	mock->handler(tested_object);
+	auto user_handlers = tested_object->get_user_handlers();
+	auto req = user_handlers.second;
+	auto res = user_handlers.first;
+	req->headers(make_dumb_request());
+	io.post([mock, req](){
+		mock->read("HTTP/1.1 100 Continue\r\n\r\n");
+		req->end();
+	});
+	bool called_continue{false};
+	res->on_response_continue([&called_continue, &tested_object](auto res){
+		called_continue = true;
+		res->get_connection()->close();
+	});
+
+	io.run();
+
+	ASSERT_TRUE(called_continue);
+
+}
