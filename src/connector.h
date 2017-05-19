@@ -37,6 +37,8 @@ public:
 	virtual void close()=0;
     virtual boost::asio::io_service & io_service() = 0;
 	virtual void set_timeout(std::chrono::milliseconds) = 0;
+	virtual void handler(std::shared_ptr<http_handler>) = 0;
+	virtual void start(bool tcp_no_delay = false) = 0;
 protected:
 	reusable_buffer<MAXINBYTESPERLOOP> _rb;
 	dstring _out;
@@ -81,12 +83,6 @@ class connector final: public connector_interface,
 		});
 	}
 
-	void set_timeout(std::chrono::milliseconds ms)
-	{
-		_ttl = boost::posix_time::milliseconds{ms.count()};
-		renew_ttl();
-	}
-
 public:
 
 	void close() override
@@ -116,6 +112,12 @@ public:
 		//LOGTRACE(this," destructor end");
 	}
 
+	void set_timeout(std::chrono::milliseconds ms)
+	{
+		_ttl = boost::posix_time::milliseconds{ms.count()};
+		renew_ttl();
+	}
+
 	boost::asio::ip::address origin() const override
 	{
 		boost::asio::ip::tcp::endpoint ep = _socket->lowest_layer().remote_endpoint();
@@ -127,14 +129,14 @@ public:
 
 	void renew_ttl() { if(_ttl != boost::posix_time::milliseconds{0}) schedule_deadline(_ttl); }
 
-	void handler( std::shared_ptr<http_handler> h )
+	void handler( std::shared_ptr<http_handler> h ) override
 	{
 		_handler = h;
         //todo: make it private;
 		_handler->connector( this->shared_from_this() );
 	}
 
-	void start( bool tcp_no_delay = false )
+	void start( bool tcp_no_delay = false ) override
 	{
 		assert( _handler );
 		_socket->lowest_layer().set_option( boost::asio::ip::tcp::no_delay(tcp_no_delay) );

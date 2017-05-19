@@ -50,7 +50,7 @@ public:
 		current_remote = rem;
 		local_objects.push_back(loc);
 		return std::make_pair(rem, loc);
-	};
+	}
 
 
 	bool start() noexcept override

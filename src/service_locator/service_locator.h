@@ -39,7 +39,7 @@ class socket_factory;
 template<class T>
 class abstract_factory_of_socket_factory;
 
-class communicator_factory;
+class connector_factory;
 }
 
 namespace endpoints
@@ -60,7 +60,7 @@ class locator
 	static std::unique_ptr<stats::stats_manager> _stats_manager;
 	static std::unique_ptr<fs_manager_wrapper> _fsm;
 	static std::unique_ptr<endpoints::chain_factory> chfac;
-    static thread_local std::unique_ptr<network::communicator_factory> _communicator_factory;
+    static thread_local std::unique_ptr<network::connector_factory> _communicator_factory;
 	// Warning - this is not to be used any more, if not as a cache.
 	template<class T = boost::asio::ip::tcp::socket>
 	static thread_local std::unique_ptr<typename network::socket_factory<T>> _socket_pool; 
@@ -101,7 +101,7 @@ public:
 	
 	static endpoints::chain_factory& chain_factory() noexcept;
 
-	static network::communicator_factory& communicator_factory() noexcept;
+	static network::connector_factory& communicator_factory() noexcept;
 
 	template<class T = boost::asio::ip::tcp::socket>
 	static network::abstract_factory_of_socket_factory<T>& socket_pool_factory() noexcept

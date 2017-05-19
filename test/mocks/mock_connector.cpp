@@ -42,6 +42,9 @@ boost::asio::io_service& MockConnector::io_service()
 	return io;
 }
 
+void MockConnector::start(bool)
+{}
+
 void MockConnector::read(std::string request)
 {
 	_handler->on_read(request.data(), request.size());

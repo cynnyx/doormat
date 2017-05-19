@@ -18,7 +18,7 @@ std::unique_ptr<logging::access_log> locator::_access_log;
 thread_local std::unique_ptr<logging::inspector_log> locator::_inspector_log;
 std::unique_ptr<stats::stats_manager> locator::_stats_manager;
 std::unique_ptr<endpoints::chain_factory> locator::chfac;
-thread_local std::unique_ptr<network::communicator_factory> locator::_communicator_factory;
+thread_local std::unique_ptr<network::connector_factory> locator::_communicator_factory;
 
 endpoints::chain_factory& locator::chain_factory() noexcept
 {
@@ -57,7 +57,7 @@ stats::stats_manager& locator::stats_manager() noexcept
 }
 
 
-network::communicator_factory& locator::communicator_factory() noexcept
+network::connector_factory& locator::communicator_factory() noexcept
 {
 	assert(_communicator_factory);
 	return *_communicator_factory;

@@ -1,3 +1,6 @@
+#include "src/http/client/request.h"
+#include "src/http/client/response.h"
+#include "src/http/client/client_connection.h"
 #include "../src/requests_manager/client_wrapper.h"
 #include "common.h"
 #include "mock_server/mock_server.h"
@@ -81,40 +84,40 @@ protected:
 	}
 };
 
-TEST_F(client_wrapper_test, preamble_only)
-{
-	//test case to validate that client_wrapper does not corrupt the data.
-	http::http_request submitted_req;
-	submitted_req.protocol(http::proto_version::HTTP11);
-	submitted_req.method("GET");
-	submitted_req.hostname(host);
-	submitted_req.path(path);
-	submitted_req.keepalive(false);
-	submitted_req.setParameter("hostname", "::");
-	submitted_req.setParameter("port", std::to_string(port));
+//TEST_F(client_wrapper_test, preamble_only)
+//{
+//	//test case to validate that client_wrapper does not corrupt the data.
+//	http::http_request submitted_req;
+//	submitted_req.protocol(http::proto_version::HTTP11);
+//	submitted_req.method("GET");
+//	submitted_req.hostname(host);
+//	submitted_req.path(path);
+//	submitted_req.keepalive(false);
+//	submitted_req.setParameter("hostname", "::");
+//	submitted_req.setParameter("port", std::to_string(port));
 
-	auto d1 = submitted_req.serialize();
-	const auto expected_bytes = d1.size();
+//	auto d1 = submitted_req.serialize();
+//	const auto expected_bytes = d1.size();
 
-	auto init_fn = [this, submitted_req, expected_bytes](boost::asio::io_service& ios) mutable
-	{
-		preset::init_thread_local();
-		ch = make_unique_chain<node_interface, first_node, nodes::client_wrapper, blocked_node>();
-		stop_condition = [this](){ return true; };
-		server.reset( new mock_server{port} );
-		server->start([this, expected_bytes](){ server->read( expected_bytes, read_fn ); });
-		ch->on_request_preamble( std::move(submitted_req) );
+//	auto init_fn = [this, submitted_req, expected_bytes](boost::asio::io_service& ios) mutable
+//	{
+//		preset::init_thread_local();
+//		ch = make_unique_chain<node_interface, first_node, nodes::client_wrapper, blocked_node>();
+//		stop_condition = [this](){ return true; };
+//		server.reset( new mock_server{port} );
+//		server->start([this, expected_bytes](){ server->read( expected_bytes, read_fn ); });
+//		ch->on_request_preamble( std::move(submitted_req) );
 
-	};
+//	};
 
-	service::locator::service_pool().run(init_fn);
+//	service::locator::service_pool().run(init_fn);
 
-	auto d2 = received_request.serialize();
-	EXPECT_EQ(std::string(d1), std::string(d2));
-	EXPECT_TRUE(received_request.path() == path);
-	EXPECT_TRUE(received_request.urihost() == host);
-	EXPECT_TRUE(received_request.hostname() == host);
-}
+//	auto d2 = received_request.serialize();
+//	EXPECT_EQ(std::string(d1), std::string(d2));
+//	EXPECT_TRUE(received_request.path() == path);
+//	EXPECT_TRUE(received_request.urihost() == host);
+//	EXPECT_TRUE(received_request.hostname() == host);
+//}
 
 TEST_F(client_wrapper_test, custom_destination_fail)
 {
@@ -150,119 +153,119 @@ TEST_F(client_wrapper_test, custom_destination_fail)
 	EXPECT_NO_THROW(service::locator::service_pool().run(init_fn));
 }
 
-TEST_F(client_wrapper_test, custom_destination_ok)
-{
-	//test case to validate that client_wrapper does not corrupt the data.
-	http::http_request submitted_req;
-	submitted_req.protocol(http::proto_version::HTTP11);
-	submitted_req.method("GET");
-	submitted_req.hostname(host);
-	submitted_req.path(path);
-	submitted_req.keepalive(false);
-	submitted_req.header(http::hf_cyn_dest, "127.0.0.1");
-	submitted_req.header(http::hf_cyn_dest_port, "8454");
-	submitted_req.setParameter("hostname", "::");
-	submitted_req.setParameter("port", std::to_string(port));
-	auto d1 = submitted_req.serialize();
-	const auto expected_bytes = d1.size();
-	auto init_fn = [this, submitted_req, expected_bytes](boost::asio::io_service& ios) mutable
-	{
-	preset::init_thread_local();
-		ch = make_unique_chain<node_interface, first_node, nodes::client_wrapper, blocked_node>();
-		stop_condition = [this](){ return true; };
-		server.reset( new mock_server{port} );
-		server->start([this, expected_bytes](){ server->read( expected_bytes, read_fn ); });
-		ch->on_request_preamble( std::move(submitted_req) );
-	};
-	service::locator::service_pool().run(init_fn);
+//TEST_F(client_wrapper_test, custom_destination_ok)
+//{
+//	//test case to validate that client_wrapper does not corrupt the data.
+//	http::http_request submitted_req;
+//	submitted_req.protocol(http::proto_version::HTTP11);
+//	submitted_req.method("GET");
+//	submitted_req.hostname(host);
+//	submitted_req.path(path);
+//	submitted_req.keepalive(false);
+//	submitted_req.header(http::hf_cyn_dest, "127.0.0.1");
+//	submitted_req.header(http::hf_cyn_dest_port, "8454");
+//	submitted_req.setParameter("hostname", "::");
+//	submitted_req.setParameter("port", std::to_string(port));
+//	auto d1 = submitted_req.serialize();
+//	const auto expected_bytes = d1.size();
+//	auto init_fn = [this, submitted_req, expected_bytes](boost::asio::io_service& ios) mutable
+//	{
+//	preset::init_thread_local();
+//		ch = make_unique_chain<node_interface, first_node, nodes::client_wrapper, blocked_node>();
+//		stop_condition = [this](){ return true; };
+//		server.reset( new mock_server{port} );
+//		server->start([this, expected_bytes](){ server->read( expected_bytes, read_fn ); });
+//		ch->on_request_preamble( std::move(submitted_req) );
+//	};
+//	service::locator::service_pool().run(init_fn);
 
-	auto d2 = received_request.serialize();
-	EXPECT_EQ(std::string(d1), std::string(d2));
-	EXPECT_TRUE(received_request.path() == path);
-	EXPECT_TRUE(received_request.urihost() == host);
-	EXPECT_TRUE(received_request.hostname() == host);
-}
+//	auto d2 = received_request.serialize();
+//	EXPECT_EQ(std::string(d1), std::string(d2));
+//	EXPECT_TRUE(received_request.path() == path);
+//	EXPECT_TRUE(received_request.urihost() == host);
+//	EXPECT_TRUE(received_request.hostname() == host);
+//}
 
-TEST_F(client_wrapper_test, complete_request)
-{
-	http::http_request submitted_req;
-	submitted_req.protocol(http::proto_version::HTTP11);
-	submitted_req.method("PUT");
-	submitted_req.hostname(host);
-	submitted_req.path(path);
-	submitted_req.keepalive(false);
-	submitted_req.content_len(body.size());
-	submitted_req.setParameter("hostname", "::");
-	submitted_req.setParameter("port", std::to_string(port));
+//TEST_F(client_wrapper_test, complete_request)
+//{
+//	http::http_request submitted_req;
+//	submitted_req.protocol(http::proto_version::HTTP11);
+//	submitted_req.method("PUT");
+//	submitted_req.hostname(host);
+//	submitted_req.path(path);
+//	submitted_req.keepalive(false);
+//	submitted_req.content_len(body.size());
+//	submitted_req.setParameter("hostname", "::");
+//	submitted_req.setParameter("port", std::to_string(port));
 
-	auto d1 = submitted_req.serialize();
-	const auto expected_bytes = d1.size() + body.size();
+//	auto d1 = submitted_req.serialize();
+//	const auto expected_bytes = d1.size() + body.size();
 
-	dstring body_chunk{body.c_str()};
-	auto init_fn = [this, submitted_req, body_chunk, expected_bytes](boost::asio::io_service& ios) mutable
-	{
-		preset::init_thread_local();
-		ch = make_unique_chain<node_interface, first_node, nodes::client_wrapper, blocked_node>();
-		stop_condition = [](){ return true; };
+//	dstring body_chunk{body.c_str()};
+//	auto init_fn = [this, submitted_req, body_chunk, expected_bytes](boost::asio::io_service& ios) mutable
+//	{
+//		preset::init_thread_local();
+//		ch = make_unique_chain<node_interface, first_node, nodes::client_wrapper, blocked_node>();
+//		stop_condition = [](){ return true; };
 
-		server.reset( new mock_server{port} );
-		server->start([this, expected_bytes](){server->read(expected_bytes, read_fn );});
+//		server.reset( new mock_server{port} );
+//		server->start([this, expected_bytes](){server->read(expected_bytes, read_fn );});
 
-		ch->on_request_preamble(std::move(submitted_req));
-		ch->on_request_body(std::move(body_chunk));
-	};
+//		ch->on_request_preamble(std::move(submitted_req));
+//		ch->on_request_body(std::move(body_chunk));
+//	};
 
-	service::locator::service_pool().run(init_fn);
+//	service::locator::service_pool().run(init_fn);
 
-	auto d2 = received_request.serialize();
+//	auto d2 = received_request.serialize();
 
-	EXPECT_EQ(std::string(d1), std::string(d2));
-	EXPECT_TRUE(received_request.path() == path);
-	EXPECT_TRUE(received_request.urihost() == host);
-	EXPECT_TRUE(received_request.hostname() == host);
-	EXPECT_TRUE(received_request_body == body);
-}
+//	EXPECT_EQ(std::string(d1), std::string(d2));
+//	EXPECT_TRUE(received_request.path() == path);
+//	EXPECT_TRUE(received_request.urihost() == host);
+//	EXPECT_TRUE(received_request.hostname() == host);
+//	EXPECT_TRUE(received_request_body == body);
+//}
 
-TEST_F(client_wrapper_test, no_response)
-{
+//TEST_F(client_wrapper_test, no_response)
+//{
 
-	http::http_request submitted_req;
-	submitted_req.protocol(http::proto_version::HTTP11);
-	submitted_req.method("GET");
-	submitted_req.hostname(host);
-	submitted_req.path(path);
-	submitted_req.keepalive(false);
-	submitted_req.setParameter("hostname", "::");
-	submitted_req.setParameter("port", std::to_string(port));
+//	http::http_request submitted_req;
+//	submitted_req.protocol(http::proto_version::HTTP11);
+//	submitted_req.method("GET");
+//	submitted_req.hostname(host);
+//	submitted_req.path(path);
+//	submitted_req.keepalive(false);
+//	submitted_req.setParameter("hostname", "::");
+//	submitted_req.setParameter("port", std::to_string(port));
 
-	auto init_fn = [this, submitted_req](boost::asio::io_service& ios) mutable
-	{
-		preset::init_thread_local();
-		ch = make_unique_chain<node_interface, first_node, nodes::client_wrapper, blocked_node>();
-		stop_condition = [this](){
-			return server->is_stopped();
-		};
+//	auto init_fn = [this, submitted_req](boost::asio::io_service& ios) mutable
+//	{
+//		preset::init_thread_local();
+//		ch = make_unique_chain<node_interface, first_node, nodes::client_wrapper, blocked_node>();
+//		stop_condition = [this](){
+//			return server->is_stopped();
+//		};
 
-		thread_local_evaluator = [this]()
-		{
-			EXPECT_TRUE( first_node::err == INTERNAL_ERROR(errors::http_error_code::internal_server_error) ) << first_node::err.code();
-		};
+//		thread_local_evaluator = [this]()
+//		{
+//			EXPECT_TRUE( first_node::err == INTERNAL_ERROR(errors::http_error_code::internal_server_error) ) << first_node::err.code();
+//		};
 
-		server.reset( new mock_server{port} );
+//		server.reset( new mock_server{port} );
 
-		server->start([this]()
-		{
-			server->read(1, read_fn );
-			//service::locator::socket_pool().stop();
-			service::locator::service_pool().allow_graceful_termination();
-		});
+//		server->start([this]()
+//		{
+//			server->read(1, read_fn );
+//			//service::locator::socket_pool().stop();
+//			service::locator::service_pool().allow_graceful_termination();
+//		});
 
-		ch->on_request_preamble(std::move(submitted_req));
-		ch->on_request_finished();
-	};
+//		ch->on_request_preamble(std::move(submitted_req));
+//		ch->on_request_finished();
+//	};
 
-	service::locator::service_pool().run(init_fn);
-}
+//	service::locator::service_pool().run(init_fn);
+//}
 
 TEST_F(client_wrapper_test, request_response)
 {
@@ -329,92 +332,92 @@ TEST_F(client_wrapper_test, request_response)
 	EXPECT_TRUE(received_request_body == body);
 }
 
-TEST_F(client_wrapper_test, client_hangs)
-{
-	//test if it indeed client_wrapper kills itself in case it hangs.
-	http::http_request submitted_req;
-	submitted_req.protocol(http::proto_version::HTTP11);
-	submitted_req.method("GET");
-	submitted_req.hostname(host);
-	submitted_req.path(path);
-	submitted_req.keepalive(false);
-	submitted_req.setParameter("hostname", "::");
-	submitted_req.setParameter("port", std::to_string(port));
+//TEST_F(client_wrapper_test, client_hangs)
+//{
+//	//test if it indeed client_wrapper kills itself in case it hangs.
+//	http::http_request submitted_req;
+//	submitted_req.protocol(http::proto_version::HTTP11);
+//	submitted_req.method("GET");
+//	submitted_req.hostname(host);
+//	submitted_req.path(path);
+//	submitted_req.keepalive(false);
+//	submitted_req.setParameter("hostname", "::");
+//	submitted_req.setParameter("port", std::to_string(port));
 
-	auto init_fn = [this, submitted_req](boost::asio::io_service& ios) mutable
-	{
-		preset::init_thread_local();
-		ch = make_unique_chain<node_interface, first_node, nodes::client_wrapper, blocked_node>();
-		stop_condition = [this](){ return server->is_stopped(); };
+//	auto init_fn = [this, submitted_req](boost::asio::io_service& ios) mutable
+//	{
+//		preset::init_thread_local();
+//		ch = make_unique_chain<node_interface, first_node, nodes::client_wrapper, blocked_node>();
+//		stop_condition = [this](){ return server->is_stopped(); };
 
-		thread_local_evaluator = [this]()
-		{
-			EXPECT_TRUE(first_node::err == INTERNAL_ERROR(errors::http_error_code::internal_server_error));
-		};
+//		thread_local_evaluator = [this]()
+//		{
+//			EXPECT_TRUE(first_node::err == INTERNAL_ERROR(errors::http_error_code::internal_server_error));
+//		};
 
-		server.reset( new mock_server{port} );
-		server->start([this](){ server->read( 1, read_fn ); });
+//		server.reset( new mock_server{port} );
+//		server->start([this](){ server->read( 1, read_fn ); });
 
-		ch->on_request_preamble( std::move(submitted_req) );
-	};
+//		ch->on_request_preamble( std::move(submitted_req) );
+//	};
 
-	service::locator::service_pool().run(init_fn);
-	EXPECT_GT(stream.size(), 0U);
-}
+//	service::locator::service_pool().run(init_fn);
+//	EXPECT_GT(stream.size(), 0U);
+//}
 
-TEST_F(client_wrapper_test, server_hangs)
-{
-	http::http_request submitted_req;
-	submitted_req.protocol(http::proto_version::HTTP11);
-	submitted_req.method("PUT");
-	submitted_req.hostname(host);
-	submitted_req.path(path);
-	submitted_req.keepalive(false);
-	submitted_req.content_len(body.size());
-	submitted_req.setParameter("hostname", "::");
-	submitted_req.setParameter("port", std::to_string(port));
+//TEST_F(client_wrapper_test, server_hangs)
+//{
+//	http::http_request submitted_req;
+//	submitted_req.protocol(http::proto_version::HTTP11);
+//	submitted_req.method("PUT");
+//	submitted_req.hostname(host);
+//	submitted_req.path(path);
+//	submitted_req.keepalive(false);
+//	submitted_req.content_len(body.size());
+//	submitted_req.setParameter("hostname", "::");
+//	submitted_req.setParameter("port", std::to_string(port));
 
-	auto req_d = submitted_req.serialize();
+//	auto req_d = submitted_req.serialize();
 
-	http::http_response submitted_res;
-	submitted_res.protocol(http::proto_version::HTTP11);
-	submitted_res.status(204);
-	submitted_req.keepalive(false);
+//	http::http_response submitted_res;
+//	submitted_res.protocol(http::proto_version::HTTP11);
+//	submitted_res.status(204);
+//	submitted_req.keepalive(false);
 
-	auto res_d = submitted_res.serialize();
+//	auto res_d = submitted_res.serialize();
 
-	dstring body_chunk{body.c_str()};
-	auto init_fn = [this, submitted_req, body_chunk, &res_d](boost::asio::io_service& ios) mutable
-	{
-		preset::init_thread_local();
-		ch = make_unique_chain<node_interface, first_node, nodes::client_wrapper, blocked_node>();
+//	dstring body_chunk{body.c_str()};
+//	auto init_fn = [this, submitted_req, body_chunk, &res_d](boost::asio::io_service& ios) mutable
+//	{
+//		preset::init_thread_local();
+//		ch = make_unique_chain<node_interface, first_node, nodes::client_wrapper, blocked_node>();
 
-		stop_condition = [this](){return server->is_stopped();};
+//		stop_condition = [this](){return server->is_stopped();};
 
-		thread_local_evaluator = [this]()
-		{
-			EXPECT_TRUE(first_node::err == INTERNAL_ERROR(errors::http_error_code::internal_server_error));
-		};
+//		thread_local_evaluator = [this]()
+//		{
+//			EXPECT_TRUE(first_node::err == INTERNAL_ERROR(errors::http_error_code::internal_server_error));
+//		};
 
-		first_node::res_start_fn = [this, &res_d]()
-		{
-			server->write(res_d.substr(0, res_d.size()/2));
-		};
+//		first_node::res_start_fn = [this, &res_d]()
+//		{
+//			server->write(res_d.substr(0, res_d.size()/2));
+//		};
 
-		server.reset( new mock_server{port} );
-		server->start([this]()
-		{
-			server->read(1, read_fn );
-			//service::locator::socket_pool().stop();
-		});
+//		server.reset( new mock_server{port} );
+//		server->start([this]()
+//		{
+//			server->read(1, read_fn );
+//			//service::locator::socket_pool().stop();
+//		});
 
-		ch->on_request_preamble(std::move(submitted_req));
-		ch->on_request_body(std::move(body_chunk));
-		ch->on_request_finished();
-	};
+//		ch->on_request_preamble(std::move(submitted_req));
+//		ch->on_request_body(std::move(body_chunk));
+//		ch->on_request_finished();
+//	};
 
-	service::locator::service_pool().run(init_fn);
-	EXPECT_GT(stream.size(), 0U);
-}
+//	service::locator::service_pool().run(init_fn);
+//	EXPECT_GT(stream.size(), 0U);
+//}
 
 }

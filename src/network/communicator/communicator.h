@@ -124,7 +124,6 @@ public:
 		std::swap(error_callback, c.error_callback);
 		std::swap(errcode, c.errcode);
 		std::swap(_rb, c._rb);
-		std::swap(timeout_ms, c.timeout_ms);
 		return *this;
 	}
 

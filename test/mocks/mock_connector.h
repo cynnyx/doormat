@@ -17,9 +17,10 @@ struct MockConnector : server::connector_interface, std::enable_shared_from_this
     bool is_ssl() const noexcept override;
     void close() override;
     boost::asio::io_service &io_service() override;
-    void set_timeout(std::chrono::milliseconds) override;
+	void set_timeout(std::chrono::milliseconds) override;
+	void handler(std::shared_ptr<server::http_handler>) override;
+	void start(bool) override;
 	void read(std::string request);
-	void handler(std::shared_ptr<server::http_handler> h);
 
     boost::asio::io_service &io;
     wcb& write_cb;

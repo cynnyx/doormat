@@ -18,10 +18,9 @@
 
 #include "dummy_node.h"
 // #include "client/client_wrapper.h"
-#include "requests_manager/client_wrapper.h"
+//#include "requests_manager/client_wrapper.h"
 
 #include "../deps/cynnypp/include/cynnypp/async_fs.hpp"
-#include "network/communicator/dns_communicator_factory.h"
 #include "http/server/request.h"
 #include "http/server/response.h"
 #include "http/server/server_connection.h"
@@ -29,13 +28,13 @@
 namespace doormat
 {
 
-namespace
-{
-static std::unique_ptr<node_interface> node_factory()
-{
-	return make_unique_chain<node_interface, /*dummy_node,*/ tls_test_node, nodes::client_wrapper>();
-}
-}
+//namespace
+//{
+//static std::unique_ptr<node_interface> node_factory()
+//{
+//	return make_unique_chain<node_interface, /*dummy_node,*/ tls_test_node, nodes::client_wrapper>();
+//}
+//}
 
 std::unique_ptr<server::http_server> doormat_srv;
 

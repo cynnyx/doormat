@@ -26,7 +26,7 @@ struct dns_factory_test: public ::testing::Test
 TEST_F(dns_factory_test, connect_http)
 {
     mock_server m;
-    network::dns_communicator_factory f;
+    network::dns_connector_factory f;
 	auto address = "localhost";
 	auto port = 8454;
 	auto tls = false;
@@ -45,7 +45,7 @@ TEST_F(dns_factory_test, connect_http)
 
 TEST_F(dns_factory_test, fail_connect)
 {
-	network::dns_communicator_factory f;
+	network::dns_connector_factory f;
 	auto address = "localhost";
 	auto port = 8454;
 	auto tls = false;

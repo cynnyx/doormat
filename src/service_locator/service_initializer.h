@@ -100,7 +100,7 @@ public:
 			locator::template _socket_pool_factory<T>.reset( afosf );
 	}
 
-	static void set_communicator_factory(network::communicator_factory *f) {
+	static void set_communicator_factory(network::connector_factory *f) {
 		locator::_communicator_factory.reset(f);
 	}
 };
