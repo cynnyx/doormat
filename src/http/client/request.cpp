@@ -40,10 +40,11 @@ void client_request::trailer(dstring &&k, dstring&& v) { tcb(std::move(k), std::
 void client_request::end() { ccb(); }
 
 void client_request::on_error(error_callback_t ecb) { error_callback.emplace(std::move(ecb)); }
-
+void client_request::on_write(write_callback_t wcb) { write_callback.emplace(std::move(wcb)); }
 client_request::state client_request::get_state() const noexcept
 {
-	if(bool(request_headers)) {
+	if(bool(request_headers))
+	{
 		return state::headers_received;
 	}
 	if(content.size()) return state::body_received;

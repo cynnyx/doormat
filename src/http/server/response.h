@@ -28,7 +28,7 @@ class response : public std::enable_shared_from_this<response>
 	friend class http2::stream;
 public:
 	using error_callback_t = std::function<void()>;
-	using write_callback_t = std::function<void()>;
+	using write_callback_t = std::function<void(std::shared_ptr<response>)>;
 
 	enum class state {
 		pending,
@@ -66,7 +66,7 @@ private:
 
 	void cleared()
 	{
-		if(write_callback) (*write_callback)();
+		if(write_callback) (*write_callback)(this->shared_from_this());
 		myself = nullptr;
 	}
 
