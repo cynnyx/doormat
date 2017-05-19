@@ -71,87 +71,89 @@ public:
 	bool start() noexcept override
 	{
 		connection_t::init();
-		auto scb = [this](http::http_structured_data** data)
-		{
-			decoding_error = false;
-			*data = &current_decoded_object;
-			decoder_begin();
-		};
-
-		auto hcb = [this]()
-		{
-			auto current_remote = get_current();
-			if(!current_remote) return;
-			bool keepalive =
-						(!current_decoded_object.has(http::hf_connection)) ?
-							connection_t::persistent :
-							current_decoded_object.header(http::hf_connection) == http::hv_keepalive;
-
-			current_decoded_object.keepalive(keepalive);
-
-			connection_t::persistent = keepalive;
-
-			io_service().post(
-					[s = current_remote, current_decoded_object = std::move(current_decoded_object)]() mutable
-					{
-						s->headers(std::move(current_decoded_object));
-					}
-			);
-
-			current_decoded_object = {};
-
-		};
-
-		auto bcb = [this](dstring&& b)
-		{
-
-			auto current_remote = get_current();
-			if(!current_remote) return;
-
-			io_service().post([s = current_remote, b = std::move(b)]() mutable
-			                  {
-				                  s->body(std::move(b));
-			                  });
-
-		};
-
-		auto tcb = [this](dstring&& k, dstring&& v)
-		{
-
-			auto current_remote = get_current();
-			if(!current_remote) return;
-			io_service().post([s = current_remote, k = std::move(k), v = std::move(v)]() mutable
-							{
-								s->trailer(std::move(k), std::move(v));
-							});
-
-		};
-
-		auto ccb = [this]()
-		{
-			auto current_remote = get_current();
-			if(!current_remote) return;
-			io_service().post([current_remote = std::move(current_remote)]() { current_remote->finished(); });
-			remote_objects.pop_front(); //finished, hence we remove the current decoded remote object from the queue.
-		};
-
-		auto ecb = [this](int error,bool&)
-		{
-			//failure always gets called after start...
-			auto current_remote = get_current();
-			if(!current_remote) return;
-
-			io_service().post([s = std::move(current_remote)]() { s->error(http::error_code::decoding); }); //fix
-			remote_objects.pop_front();
-			if(auto s = local_objects.back().lock())
-			{
-				io_service().post([s]() { s->error(http::error_code::decoding); });
-			}
-			local_objects.pop_front();
-		};
+		auto scb = [this](http::http_structured_data** data) { decoding_start(data); };
+		auto hcb = [this]()	{ decoded_headers(); };
+		auto bcb = [this](dstring&& b) { decoded_body(std::move(b)); };
+		auto tcb = [this](dstring&& k, dstring&& v) { decoded_trailer(std::move(k), std::move(v));};
+		auto ccb = [this]() {decoding_end(); };
+		auto ecb = [this](int error,bool&) {decoding_failure();};
 
 		decoder.register_callback(std::move(scb), std::move(hcb), std::move(bcb), std::move(tcb), std::move(ccb), std::move(ecb));
 		return true;
+	}
+
+	void decoding_failure()
+	{
+		//failure always gets called after start...
+		auto current_remote = get_current();
+		if(!current_remote) return;
+
+		io_service().post([s = std::move(current_remote)]() { s->error(http::error_code::decoding); }); //fix
+		remote_objects.pop_front();
+		if(auto s = local_objects.back().lock())
+			{
+				io_service().post([s]() { s->error(http::error_code::decoding); });
+			}
+		local_objects.pop_front();
+	}
+
+	void decoding_end()
+	{
+		auto current_remote = get_current();
+		if(!current_remote) return;
+		io_service().post([current_remote = ::std::move(current_remote)]() { current_remote->finished(); });
+		remote_objects.pop_front(); //finished, hence we remove the current decoded remote object from the queue.
+	}
+
+	void decoded_trailer(dstring &&k, dstring &&v)
+	{
+		auto current_remote = get_current();
+		if(!current_remote) return;
+		io_service().post([s = current_remote, k = ::std::move(k), v = ::std::move(v)]() mutable
+							{
+								s->trailer(std::move(k), std::move(v));
+							});
+	}
+
+	void decoded_body(dstring &&b)
+	{
+		auto current_remote = get_current();
+		if(!current_remote) return;
+
+		io_service().post([s = current_remote, b = ::std::move(b)]() mutable
+			                  {
+				                  s->body(std::move(b));
+			                  });
+	}
+
+	void decoded_headers()
+	{
+		auto current_remote = get_current();
+		if(!current_remote) return;
+		bool keepalive =
+						(!current_decoded_object.has(http::hf_connection)) ?
+							connection_t::persistent :
+						current_decoded_object.header(http::hf_connection) == http::hv_keepalive;
+
+		current_decoded_object.keepalive(keepalive);
+
+		connection_t::persistent = keepalive;
+
+		io_service().post(
+				[s = current_remote, current_decoded_object = ::std::move(current_decoded_object)]() mutable
+					{
+						s->headers(::std::move(current_decoded_object));
+					}
+			);
+
+		current_decoded_object = {};
+	}
+
+	void decoding_start(http::http_structured_data **data)
+	{
+		decoding_error = false;
+		*data = &current_decoded_object;
+		decoder_begin();
 	}
 
 	bool should_stop() const noexcept override
@@ -233,7 +235,7 @@ private:
 		connection_t::error(err);
 		//should notify everybody in the connection of the error!
 		connection_t::deinit();
-		pending_clear_callbacks.clear(); 
+		pending_clear_callbacks.clear();
 	}
 
 	/** Method used by responses to notify availability of new content*/
