@@ -61,6 +61,7 @@ private:
     void error(http::connection_error err)
     {
         if(error_callback) (*error_callback)();
+	    myself = nullptr;
     }
 
 	void cleared()

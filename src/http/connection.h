@@ -6,6 +6,7 @@
 #include <experimental/optional>
 #include <chrono>
 #include <memory>
+#include <iostream>
 
 #include "connection_error.h"
 

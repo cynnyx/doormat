@@ -65,9 +65,7 @@ private:
 	void trailer(dstring&&, dstring&&);
 	void finished();
 
-	bool ended() { return myself == nullptr; }
-
-	void init(){ myself = this->shared_from_this();}
+	bool ended() { return response_ended; }
 
 	/* User registered events */
 	std::experimental::optional<headers_callback_t> headers_callback;
@@ -78,11 +76,12 @@ private:
 
 	std::shared_ptr<client_connection> connection_keepalive;
 	/** Ptr-to-self: to grant the user that, until finished() or error() event is propagated, the client_response will be alive*/
-	std::shared_ptr<client_response> myself;
 
 	http::connection_error conn_error{http::error_code::success};
 
 	http::http_response _preamble;
+
+	bool response_ended{false};
 
 };
 
