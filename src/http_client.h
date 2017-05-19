@@ -3,13 +3,19 @@
 
 #include <functional>
 #include <memory>
+#include <utility>
 
 #include "http/http_commons.h"
 #include "http/client/client_traits.h"
-#include "protocol/handler_http1.h"
 
 namespace http {
 class client_connection;
+}
+namespace server
+{
+template<typename>
+class handler_http1;
+class connector_interface;
 }
 
 // TODO: hmm... namespace client sucks... both client and server should be inside the http namespace
@@ -17,6 +23,20 @@ class client_connection;
 namespace client
 {
 
+namespace detail
+{
+struct handler_factory
+{
+	using connect_callback_t = std::function<void(std::shared_ptr<http::client_connection>)>;
+
+	handler_factory(http::proto_version v, connect_callback_t cb) noexcept;
+	void operator()(std::shared_ptr<server::connector_interface>);
+private:
+	http::proto_version v_;
+	connect_callback_t cb_;
+};
+
+}
 
 template<typename connector_factory_t>
 class http_client
@@ -24,25 +44,18 @@ class http_client
 	connector_factory_t connector_factory_;
 
 public:
-	using connect_callback = std::function<void(std::shared_ptr<http::client_connection>)>;
-	using error_callback = std::function<void(int)>; // TODO: int? come on... :D
+	using connect_callback_t = detail::handler_factory::connect_callback_t;
+	using error_callback_t = std::function<void(int)>; // TODO: int? come on... :D
 
 	template<typename... Args>
 	http_client(Args&&... args)
 		: connector_factory_{std::forward<Args>(args)...}
 	{}
 
-	template<typename... Args>
-	void connect(connect_callback ccb, error_callback ecb, bool tls, Args&&... args)
+	template<typename... connector_args_t>
+	void connect(connect_callback_t ccb, error_callback_t ecb, http::proto_version v, bool tls, connector_args_t&&... args)
 	{
-		connector_factory_(std::forward<Args>(args)..., tls, [ccb](auto connector_ptr)
-		{
-			auto h = std::make_shared<server::handler_http1<http::client_traits>>(http::proto_version::HTTP11); // TODO: it's only http1 for now
-			h->connector(connector_ptr);
-			connector_ptr->handler(h);
-			connector_ptr->start(true);
-			ccb(std::move(h));
-		},
+		connector_factory_(std::forward<connector_args_t>(args)..., tls, detail::handler_factory(v, std::move(ccb)),
 		[ecb](const auto& error)
 		{
 			ecb(error);
