@@ -25,7 +25,6 @@ struct HandlerTest: public ::testing::Test
 {
 	MockConnector::wcb cb;
 	std::shared_ptr<MockConnector> conn;
-	std::string response;
 	boost::asio::io_service io;
 
 protected:
@@ -42,65 +41,7 @@ protected:
 }
 
 
-TEST_F(HandlerTest, http1_persistent)
-{
 
-	std::string req =
-		"GET / HTTP/1.1\r\n"
-		"host:localhost:1443\r\n"
-		"date: Tue, 17 May 2016 14:53:09 GMT\r\n"
-		"\r\n";
-
-	auto h1 = std::make_shared<server::handler_http1<http::server_traits>>(http::proto_version::HTTP11);
-	conn->handler(h1);
-
-	std::shared_ptr<http::server_connection> user_connection = h1;
-
-    user_connection->set_persistent(true);
-
-    user_connection->on_request([&](auto conn, auto req, auto res){
-        req->on_finished([res](auto req){
-            http::http_response r;
-            r.protocol(http::proto_version::HTTP11);
-            std::string body{"Ave client, dummy node says hello"};
-            r.status(200);
-            r.keepalive(true);
-            r.header("content-type", "text/plain");
-            r.header("date", "Tue, 17 May 2016 14:53:09 GMT");
-            r.content_len(body.size());
-            res->headers(std::move(r));
-            res->body(dstring{body.c_str(), body.size()});
-            res->end();
-        });
-    });
-
-
-	// list of chunks that I expect to receive inside the on_write()
-	std::string expected_response = "HTTP/1.1 200 OK\r\n"
-		"connection: keep-alive\r\n"
-		"content-length: 33\r\n"
-		"content-type: text/plain\r\n"
-		"date: Tue, 17 May 2016 14:53:09 GMT\r\n"
-		"\r\n"
-		"Ave client, dummy node says hello";
-	bool terminated{false};
-    cb = [this, &expected_response, &terminated, &h1](dstring chunk)
-	{
-		response.append(chunk);
-		if(response == expected_response)
-		{
-			conn = nullptr;
-			ASSERT_FALSE(h1->should_stop());
-			terminated = true;
-		}
-	};
-
-	conn->read(req);
-	conn->io_service().run();
-	ASSERT_TRUE(terminated);
-	ASSERT_TRUE(response.find("connection: keep-alive\r\n") != std::string::npos);
-
-}
 
 /*
 TEST_F(HandlerTest, http1_non_persistent)

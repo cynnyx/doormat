@@ -5,25 +5,27 @@
 #include <gtest/gtest.h>
 #include <gmock/gmock.h>
 
+
 using namespace http;
 
 
 class server_connection_test : public ::testing::Test {
 public:
 	virtual void SetUp() {
-		write_cb_ = [](dstring chunk) {};
-		mock_connector = std::make_shared<MockConnector>(io, write_cb_);
+		_write_cb = [](dstring chunk) {};
+		mock_connector = std::make_shared<MockConnector>(io, _write_cb);
 		_handler = std::make_shared<server::handler_http1<http::server_traits>>(http::proto_version::HTTP11);
 		mock_connector->handler(_handler);
+		response = "";q
 	}
 
-	virtual void TearDown()
-	{}
+	virtual void TearDown() {}
 
 	boost::asio::io_service io;
-	MockConnector::wcb write_cb_;
+	MockConnector::wcb _write_cb;
 	std::shared_ptr<MockConnector> mock_connector;
 	std::shared_ptr<server::handler_http1<http::server_traits>> _handler;
+	std::string response;
 };
 
 
@@ -113,7 +115,7 @@ TEST_F(server_connection_test, on_connector_nulled) {
 TEST_F(server_connection_test, response_continue) {
 	std::string accumulator{};
 	bool rcvd{false};
-	write_cb_ = [&accumulator, &rcvd](dstring chunk) {
+	_write_cb = [&accumulator, &rcvd](dstring chunk) {
 		accumulator += std::string(chunk);
 		if (accumulator == "HTTP/1.1 100 Continue\r\ncontent-length: 0\r\n\r\n") {
 			rcvd = true;
@@ -138,3 +140,49 @@ TEST_F(server_connection_test, response_continue) {
 }
 
 
+TEST_F(server_connection_test, http1_persistent) {
+	_handler->on_request([&](auto conn, auto req, auto res) {
+		req->on_finished([res](auto req) {
+			http::http_response r;
+			r.protocol(http::proto_version::HTTP11);
+			std::string body{"Ave client, dummy node says hello"};
+			r.status(200);
+			r.keepalive(true);
+			r.header("content-type", "text/plain");
+			r.header("date", "Tue, 17 May 2016 14:53:09 GMT");
+			r.content_len(body.size());
+			res->headers(std::move(r));
+			res->body(dstring{body.c_str(), body.size()});
+			res->end();
+		});
+	});
+
+	// list of chunks that I expect to receive inside the on_write()
+	std::string expected_response = "HTTP/1.1 200 OK\r\n"
+			"connection: keep-alive\r\n"
+			"content-length: 33\r\n"
+			"content-type: text/plain\r\n"
+			"date: Tue, 17 May 2016 14:53:09 GMT\r\n"
+			"\r\n"
+			"Ave client, dummy node says hello";
+
+	bool terminated{false};
+	_write_cb = [this, &expected_response, &terminated](dstring chunk) {
+		response.append(chunk);
+		if (response == expected_response) {
+			mock_connector = nullptr;
+			ASSERT_FALSE(_handler->should_stop());
+			terminated = true;
+		}
+	};
+
+	mock_connector->io_service().post([this]() {
+		mock_connector->read("GET / HTTP/1.1\r\n"
+				                     "host:localhost:1443\r\n"
+				                     "date: Tue, 17 May 2016 14:53:09 GMT\r\n"
+				                     "\r\n");
+	});
+	mock_connector->io_service().run();
+	ASSERT_TRUE(terminated);
+	ASSERT_TRUE(response.find("connection: keep-alive\r\n") != std::string::npos);
+}
