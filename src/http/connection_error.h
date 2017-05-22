@@ -8,7 +8,9 @@ enum class error_code : int
 	decoding = 1,
     closed_by_client = 2,
 	invalid_read = 3,
-	connection_closed = 4
+	connection_closed = 4,
+	missing_response = 5,
+
 };
 
 

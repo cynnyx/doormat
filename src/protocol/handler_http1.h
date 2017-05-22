@@ -268,7 +268,10 @@ private:
 				else break;
 			} else
 			{
-				local_objects.pop_front();
+				http::connection_error err{http::error_code::missing_response};
+				connection_t::error(err);
+				notify_all(http::error_code::missing_response);
+				connection_t::deinit();
 			}
 		}
 	}
@@ -301,7 +304,6 @@ private:
 			case local_t::state::ended:
 				pending_clear_callbacks.push_back([loc](){ loc->cleared(); });
 				notify_local_end();
-				//delaying this is very important; otherwise the client could send another request while the state is wrong.
 				connection_t::cleared();
 				return true;
 			default: assert(0);
