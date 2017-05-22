@@ -141,7 +141,7 @@ void access_recorder::request( const http::http_request& r )
 		.append(space);
 
 	auto&& _schema = r.schema();
-	if(_schema)
+	if(_schema.is_valid())
 		line.append(_schema)
 			.append(colon)
 			.append(slash)
@@ -152,24 +152,24 @@ void access_recorder::request( const http::http_request& r )
 	//	chunks.push_back(_userinfo);
 
 	auto _host = r.urihost();
-	if(_host)
+	if(_host.is_valid())
 		line.append( _host);
 
 	auto _port = r.port();
-	if(_port)
+	if(_port.is_valid())
 		line.append( colon ).append( _port );
 
 	auto _path = r.path();
-	if(_path)
+	if(_path.is_valid())
 		line.append( _path);
 
 	auto _query = r.query();
-	if(_query)
+	if(_query.is_valid())
 		line.append( questionmark )
 			.append( _query );
 
 	auto _fragment = r.fragment();
-	if(_fragment)
+	if(_fragment.is_valid())
 		line.append( hash )
 			.append( _fragment );
 

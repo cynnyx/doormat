@@ -345,7 +345,7 @@ TEST(client_connection, pipeline)
 	int rcvd_rqs = 0;
 	write_callback = [&](dstring d)
 	{
-		if(!d) return;
+		if(!d.is_valid()) return;
 		rcvd += std::string(d);
 		if (rcvd == first_req_serialization)
 		{
