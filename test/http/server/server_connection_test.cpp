@@ -16,7 +16,7 @@ public:
 		mock_connector = std::make_shared<MockConnector>(io, _write_cb);
 		_handler = std::make_shared<server::handler_http1<http::server_traits>>(http::proto_version::HTTP11);
 		mock_connector->handler(_handler);
-		response = "";q
+		response = "";
 	}
 
 	virtual void TearDown() {}
