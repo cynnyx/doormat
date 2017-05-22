@@ -21,7 +21,7 @@ public:
 
 	/** Register callbacks*/
 	void on_request_sent(request_sent_callback rscb) { request_cb.emplace(std::move(rscb)); }
-	handlers_t create_request() // TODO: poor naming...
+	handlers_t create_transaction()
 	{
 		auto p = get_user_handlers();
 		return std::make_pair(std::move(p.second), std::move(p.first));

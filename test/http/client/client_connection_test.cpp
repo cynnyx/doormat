@@ -226,25 +226,25 @@ TEST(client_connection, multiple_requests_multiple_responses)
 		FAIL() << "there was an unexpected error, with code " << int(error.errc()) << std::endl;
 	});
 	req->on_write([&](auto req){
-		ASSERT_EQ(finished_requests, 0);
+		ASSERT_EQ(finished_requests, 0U);
 		++finished_requests;
 		auto second_request_handlers = tested_object->get_user_handlers();
 		auto second_request = second_request_handlers.second;
 		auto second_response = second_request_handlers.first;
 
 		second_request->on_write([&](auto second_request){
-			ASSERT_EQ(finished_requests, 1);
+			ASSERT_EQ(finished_requests, 1U);
 			++finished_requests;
 		});
 
 		second_response->on_headers([&received_second_response, &received_responses](auto response) mutable {
-			ASSERT_EQ(received_responses, 3);
+			ASSERT_EQ(received_responses, 3U);
 			++received_responses;
 			received_second_response = std::string(response->preamble().serialize());
 		});
 
 		second_response->on_body([&received_second_response, &received_responses](auto response, auto body, auto body_size) mutable {
-			ASSERT_EQ(received_responses, 4);
+			ASSERT_EQ(received_responses, 4U);
 			//this might be wrong in reality, as we don't know how many body events will be emitted. However it works just fine in reality
 			++received_responses;
 			received_second_response += std::string{body.get(), body_size};
@@ -252,7 +252,7 @@ TEST(client_connection, multiple_requests_multiple_responses)
 
 
 		second_response->on_finished([&received_second_response, expected_second_response, &received_responses, &w](auto response) mutable {
-			ASSERT_EQ(received_responses, 5);
+			ASSERT_EQ(received_responses, 5U);
 			++received_responses;
 			ASSERT_EQ(received_second_response, expected_second_response);
 			response->get_connection()->close();
@@ -265,19 +265,19 @@ TEST(client_connection, multiple_requests_multiple_responses)
 	});
 
 	res->on_headers([&](auto res){
-		ASSERT_EQ(received_responses, 0);
+		ASSERT_EQ(received_responses, 0U);
 		++received_responses;
 		received_first_response += std::string(res->preamble().serialize());
 	});
 
 	res->on_body([&](auto res, auto body, auto body_size){
-		ASSERT_EQ(received_responses, 1);
+		ASSERT_EQ(received_responses, 1U);
 		++received_responses;
 		received_first_response += std::string{body.get(), body_size};
 	});
 
 	res->on_finished([&](auto res){
-		ASSERT_EQ(received_responses, 2);
+		ASSERT_EQ(received_responses, 2U);
 		++received_responses;
 		ASSERT_EQ(received_first_response, expected_first_response);
 

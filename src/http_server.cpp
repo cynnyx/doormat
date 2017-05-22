@@ -48,10 +48,18 @@ void http_server::start(boost::asio::io_service &io) noexcept
 
     if(_ssl)
     {
-        _ssl_ctx = &(sni.begin()->context);
-        for(auto&& iter = sni.begin(); iter != sni.end(); ++iter)
-            _handlers.register_protocol_selection_callbacks(iter->context.native_handle());
-        listen(io, true);
+		if ( sni.size() != 0 )
+		{
+			_ssl_ctx = &(sni.begin()->context);
+			for(auto&& iter = sni.begin(); iter != sni.end(); ++iter)
+				_handlers.register_protocol_selection_callbacks(iter->context.native_handle());
+			listen(io, true);
+		}
+		else
+		{
+			LOGERROR("Forgotten certificates!");
+			_ssl = false;
+		}
     }
 
     listen(io);
