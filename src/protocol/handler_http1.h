@@ -236,8 +236,9 @@ private:
 	/** Requires a write if a connector is still available. */
 	void do_write() override
 	{
-		if(connector())
-			connector()->do_write();
+		auto c = connector();
+		if(c)
+			c->do_write();
 	}
 
 	/** Reaction to connection close*/

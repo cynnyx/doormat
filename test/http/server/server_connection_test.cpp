@@ -170,7 +170,7 @@ TEST_F(server_connection_test, http1_persistent) {
 	_write_cb = [this, &expected_response, &terminated](dstring chunk) {
 		response.append(chunk);
 		if (response == expected_response) {
-			mock_connector = nullptr;
+//			mock_connector = nullptr;
 			ASSERT_FALSE(_handler->should_stop());
 			terminated = true;
 		}
