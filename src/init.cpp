@@ -210,7 +210,7 @@ int doormat( int argc, char** argv )
 	boost::asio::io_service io;
 	//Main loop
     log_wrapper::init(false, "error", "/tmp/doormat_log.txt");
-    doormat_srv.reset(new server::http_server{1000, 0, 8888});
+    doormat_srv.reset(new server::http_server{1000, 1443, 8888});
 	//doormat_srv->load_certificate("./etc/doormat/certificates/npn/newcert.pem", "./etc/doormat/certificates/npn/newkey.pem", "./etc/doormat/certificates/npn/keypass");
 	doormat_srv->on_client_connect([&io](auto conn){
 		std::cout << "new connection!" << std::endl;
