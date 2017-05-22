@@ -14,8 +14,7 @@ set(DOORMAT_TESTCASES_SOURCES
 	dstring_factory_test.cpp
 	dstring_test.cpp
 	error_test.cpp
-	handler_test.cpp
-	header_conf_test.cpp
+        header_conf_test.cpp
 	inspector_serializer_test.cpp
 	ipv4matcher_test.cpp
 	log_test.cpp
