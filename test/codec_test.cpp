@@ -72,14 +72,14 @@ void test_decoding(T& msg, dstring in)
 
 	auto bcb = [&out](dstring&& c)
 	{
-		ASSERT_TRUE(c);
+		ASSERT_TRUE(c.is_valid());
 		out.append(codec.encode_body(c));
 	};
 
 	auto tcb = [&out](dstring&& k, dstring&& v)
 	{
-		ASSERT_TRUE(k);
-		ASSERT_TRUE(v);
+		ASSERT_TRUE(k.is_valid());
+		ASSERT_TRUE(v.is_valid());
 		out.append(codec.encode_trailer(k,v));
 	};
 
@@ -120,13 +120,13 @@ void test_request_encoding(http_request *in_, const dstring& in_data)
 	auto hcb = [](){};
 	auto bcb = [&out](dstring&& c)
 	{
-		ASSERT_TRUE(c);
+		ASSERT_TRUE(c.is_valid());
 		out.append(c);
 	};
 	auto tcb = [&out_msg](dstring&& k, dstring&& v)
 	{
-		ASSERT_TRUE(k);
-		ASSERT_TRUE(v);
+		ASSERT_TRUE(k.is_valid());
+		ASSERT_TRUE(v.is_valid());
 		out_msg.header(k,v);
 	};
 	auto ccb = [](){};
@@ -167,13 +167,13 @@ void test_response_encoding(http_response *in_, const dstring& in_data)
 	auto hcb = [](){};
 	auto bcb = [&out](dstring&& c)
 	{
-		ASSERT_TRUE(c);
+		ASSERT_TRUE(c.is_valid());
 		out.append(c);
 	};
 	auto tcb = [&out_msg](dstring&& k, dstring&& v)
 	{
-		ASSERT_TRUE(k);
-		ASSERT_TRUE(v);
+		ASSERT_TRUE(k.is_valid());
+		ASSERT_TRUE(v.is_valid());
 		out_msg.header(k,v);
 	};
 	auto ccb = [](){};

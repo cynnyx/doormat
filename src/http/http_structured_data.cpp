@@ -206,7 +206,7 @@ dstring http_structured_data::serialize() const noexcept
 		}
 
 		//FIXME: exclude invalid chunks from being serialized
-		if(h.second)
+		if(h.second.is_valid())
 			msg.append(h.second);
 		not_first=true;
 	}

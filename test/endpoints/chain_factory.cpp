@@ -64,7 +64,8 @@ TEST(chain_factory, get_with_hosts) {
 
 	http::http_request dummy_request2{};
 	dummy_request2.method(http_method::HTTP_GET);
-	dummy_request2.hostname(dstring{host} + "z");
+	auto hn = std::string{host} + "z";
+	dummy_request2.hostname(dstring{hn.data(), hn.size()});
 	dummy_request2.path(path);
 	auto chain2 = cf->get_chain(dummy_request2);
 	EXPECT_FALSE(chain2);

@@ -6,6 +6,7 @@
 #include <type_traits>
 #include <cctype>
 #include <cstring>
+#include <ostream>
 
 class dstring
 {
@@ -52,7 +53,6 @@ class dstring
 			_flags &= ~flags::immutable;
 	}
 
-	bool is_valid() const noexcept { return _flags&flags::valid; }
 	bool is_ci() const noexcept { return _flags&flags::cinsensitive; }
 	bool is_immutable() const noexcept { return _flags&flags::immutable; }
 public:
@@ -91,13 +91,9 @@ public:
 	bool operator==(const std::string&) const noexcept;
 	bool operator==(const char*) const noexcept;
 
-	/**
-	 * @warning What operator will be called?
-	 * If you write std::string{ ... } a bool, so use ( ) or static_cast
-	 */
-	operator bool() const noexcept { return is_valid(); }
 	operator std::string() const noexcept;
 
+	bool is_valid() const noexcept { return _flags&flags::valid; }
 	const char* cdata() const noexcept { return _data; }
 
 	const char& front() const noexcept;
@@ -162,3 +158,9 @@ public:
 	dstring substr(const_iterator b , const_iterator e, std::function<char(char)> fn = nullptr) const noexcept;
 	dstring substr(size_t pos, size_t count = npos, std::function<char(char)> fn = nullptr) const noexcept;
 };
+
+inline std::ostream& operator<<(std::ostream& os, dstring s)
+{
+	os << s.cdata();
+	return os;
+}
