@@ -46,7 +46,7 @@ client_wrapper::~client_wrapper()
 
 void client_wrapper::perform_request(http::http_request&& preamble)
 {
-	auto p = connection->create_request();
+	auto p = connection->create_transaction();
 	this->local_request = std::move(p.first);
 	this->local_request->headers(std::move(preamble));
 	this->local_request->body(std::move(tmp_body));
