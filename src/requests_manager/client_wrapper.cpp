@@ -118,7 +118,7 @@ void client_wrapper::on_request_preamble(http::http_request&& preamble)
 		LOGTRACE("client_wrapper ",this," connect error cb triggered");
 		errcode = INTERNAL_ERROR_LONG(errors::http_error_code::internal_server_error);
 		this->stop();
-	}, proto_v, tls, address, static_cast<uint16_t>(port));
+	}, proto_v, address, static_cast<uint16_t>(port), tls);
 }
 
 void client_wrapper::on_request_body(dstring&& chunk)
