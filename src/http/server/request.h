@@ -25,10 +25,10 @@ namespace http {
  *  to the request.
  * */
 class server_connection;
+struct server_traits;
 
 class request : public std::enable_shared_from_this<request> {
-	template<typename>
-	friend class server::handler_http1;
+	friend class server::handler_http1<server_traits>;
 	friend class http2::stream;
 public:
 	request(std::shared_ptr<server_connection>);

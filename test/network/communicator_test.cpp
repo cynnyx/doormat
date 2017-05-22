@@ -8,7 +8,7 @@ using namespace test_utils;
 
 struct communicator_test : public ::testing::Test
 {
-	mock_server server;
+	mock_server<> server;
 	std::function<void(boost::asio::io_service &service)> init_function;
 	std::unique_ptr<network::communicator> c{nullptr};
 	int count = 0; //should be 4

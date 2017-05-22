@@ -31,10 +31,11 @@ set(DOORMAT_TESTCASES_SOURCES
 	endpoints/tree_test.cpp
 	endpoints/chain_factory.cpp
 	network/dns_factory_test.cpp
-	#nodes/client_wrapper_test.cpp
-        http/server/server_connection_test.cpp
-		http/client/client_connection_test.cpp
-	)
+	nodes/client_wrapper_test.cpp
+	http/server/server_connection_test.cpp
+	http/client/client_connection_test.cpp
+	http_client_test.cpp
+)
 
 add_executable(${DOORMAT_TEST_EXECUTABLE} ${DOORMAT_TESTCASES_SOURCES})
 
@@ -50,7 +51,7 @@ target_include_directories(
 	PRIVATE ${CITYHASH_INCLUDE_DIRS}
 	PRIVATE ${ZLIB_INCLUDE_DIRS}
 	PRIVATE ${SPDLOG_INCLUDE_DIR}
-        PRIVATE ${PROJECT_SOURCE_DIR}
+	PRIVATE ${PROJECT_SOURCE_DIR}
 )
 
 target_link_libraries(
