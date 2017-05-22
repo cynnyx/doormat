@@ -377,6 +377,49 @@ void handler_http1<http::server_traits>::decoder_begin()
 	auto f = get_user_handlers();
 	user_feedback(std::move(f.first), std::move(f.second));
 }
+template<>
+inline
+bool handler_http1<http::server_traits>::poll_local(std::shared_ptr<http::server_traits::local_t> loc)
+{
+	auto state = loc->get_state();
+	while(state != local_t::state::pending)
+	{
+		switch(state) {
+			case local_t::state::headers_received:
+				notify_local_headers(loc->get_preamble());
+				break;
+			case local_t::state::body_received:
+				notify_local_body(loc->get_body());
+				break;
+			case local_t::state::trailer_received:
+			{
+				auto trailer = loc->get_trailer();
+				notify_local_trailer(std::move(trailer.first), std::move(trailer.second));
+				break;
+			}
+			case local_t::state::ended:
+				pending_clear_callbacks.push_back([loc](){ loc->cleared(); });
+				notify_local_end();
+				//delaying this is very important; otherwise the client could send another request while the state is wrong.
+				connection_t::cleared();
+				return true;
+			case local_t::state::send_continue:
+			{
+				http::http_response r;
+				r.protocol(http::proto_version::HTTP11); //todo: make protocol parametric; fix everything.
+				r.status(100);
+				serialization.append(encoder.encode_header(r));
+				serialization.append(encoder.encode_eom());
+				do_write();
+				return false;
+			}
+			default: assert(0);
+
+		}
+		state = loc->get_state();
+	}
+	return false;
+}
 
 template<>
 inline

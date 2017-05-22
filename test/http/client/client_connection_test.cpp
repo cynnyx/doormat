@@ -324,5 +324,94 @@ TEST(client_connection, response_continue)
 	io.run();
 
 	ASSERT_TRUE(called_continue);
+}
 
+TEST(client_connection, pipeline)
+{
+	boost::asio::io_service io;
+	auto tested_object = std::make_shared<client_connection_t>(http::proto_version::HTTP11);
+	auto r1 = make_dumb_request();
+	auto r2 = make_dumb_request();
+	r1.header("request-id", "1");
+	r2.header("request-id", "2");
+
+	auto first_req_serialization = std::string(r1.serialize());
+	auto second_req_serialization = std::string(r2.serialize());
+
+	std::string rcvd{};
+	MockConnector::wcb write_callback;
+	auto mock = std::make_shared<MockConnector>(io, write_callback);
+	mock->handler(tested_object);
+	int rcvd_rqs = 0;
+	write_callback = [&](dstring d)
+	{
+		if(!d) return;
+		rcvd += std::string(d);
+		if (rcvd == first_req_serialization)
+		{
+			ASSERT_EQ(rcvd_rqs, 0);
+			++rcvd_rqs;
+			rcvd = {};
+		}
+		if(rcvd == second_req_serialization)
+		{
+			ASSERT_EQ(rcvd_rqs, 1);
+			++rcvd_rqs;
+			rcvd = {};
+		}
+
+		if(rcvd_rqs == 2)
+		{
+			std::string first_response = "HTTP/1.1 200 OK\r\n"
+					"connection: keep-alive\r\n"
+					"content-length: 33\r\n"
+					"content-type: text/plain\r\n"
+					"request-id: 1\r\n"
+					"date: Tue, 17 May 2016 14:53:09 GMT\r\n"
+					"\r\n"
+					"Ave client, dummy node says hell!";
+			std::string second_response = "HTTP/1.1 200 OK\r\n"
+					"connection: keep-alive\r\n"
+					"content-length: 33\r\n"
+					"content-type: text/plain\r\n"
+					"request-id: 2\r\n"
+					"date: Tue, 17 May 2016 14:53:09 GMT\r\n"
+					"\r\n"
+					"Ave client, dummy node says hell!";
+			mock->read(first_response);
+			mock->read(second_response); 
+		}
+	};
+
+	auto r1_handlers = tested_object->get_user_handlers();
+	auto r2_handlers = tested_object->get_user_handlers();
+	auto &req1 = r1_handlers.second;
+	auto &res1 = r1_handlers.first;
+	auto &req2 = r2_handlers.second;
+	auto &res2 = r2_handlers.first;
+
+	int response_cb_count{0};
+	res1->on_headers([&response_cb_count](auto res1){
+		ASSERT_EQ(response_cb_count, 0);
+		ASSERT_TRUE(res1->preamble().has("request-id"));
+		ASSERT_EQ(std::string(res1->preamble().header("request-id")), "1");
+		++response_cb_count;
+	});
+
+	res2->on_headers([&response_cb_count](auto res2){
+		ASSERT_EQ(response_cb_count, 1);
+		ASSERT_TRUE(res2->preamble().has("request-id"));
+		ASSERT_EQ(std::string(res2->preamble().header("request-id")), "2");
+		++response_cb_count;
+	});
+
+	req1->headers(std::move(r1));
+	req1->end();
+	req2->headers(std::move(r2));
+	req2->end();
+
+	io.run();
+
+	ASSERT_EQ(response_cb_count, 2);
+	ASSERT_EQ(rcvd_rqs, 2);
 }

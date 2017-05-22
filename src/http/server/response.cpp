@@ -26,6 +26,8 @@ response::response(std::function<void()> content_notification)
 		ended = true;
 		content_notification();
 	};
+
+	notify_continue = content_notification;
 }
 
 response::response(std::function<void(http_response&&)> hcb, std::function<void(dstring &&)> bcb, std::function<void(dstring &&, dstring &&)> tcb,
@@ -50,8 +52,13 @@ enum class state {
 	ended
 } current = state::pending;
 
-response::state response::get_state() const noexcept
+response::state response::get_state() noexcept
 {
+	if(continue_required)
+	{
+		continue_required = false;
+		return state::send_continue;
+	}
 	if(bool(response_headers)) {
 		return state::headers_received;
 	}

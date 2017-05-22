@@ -14,7 +14,7 @@ set(DOORMAT_TESTCASES_SOURCES
 	dstring_factory_test.cpp
 	dstring_test.cpp
 	error_test.cpp
-	#handler_test.cpp
+	handler_test.cpp
 	header_conf_test.cpp
 	inspector_serializer_test.cpp
 	ipv4matcher_test.cpp
@@ -51,7 +51,7 @@ target_include_directories(
 	PRIVATE ${CITYHASH_INCLUDE_DIRS}
 	PRIVATE ${ZLIB_INCLUDE_DIRS}
 	PRIVATE ${SPDLOG_INCLUDE_DIR}
-        PRIVATE ${PROJECT_SOURCE_DIR}
+	PRIVATE ${PROJECT_SOURCE_DIR}
 )
 
 target_link_libraries(

@@ -31,6 +31,7 @@ public:
 	using write_callback_t = std::function<void(std::shared_ptr<response>)>;
 
 	enum class state {
+		send_continue,
 		pending,
 		headers_received,
 		body_received,
@@ -45,11 +46,11 @@ public:
 	void body(dstring &&d);
 	void trailer(dstring &&k, dstring&& v);
 	void end();
-
+	void send_continue() { continue_required = true; notify_continue();  }
 	void on_error(error_callback_t ecb);
 	void on_write(write_callback_t wcb);
 
-	state get_state() const noexcept;
+	state get_state() noexcept;
 	http_response get_preamble();
 	dstring get_body();
 	std::pair<dstring, dstring> get_trailer();
@@ -72,6 +73,7 @@ private:
 
 	state current;
 	bool ended{false};
+	bool continue_required{false};
 	std::experimental::optional<error_callback_t> error_callback;
 	std::experimental::optional<write_callback_t> write_callback;
 	std::experimental::optional<http_response> response_headers;
@@ -84,6 +86,7 @@ private:
 	std::function<void(dstring&&)> bcb;
 	std::function<void(dstring &&, dstring&&)> tcb;
 	std::function<void()> ccb;
+	std::function<void()> notify_continue;
 
 };
 

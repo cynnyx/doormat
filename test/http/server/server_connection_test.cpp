@@ -105,3 +105,34 @@ TEST(server_connection, on_connector_nulled) {
 }
 
 
+TEST(server_connection, response_continue) {
+	boost::asio::io_service io;
+
+	std::string accumulator{};
+	bool rcvd{false};
+	MockConnector::wcb cb = [&accumulator, &rcvd](dstring chunk){
+		accumulator += std::string(chunk);
+		if(accumulator == "HTTP/1.1 100 Continue\r\ncontent-length: 0\r\n\r\n") {
+			rcvd = true;
+		}
+	};
+	auto handler_test = std::make_shared<server::handler_http1<http::server_traits>>(http::proto_version::HTTP11);
+	auto connector = std::make_shared<MockConnector>(io, cb);
+	connector->handler(handler_test);
+
+	handler_test->on_request([](auto conn, auto req, auto resp) {
+		req->on_headers([resp](auto req){
+			resp->send_continue();
+		});
+
+	});
+
+	connector->io_service().post([connector](){ connector->read("GET / HTTP/1.1\r\n"
+			                                                            "host:localhost:1443\r\n"
+			                                                            "date: Tue, 17 May 2016 14:53:09 GMT\r\n"
+			                                                            "\r\n"); });
+	connector->io_service().run();
+	ASSERT_TRUE(rcvd);
+}
+
+
