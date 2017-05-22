@@ -6,29 +6,93 @@
 
 using namespace  boost::asio::ip;
 
-void mock_server::start(std::function<void()> on_start_function, bool once)
+template<>
+std::unique_ptr<boost::asio::ip::tcp::socket> mock_server<false>::make_socket(boost::asio::io_service& io)
+{
+	return std::make_unique<socket_t>(io);
+}
+
+template<>
+std::unique_ptr<boost::asio::ssl::stream<boost::asio::ip::tcp::socket>> mock_server<true>::make_socket(boost::asio::io_service& io)
+{
+	return std::make_unique<socket_t>(io, ctx);
+}
+
+template<bool ssl>
+mock_server<ssl>::mock_server(uint16_t listening_port) :
+	listening_port{listening_port},
+	stopped{false},
+	ctx{boost::asio::ssl::context::tlsv12}
+{
+	if(ssl)
+	{
+		ctx.set_options(
+					boost::asio::ssl::context::default_workarounds
+					| boost::asio::ssl::context::verify_none);
+		ctx.set_password_callback([](auto&&, auto&&) -> std::string
+		{
+			return "pippo123";
+		});
+		ctx.use_certificate_chain_file("../resources/certificates/npn/newcert.pem");
+		ctx.use_private_key_file("../resources/certificates/npn/newkey.pem", boost::asio::ssl::context::pem);
+	}
+}
+
+template<>
+void mock_server<false>::start(std::function<void()> on_start_function, bool once)
 {
 	auto&& ios = service::locator::service_pool().get_thread_io_service();
 	auto endpoint = tcp::endpoint{address::from_string("::"), listening_port};
 
-	acceptor.reset( new tcp::acceptor{ios, endpoint} );
-	socket.reset( new tcp::socket{ios} );
-	acceptor->async_accept(*socket, [this, on_start_function, once](const boost::system::error_code &ec)
+	acceptor = std::make_unique<tcp::acceptor>(ios, endpoint);
+	socket = make_socket(ios);
+	acceptor->async_accept(socket->lowest_layer(), [this, on_start_function, once](const boost::system::error_code &ec)
 	{
 		if(once) acceptor->close();
 		if(ec)
 			return;
+
 		stopped = false;
 		on_start_function();
 	});
 }
 
-bool mock_server::is_stopped()
+template<>
+void mock_server<true>::start(std::function<void()> on_start_function, bool once)
+{
+	auto&& ios = service::locator::service_pool().get_thread_io_service();
+	auto endpoint = tcp::endpoint{address::from_string("::"), listening_port};
+
+	acceptor = std::make_unique<tcp::acceptor>(ios, endpoint);
+	socket = make_socket(ios);
+	acceptor->async_accept(socket->lowest_layer(), [this, on_start_function, once](const boost::system::error_code &ec)
+	{
+		if(ec)
+			return;
+
+		auto handshake_cb = [this, once, on_start_function](const boost::system::error_code &ec)
+		{
+			if(once)
+				acceptor->close();
+
+			if (!ec)
+			{
+				stopped = false;
+				on_start_function();
+			}
+		};
+		socket->async_handshake(boost::asio::ssl::stream_base::server, handshake_cb);
+	});
+}
+
+template<bool ssl>
+bool mock_server<ssl>::is_stopped() const noexcept
 {
 	return stopped;
 }
 
-void mock_server::stop()
+template<bool ssl>
+void mock_server<ssl>::stop()
 {
 	if(stopped)
 		return;
@@ -36,7 +100,7 @@ void mock_server::stop()
 
 	if(socket != nullptr)
 	{
-		socket->close();
+		socket->lowest_layer().close();
 		socket.reset();
 	}
 
@@ -50,7 +114,8 @@ void mock_server::stop()
 }
 
 
-void mock_server::read(int amount, read_feedback rf)
+template<bool ssl>
+void mock_server<ssl>::read(int amount, read_feedback rf)
 {
 	if(stopped)
 		return;
@@ -69,7 +134,8 @@ void mock_server::read(int amount, read_feedback rf)
 	);
 }
 
-void mock_server::write(const std::string &what, write_feedback wf)
+template<bool ssl>
+void mock_server<ssl>::write(const std::string &what, write_feedback wf)
 {
 	if(stopped)
 		return;
@@ -85,5 +151,7 @@ void mock_server::write(const std::string &what, write_feedback wf)
 }
 
 
-
+// explicit instatiation
+template class mock_server<false>;
+template class mock_server<true>;
 
