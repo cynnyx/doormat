@@ -14,7 +14,7 @@ set(DOORMAT_TESTCASES_SOURCES
 	dstring_factory_test.cpp
 	dstring_test.cpp
 	error_test.cpp
-	#handler_test.cpp
+	handler_test.cpp
 	header_conf_test.cpp
 	inspector_serializer_test.cpp
 	ipv4matcher_test.cpp
@@ -24,14 +24,14 @@ set(DOORMAT_TESTCASES_SOURCES
 	testcommon.cpp
 	utils_test.cpp
 	mock_server/mock_server.cpp
-        mocks/mock_connector.cpp
+	mocks/mock_connector.cpp
 	network/communicator_test.cpp
 	nodes/common.cpp
 	cloudiapooltest.cpp
 	endpoints/tree_test.cpp
 	endpoints/chain_factory.cpp
 	network/dns_factory_test.cpp
-	nodes/client_wrapper_test.cpp
+	#nodes/client_wrapper_test.cpp
         http/server/server_connection_test.cpp
 		http/client/client_connection_test.cpp
 	)
