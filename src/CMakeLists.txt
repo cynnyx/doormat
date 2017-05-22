@@ -22,7 +22,6 @@ set(DOORMAT_COMMON_SOURCES
 	http/http_response.cpp
 	http/http_request.cpp
 	http_parser/http_parser.c
-	http/peer.cpp
 	http_server.cpp
 	http_client.cpp
 	io_service_pool.cpp
