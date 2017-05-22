@@ -4,7 +4,7 @@
 #include "../utils/utils.h"
 #include "../http/http_structured_data.h"
 #include "../http/http_commons.h"
-#include "../service_locator/service_locator.h"
+// #include "../service_locator/service_locator.h"
 #include "../endpoints/chain_factory.h"
 #include "../chain_of_responsibility/callback_initializer.h"
 #include "../log/log.h"
@@ -288,7 +288,7 @@ void stream::flush() noexcept
 void stream::on_body( dstring&& c )
 {
 	LOGTRACE("stream::on_body");
-	if ( service::locator::inspector_log().active() ) logger.append_response_body( c );
+	//if ( service::locator::inspector_log().active() ) logger.append_response_body( c );
 	logger.add_request_size( c.size() );
 	body.emplace_back( c );
 	flush();
@@ -380,7 +380,7 @@ void stream::on_header(  http::http_response && resp )
 void stream::on_trailer( dstring&& key, dstring&& value )
 {
 	LOGTRACE("stream:", this, " on_trailer");
-	if ( service::locator::inspector_log().active()  ) logger.append_request_trailer( key, value );
+// 	if ( service::locator::inspector_log().active()  ) logger.append_request_trailer( key, value );
 	trailers.emplace( http::http_structured_data::header_t{key, value} );
 }
 
