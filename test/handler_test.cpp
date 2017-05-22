@@ -83,11 +83,6 @@ TEST_F(HandlerTest, http1_persistent)
 		"date: Tue, 17 May 2016 14:53:09 GMT\r\n"
 		"\r\n"
 		"Ave client, dummy node says hello";
-
-	bool simulate_connection_closed = false;
-    boost::asio::deadline_timer t{conn->io_service()};
-	t.expires_from_now(boost::posix_time::seconds(2));
-	t.async_wait([&simulate_connection_closed](const boost::system::error_code &ec){simulate_connection_closed=true;});
 	bool terminated{false};
     cb = [this, &expected_response, &terminated, &h1](dstring chunk)
 	{
