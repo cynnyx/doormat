@@ -196,6 +196,16 @@ public:
 	}
 
 
+	/** Explicit user-requested close*/
+	void close() override
+	{
+		user_close = true;
+		if(auto s = connector()) s->close();
+		notify_all(http::error_code::connection_closed);
+		connection_t::deinit();
+	}
+
+
 	~handler_http1() override = default;
 
 private:
@@ -216,15 +226,6 @@ private:
 		local_objects.clear();
 	}
 
-
-	/** Explicit user-requested close*/
-	void close() override
-	{
-		user_close = true;
-		if(auto s = connector()) s->close();
-		notify_all(http::error_code::connection_closed);
-		connection_t::deinit();
-	}
 
 	/** Handler to the io_service to post deferred callbacks*/
 	boost::asio::io_service& io_service()
