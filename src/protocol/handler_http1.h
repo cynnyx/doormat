@@ -130,20 +130,28 @@ public:
 			                  });
 	}
 
+	void update_persistent()
+	{
+		if(current_decoded_object.protocol_version() == http::proto_version::HTTP10)
+		{
+			connection_t::persistent = connection_t::persistent &&
+					(current_decoded_object.has(http::hf_connection) &&
+					 current_decoded_object.header(http::hf_connection) == http::hv_keepalive);
+		} else
+		{
+			connection_t::persistent = connection_t::persistent &&
+					(!current_decoded_object.has(http::hf_connection) ||
+					 current_decoded_object.header(http::hf_connection) == http::hv_keepalive);
+		}
+
+		current_decoded_object.keepalive(connection_t::persistent);
+	}
+
 	void decoded_headers()
 	{
 		auto current_remote = get_current();
 		if(!current_remote) return;
-
-		bool keepalive =
-						(!current_decoded_object.has(http::hf_connection)) ?
-							connection_t::persistent :
-						current_decoded_object.header(http::hf_connection) == http::hv_keepalive;
-
-		current_decoded_object.keepalive(keepalive);
-
-		connection_t::persistent = keepalive;
-
+		update_persistent();
 		io_service().post(
 				[s = current_remote, current_decoded_object = ::std::move(current_decoded_object)]() mutable
 					{
@@ -427,15 +435,7 @@ void handler_http1<http::client_traits>::decoded_headers()
 {
 	auto current_remote = get_current();
 	if(!current_remote) return;
-
-	bool keepalive =
-			(!current_decoded_object.has(http::hf_connection)) ?
-			connection_t::persistent :
-			current_decoded_object.header(http::hf_connection) == http::hv_keepalive;
-
-	current_decoded_object.keepalive(keepalive);
-
-	connection_t::persistent = keepalive;
+	update_persistent();
 	managing_continue = current_decoded_object.status_code() == 100;
 	if(!managing_continue)
 		io_service().post(
