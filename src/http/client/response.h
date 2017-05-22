@@ -25,10 +25,10 @@ namespace http {
  *  to the client_response.
  * */
 class client_connection;
+struct client_traits;
 
 class client_response : public std::enable_shared_from_this<client_response> {
-	template<typename> // TODO: only the client side handler should be friend
-	friend class server::handler_http1;
+	friend class server::handler_http1<client_traits>;
 	friend class http2::stream;
 public:
 	client_response(std::shared_ptr<client_connection>);
