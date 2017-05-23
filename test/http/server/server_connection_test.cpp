@@ -17,7 +17,7 @@ public:
 	{
 		_write_cb = std::move(write_cb);
 		mock_connector = std::make_shared<MockConnector>(io, _write_cb);
-		_handler = std::make_shared<server_connection_t>(proto_version);
+		_handler = std::make_shared<server_connection_t>();
 		mock_connector->handler(_handler);
 		response = "";
 	}
