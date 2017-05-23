@@ -10,7 +10,7 @@ TEST(dstring_factory, usage)
 	memcpy(dsf.data(),"pippo", 5);
 	auto d = dsf.create_dstring(5);
 
-	EXPECT_TRUE(d);
+	EXPECT_TRUE(d.is_valid());
 	EXPECT_EQ(d.size(),5U);
 	EXPECT_EQ(std::string(d), "pippo");
 }
@@ -21,7 +21,7 @@ TEST(dstring_factory, create_invalid)
 	EXPECT_EQ(dsf.max_size(), 10U);
 
 	auto d = dsf.create_dstring();
-	EXPECT_FALSE(d);
+	EXPECT_FALSE(d.is_valid());
 	EXPECT_FALSE(d.cdata());
 	EXPECT_EQ(d.size(), 0U);
 }
@@ -34,14 +34,14 @@ TEST(dstring_factory, create_twice)
 	memcpy(dsf.data(),"pippo", 5);
 	auto d1 = dsf.create_dstring(5);
 
-	EXPECT_TRUE(d1);
+	EXPECT_TRUE(d1.is_valid());
 	EXPECT_EQ(d1.size(),5U);
 	EXPECT_EQ(std::string(d1), "pippo");
 
 	memcpy(dsf.data(),"pippo", 5);
 	auto d2 = dsf.create_dstring(5);
 
-	EXPECT_TRUE(d2);
+	EXPECT_TRUE(d2.is_valid());
 	EXPECT_EQ(d2.size(),5U);
 	EXPECT_EQ(std::string(d2), "pippo");
 

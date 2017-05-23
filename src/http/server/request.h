@@ -80,8 +80,6 @@ private:
 
 	std::shared_ptr<server_connection> connection_keepalive;
     /** Ptr-to-self: to grant the user that, until finished() or error() event is propagated, the request will be alive*/
-	std::shared_ptr<request> myself{nullptr};
-
     http::connection_error conn_error{http::error_code::success};
 
 	http::http_request _preamble;

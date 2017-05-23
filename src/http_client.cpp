@@ -30,7 +30,7 @@ void handler_factory::operator()(connector_ptr c)
 	}
 	else
 	{
-		auto h = std::make_shared<server::handler_http1<http::client_traits>>(http::proto_version::HTTP11);
+		auto h = std::make_shared<server::handler_http1<http::client_traits>>();
 		h->connector(c);
 		c->handler(h);
 		c->start(true);

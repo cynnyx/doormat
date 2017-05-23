@@ -32,16 +32,14 @@ class http_handler
 protected:
 
 
-	std::shared_ptr<connector_interface> connector() noexcept
+	std::shared_ptr<connector_interface> connector()
 	{
-        if(auto s = _connector.lock()) return s;
-		return nullptr;
+		return _connector.lock();
     }
-    const std::shared_ptr<connector_interface> connector() const noexcept
+	std::shared_ptr<const connector_interface> connector() const
     {
-        if(auto s = _connector.lock()) return s;
-        return nullptr;
-    }
+		return _connector.lock();
+	}
 
 
 public:
@@ -55,7 +53,7 @@ public:
 	virtual bool on_read(const char*, unsigned long) = 0;
 	virtual bool on_write(dstring& chunk) = 0;
 	virtual void trigger_timeout_event() =0;
-	virtual std::vector<std::function<void()>> write_feedbacks(){ return {}; };
+	virtual std::vector<std::function<void()>> write_feedbacks(){ return {}; }
 
 	virtual ~http_handler() = default;
 };

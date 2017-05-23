@@ -17,15 +17,15 @@ dstring http_request::serialize() const noexcept
 	dstring msg;
 	msg.append(method()).append(http::space);
 
-	if(_path)
+	if(_path.is_valid())
 		msg.append(_path);
 	else
 		msg.append(http::slash);
 
-	if(_query)
+	if(_query.is_valid())
 		msg.append(http::questionmark).append(_query);
 
-	if(_fragment)
+	if(_fragment.is_valid())
 		msg.append(http::hash).append(_fragment);
 
 	msg.append(http::space)

@@ -60,7 +60,7 @@ public:
 			conn->start(true);
 			return h;
 		} else {
-			auto h = std::make_shared<handler_http1<http::server_traits>>(proto);
+			auto h = std::make_shared<handler_http1<http::server_traits>>();
 			conn->handler(h);
 			conn->start(true);
 			return h;

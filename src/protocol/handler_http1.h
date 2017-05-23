@@ -40,7 +40,7 @@ public:
 		io_service().post([this](){connection_t::timeout(); });
 	}
 
-	handler_http1(http::proto_version version) : version{version} {}
+	handler_http1() = default;
 
 
 	std::pair<std::shared_ptr<remote_t>, std::shared_ptr<local_t>> get_user_handlers() override
@@ -130,20 +130,28 @@ public:
 			                  });
 	}
 
+	void update_persistent()
+	{
+		if(current_decoded_object.protocol_version() == http::proto_version::HTTP10)
+		{
+			connection_t::persistent = connection_t::persistent &&
+					(current_decoded_object.has(http::hf_connection) &&
+					 current_decoded_object.header(http::hf_connection) == http::hv_keepalive);
+		} else
+		{
+			connection_t::persistent = connection_t::persistent &&
+					(!current_decoded_object.has(http::hf_connection) ||
+					 current_decoded_object.header(http::hf_connection) == http::hv_keepalive);
+		}
+
+		current_decoded_object.keepalive(connection_t::persistent);
+	}
+
 	void decoded_headers()
 	{
 		auto current_remote = get_current();
 		if(!current_remote) return;
-
-		bool keepalive =
-						(!current_decoded_object.has(http::hf_connection)) ?
-							connection_t::persistent :
-						current_decoded_object.header(http::hf_connection) == http::hv_keepalive;
-
-		current_decoded_object.keepalive(keepalive);
-
-		connection_t::persistent = keepalive;
-
+		update_persistent();
 		io_service().post(
 				[s = current_remote, current_decoded_object = ::std::move(current_decoded_object)]() mutable
 					{
@@ -188,6 +196,16 @@ public:
 	}
 
 
+	/** Explicit user-requested close*/
+	void close() override
+	{
+		user_close = true;
+		if(auto s = connector()) s->close();
+		notify_all(http::error_code::connection_closed);
+		connection_t::deinit();
+	}
+
+
 	~handler_http1() override = default;
 
 private:
@@ -209,15 +227,6 @@ private:
 	}
 
 
-	/** Explicit user-requested close*/
-	void close() override
-	{
-		user_close = true;
-		if(auto s = connector()) s->close();
-		notify_all(http::error_code::connection_closed);
-		connection_t::deinit();
-	}
-
 	/** Handler to the io_service to post deferred callbacks*/
 	boost::asio::io_service& io_service()
 	{
@@ -227,8 +236,9 @@ private:
 	/** Requires a write if a connector is still available. */
 	void do_write() override
 	{
-		if(connector())
-			connector()->do_write();
+		auto c = connector();
+		if(c)
+			c->do_write();
 	}
 
 	/** Reaction to connection close*/
@@ -260,7 +270,10 @@ private:
 				else break;
 			} else
 			{
-				local_objects.pop_front();
+				http::connection_error err{http::error_code::missing_response};
+				connection_t::error(err);
+				notify_all(http::error_code::missing_response);
+				connection_t::deinit();
 			}
 		}
 	}
@@ -293,7 +306,6 @@ private:
 			case local_t::state::ended:
 				pending_clear_callbacks.push_back([loc](){ loc->cleared(); });
 				notify_local_end();
-				//delaying this is very important; otherwise the client could send another request while the state is wrong.
 				connection_t::cleared();
 				return true;
 			default: assert(0);
@@ -360,8 +372,6 @@ private:
 	/** User close is set to true when an explicit connection close is required by the user, avoiding sending an error*/
 	bool user_close{false};
 	bool decoding_error{false};
-	/** Current protocol version.*/
-	http::proto_version version{http::proto_version::UNSET};
 
 	/** List of callbacks to be called when the next write is successful. */
 	std::vector<std::function<void()>> pending_clear_callbacks{};
@@ -427,15 +437,7 @@ void handler_http1<http::client_traits>::decoded_headers()
 {
 	auto current_remote = get_current();
 	if(!current_remote) return;
-
-	bool keepalive =
-			(!current_decoded_object.has(http::hf_connection)) ?
-			connection_t::persistent :
-			current_decoded_object.header(http::hf_connection) == http::hv_keepalive;
-
-	current_decoded_object.keepalive(keepalive);
-
-	connection_t::persistent = keepalive;
+	update_persistent();
 	managing_continue = current_decoded_object.status_code() == 100;
 	if(!managing_continue)
 		io_service().post(

@@ -38,7 +38,7 @@ TEST(dstring, sizers)
 TEST(dstring, ctors)
 {
 	dstring d;
-	EXPECT_FALSE(d);
+	EXPECT_FALSE(d.is_valid());
 
 	dstring d0{"ciaone"};
 
@@ -118,11 +118,11 @@ TEST(dstring, converters)
 	size_t int_value;
 
 	dstring d;
-	EXPECT_EQ(bool(d), false);
+	EXPECT_FALSE(d.is_valid());
 	EXPECT_EQ((std::string{d.cdata(), d.size()}), "");
 
 	dstring d1{"Pippo"};
-	EXPECT_EQ(bool(d1), true);
+	EXPECT_TRUE(d1.is_valid());
 	EXPECT_EQ((std::string{d1.cdata(), d1.size()}), "Pippo");
 	EXPECT_EQ(d1.to_integer(int_value), false);
 
@@ -217,7 +217,7 @@ TEST(dstring, empty)
 {
 	dstring dx;
 	std::string boomer = static_cast<std::string>(dx);
-	EXPECT_FALSE(static_cast<bool>( dx ));
+	EXPECT_FALSE(dx.is_valid());
 	EXPECT_TRUE(dx.empty());
 	EXPECT_EQ( boomer, static_cast<std::string>(dx));
 	EXPECT_EQ( static_cast<std::string>(dx), "");

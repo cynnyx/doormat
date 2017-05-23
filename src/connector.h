@@ -227,7 +227,7 @@ public:
 			return;
 		}
 
-		if( !_out && _handler->should_stop() )
+		if( !_out.is_valid() && _handler->should_stop() )
 		{
 			//LOGDEBUG(this," nothing left to write, stopping");
 			stop();
@@ -236,7 +236,7 @@ public:
 
 		renew_ttl();
 
-		if( !_out )
+		if( !_out.is_valid() )
 			return;
 
 		//LOGTRACE(this," triggered a write of ", _out.size(), " bytes");
