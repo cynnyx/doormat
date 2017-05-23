@@ -12,10 +12,9 @@ using server_connection_t = server::handler_http1<http::server_traits>;
 class server_connection_test : public ::testing::Test
 {
 public:
-	void SetUp(http::proto_version proto_version = http::proto_version::UNSET,
-	           MockConnector::wcb write_cb = [](dstring chunk) {})
+	void SetUp()
 	{
-		_write_cb = std::move(write_cb);
+		_write_cb = [](dstring chunk) {};
 		mock_connector = std::make_shared<MockConnector>(io, _write_cb);
 		_handler = std::make_shared<server_connection_t>();
 		mock_connector->handler(_handler);
@@ -32,8 +31,6 @@ public:
 
 TEST_F(server_connection_test, invalid_request)
 {
-	SetUp(http::proto_version::HTTP11);
-
 	bool called{false};
 
 	_handler->on_request([&called](auto conn, auto req, auto resp) {
@@ -56,8 +53,6 @@ TEST_F(server_connection_test, invalid_request)
 
 TEST_F(server_connection_test, valid_request)
 {
-	SetUp(http::proto_version::HTTP11);
-
 	size_t expected_cb_counter{2};
 	size_t cb_counter{0};
 	_handler->on_request([&cb_counter](auto conn, auto req, auto resp) {
@@ -83,8 +78,6 @@ TEST_F(server_connection_test, valid_request)
 
 TEST_F(server_connection_test, on_connector_nulled)
 {
-	SetUp(http::proto_version::HTTP11);
-
 	size_t expected_req_cb_counter{2};
 	size_t expected_error_cb_counter{1};
 
@@ -124,8 +117,6 @@ TEST_F(server_connection_test, on_connector_nulled)
 
 TEST_F(server_connection_test, response_continue)
 {
-	SetUp(http::proto_version::HTTP11);
-
 	std::string accumulator{};
 	bool rcvd{false};
 	_write_cb = [&accumulator, &rcvd](dstring chunk) {
@@ -155,8 +146,6 @@ TEST_F(server_connection_test, response_continue)
 
 TEST_F(server_connection_test, http11_persistent)
 {
-	SetUp(http::proto_version::HTTP11);
-
 	_handler->set_persistent(true);
 	_handler->on_request([&](auto conn, auto req, auto res) {
 		req->on_finished([res](auto req) {
@@ -205,8 +194,6 @@ TEST_F(server_connection_test, http11_persistent)
 
 
 TEST_F(server_connection_test, http11_non_persistent) {
-	SetUp(http::proto_version::HTTP11);
-
 	_handler->set_persistent(false);
 	_handler->on_request([&](auto conn, auto req, auto res) {
 		req->on_finished([res](auto req) {
@@ -257,6 +244,24 @@ TEST_F(server_connection_test, http11_non_persistent) {
 
 
 TEST_F(server_connection_test, http11_pipelining) {
+	_handler->set_persistent(true);
+	_handler->on_request([&](auto conn, auto req, auto res) {
+		req->on_finished([res](auto req) {
+			bool keep_alive = req->preamble().keepalive();
+			http::http_response r;
+			r.protocol(http::proto_version::HTTP11);
+			std::string body{"Ave client, dummy node says hello"};
+			r.status(200);
+			r.keepalive(keep_alive);
+			r.header("content-type", "text/plain");
+			r.header("date", "Tue, 17 May 2016 14:53:09 GMT");
+			r.content_len(body.size());
+			res->headers(std::move(r));
+			res->body(dstring{body.c_str(), body.size()});
+			res->end();
+		});
+	});
+
 	// list of chunks that I expect to receive inside the on_write()
 	std::string expected_response =
 			"HTTP/1.1 200 OK\r\n"
@@ -282,26 +287,6 @@ TEST_F(server_connection_test, http11_pipelining) {
 		}
 	};
 
-	SetUp(http::proto_version::HTTP11, _write_cb);
-
-	_handler->set_persistent(true);
-	_handler->on_request([&](auto conn, auto req, auto res) {
-		req->on_finished([res](auto req) {
-			bool keep_alive = req->preamble().keepalive();
-			http::http_response r;
-			r.protocol(http::proto_version::HTTP11);
-			std::string body{"Ave client, dummy node says hello"};
-			r.status(200);
-			r.keepalive(keep_alive);
-			r.header("content-type", "text/plain");
-			r.header("date", "Tue, 17 May 2016 14:53:09 GMT");
-			r.content_len(body.size());
-			res->headers(std::move(r));
-			res->body(dstring{body.c_str(), body.size()});
-			res->end();
-		});
-	});
-
 	mock_connector->io_service().post([this]() {
 		mock_connector->read("GET / HTTP/1.1\r\n"
 									 "host:localhost:1443\r\n"
@@ -322,25 +307,6 @@ TEST_F(server_connection_test, http11_pipelining) {
 
 
 TEST_F(server_connection_test, http10_persistent) {
-	// list of chunks that I expect to receive inside the on_write()
-	std::string expected_response = "HTTP/1.0 200 OK\r\n"
-			"connection: close\r\n"
-			"content-length: 33\r\n"
-			"content-type: text/plain\r\n"
-			"date: Tue, 17 May 2016 14:53:09 GMT\r\n"
-			"\r\n"
-			"Ave client, dummy node says hello";
-
-	bool terminated{false};
-	_write_cb = [this, &terminated, &expected_response](dstring chunk) {
-		response.append(chunk);
-		if (response == expected_response) {
-			terminated = true;
-		}
-	};
-
-	SetUp(http::proto_version::HTTP10, _write_cb);
-
 	_handler->set_persistent(false);
 	_handler->on_request([&](auto conn, auto req, auto res) {
 		req->on_finished([res](auto req) {
@@ -357,6 +323,23 @@ TEST_F(server_connection_test, http10_persistent) {
 			res->end();
 		});
 	});
+
+	// list of chunks that I expect to receive inside the on_write()
+	std::string expected_response = "HTTP/1.0 200 OK\r\n"
+			"connection: close\r\n"
+			"content-length: 33\r\n"
+			"content-type: text/plain\r\n"
+			"date: Tue, 17 May 2016 14:53:09 GMT\r\n"
+			"\r\n"
+			"Ave client, dummy node says hello";
+
+	bool terminated{false};
+	_write_cb = [this, &terminated, &expected_response](dstring chunk) {
+		response.append(chunk);
+		if (response == expected_response) {
+			terminated = true;
+		}
+	};
 
 	mock_connector->io_service().post([this]() {
 		mock_connector->read("GET / HTTP/1.0\r\n"
@@ -373,25 +356,6 @@ TEST_F(server_connection_test, http10_persistent) {
 
 
 TEST_F(server_connection_test, http10_non_persistent) {
-	// list of chunks that I expect to receive inside the on_write()
-	std::string expected_response = "HTTP/1.0 200 OK\r\n"
-			"connection: close\r\n"
-			"content-length: 33\r\n"
-			"content-type: text/plain\r\n"
-			"date: Tue, 17 May 2016 14:53:09 GMT\r\n"
-			"\r\n"
-			"Ave client, dummy node says hello";
-
-	bool terminated{false};
-	_write_cb = [this, &terminated, &expected_response](dstring chunk) {
-		response.append(chunk);
-		if (response == expected_response) {
-			terminated = true;
-		}
-	};
-
-	SetUp(http::proto_version::HTTP10, _write_cb);
-
 	_handler->set_persistent(false);
 	_handler->on_request([&](auto conn, auto req, auto res) {
 		req->on_finished([res](auto req) {
@@ -408,6 +372,23 @@ TEST_F(server_connection_test, http10_non_persistent) {
 			res->end();
 		});
 	});
+
+	// list of chunks that I expect to receive inside the on_write()
+	std::string expected_response = "HTTP/1.0 200 OK\r\n"
+			"connection: close\r\n"
+			"content-length: 33\r\n"
+			"content-type: text/plain\r\n"
+			"date: Tue, 17 May 2016 14:53:09 GMT\r\n"
+			"\r\n"
+			"Ave client, dummy node says hello";
+
+	bool terminated{false};
+	_write_cb = [this, &terminated, &expected_response](dstring chunk) {
+		response.append(chunk);
+		if (response == expected_response) {
+			terminated = true;
+		}
+	};
 
 	mock_connector->io_service().post([this]() {
 		mock_connector->read("GET / HTTP/1.0\r\n"
