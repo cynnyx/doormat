@@ -51,15 +51,7 @@ public:
 	http_server(const http_server&) = delete;
 	http_server& operator=(const http_server&) = delete;
 
-	bool load_certificate(const std::string& cert, const std::string& key, const std::string &pass ) noexcept
-	{
-		std::ifstream pwdfile;
-		pwdfile.open(pass);
-		std::string pwd{};
-		std::string c;
-		while(std::getline(pwdfile, c)) pwd +=c;
-		return sni.load_certificate(cert, key, pass);
-	}
+	bool load_certificate(const std::string& cert, const std::string& key, const std::string &pass ) noexcept;
 
 	void on_client_connect(connect_callback cb) noexcept;
 

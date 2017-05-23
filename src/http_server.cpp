@@ -184,12 +184,11 @@ tcp_acceptor http_server::make_acceptor(boost::asio::io_service& io, tcp::endpoi
 
 void http_server::listen(boost::asio::io_service &io, bool ssl )
 {
-    auto port = (ssl) ? ssl_port : http_port;
-    auto& acceptor = (ssl) ? ssl_acceptor : plain_acceptor;
-    tcp::resolver resolver(io);
-    //todo: make the interface addr. parametric in the constructor.
+	auto port = (ssl) ? ssl_port : http_port;
+	auto& acceptor = (ssl) ? ssl_acceptor : plain_acceptor;
+	tcp::resolver resolver(io);
+	//todo: make the interface addr. parametric in the constructor.
 	tcp::resolver::query query("0.0.0.0", to_string(port));
-
 
 	boost::system::error_code ec;
 	auto it = resolver.resolve(query, ec);
@@ -211,6 +210,16 @@ void http_server::listen(boost::asio::io_service &io, bool ssl )
 		//LOGERROR("Error while listening on ", to_string(port));
 		throw ec;
 	}
+}
+
+bool http_server::load_certificate(const std::string& cert, const std::string& key, const std::string& pass) noexcept
+{
+    std::ifstream pwdfile;
+    pwdfile.open(pass);
+    std::string pwd {};
+    std::string c;
+    while(std::getline(pwdfile, c)) pwd +=c;
+    return sni.load_certificate(cert, key, pass);
 }
 
 }//namespace
