@@ -81,8 +81,6 @@ void session::send_connection_header()
 
 stream* session::create_stream ( std::int32_t id )
 {
-
-
 	stream* stream_data = static_cast<stream*>( all.malloc( sizeof(stream), all.mem_user_data ) );
 	LOGTRACE(" Create stream: ", id, " address: ", stream_data );
 	new ( stream_data ) stream{ this->get_shared(), [] ( stream* s, session* sess )
@@ -95,18 +93,19 @@ stream* session::create_stream ( std::int32_t id )
 	stream_data->id( id );
 	//todo: replace.
 	auto req_handler = std::make_shared<http::request>(this->get_shared());
-	auto res_handler = std::make_shared<http::response>([stream_data](http::http_response&& res){
-															stream_data->on_header(std::move(res));
-														},
-														[stream_data](std::unique_ptr<const char[]> d, size_t s){
-															stream_data->on_body(std::move(d), s);
-														},
-														[stream_data](std::string&& k, std::string&& v) {
-															stream_data->on_trailer(std::move(k), std::move(v));
-														},
-														[stream_data]() {
-															stream_data->on_eom();
-														});
+	auto res_handler = std::make_shared<http::response>([stream_data](http::http_response&& res)
+	{
+		stream_data->on_header(std::move(res));
+	},
+	[stream_data](auto&& b, auto len){
+		stream_data->on_body(std::move(b), len);
+	},
+	[stream_data](auto&& k, auto&& v) {
+		stream_data->on_trailer(std::move(k), std::move(v));
+	},
+	[stream_data]() {
+		stream_data->on_eom();
+	});
 	user_feedback(req_handler, res_handler);
     stream_data->set_handlers(req_handler, res_handler);
 
@@ -377,7 +376,7 @@ bool session::on_write(std::string& ch )
 
 	if ( consumed >= 0 )
 	{
-		dstring tdata{data, static_cast<size_t>(consumed)};
+		std::string tdata{data, data + static_cast<size_t>(consumed)};
 		ch = std::move( tdata );
 	}
 	return true;

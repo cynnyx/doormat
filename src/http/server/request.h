@@ -19,7 +19,8 @@ template<typename handler_traits>
 class handler_http1;
 }
 
-namespace http {
+namespace http 
+{
 /** \brief the request class provides to the library user a mean through which it can subscribe to events related
  *  to the request.
  * */

@@ -16,7 +16,8 @@ template<typename handler_traits>
 class handler_http1;
 }
 
-namespace http2 {
+namespace http2 
+{
 class stream;
 }
 
@@ -32,7 +33,8 @@ public:
 	using write_callback_t = std::function<void(std::shared_ptr<response>)>;
 	using data_t = std::unique_ptr<const char[]>;
 
-	enum class state {
+	enum class state 
+	{
 		send_continue,
 		pending,
 		headers_received,
@@ -82,13 +84,11 @@ private:
 	std::queue<std::pair<std::string, std::string>> trailers;
 	std::function<void()> content_notification;
 
-
 	std::function<void(http_response&&)> hcb;
 	std::function<void(data_t, size_t)> bcb;
 	std::function<void(std::string&&, std::string&&)> tcb;
 	std::function<void()> ccb;
 	std::function<void()> notify_continue;
-
 };
 
 }

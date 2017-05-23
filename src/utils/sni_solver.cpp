@@ -50,13 +50,11 @@ bool sni_solver::load_certificate(const std::string& cert, const std::string& ke
 
 		auto ssl_ctx = ctx.native_handle();
 		configure_tls_context_easy(ssl_ctx);
-		boost::system::error_code ec;
 		ctx.set_password_callback(
 			[ password ]( size_t maxLength, boost::asio::ssl::context::password_purpose purpose ) -> std::string
 			{
 				return password;
-			}, ec );
-		if ( ec ) { LOGERROR( ec.message() ); return false; }
+			});
 		
 		ctx.use_private_key_file( key, boost::asio::ssl::context::pem );
 		ctx.use_certificate_chain_file( cert );
@@ -86,6 +84,10 @@ bool sni_solver::load_certificate(const std::string& cert, const std::string& ke
 		certificates_list.emplace_back( std::move( current_cert ) ) ;
 		
 		return true;
+	}
+	catch ( boost::system::system_error& error )
+	{
+		LOGERROR("Certificate not loaded ", error.what(), " cert: ", cert, " key file: ", key, " password: ", password );
 	}
 	catch ( ... )
 	{

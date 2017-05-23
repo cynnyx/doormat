@@ -41,7 +41,7 @@ public:
 		io_service().post([this](){connection_t::timeout(); });
 	}
 
-	handler_http1(http::proto_version version) : version{version} {}
+	handler_http1() = default;
 
 
 	std::pair<std::shared_ptr<remote_t>, std::shared_ptr<local_t>> get_user_handlers() override
@@ -383,8 +383,6 @@ private:
 	/** User close is set to true when an explicit connection close is required by the user, avoiding sending an error*/
 	bool user_close{false};
 	bool decoding_error{false};
-	/** Current protocol version.*/
-	http::proto_version version{http::proto_version::UNSET};
 
 	/** List of callbacks to be called when the next write is successful. */
 	std::vector<std::function<void()>> pending_clear_callbacks{};

@@ -39,7 +39,7 @@ std::string get_expected(http::http_request &req, const std::string &body){
 TEST(client_connection, send_request)
 {
     boost::asio::io_service io;
-	auto tested_object = std::make_shared<client_connection_t>(http::proto_version::HTTP11);
+	auto tested_object = std::make_shared<client_connection_t>();
 	//now register a mock connector; than go on.
 
 	std::string body{"ciao"};
@@ -69,7 +69,7 @@ TEST(client_connection, request_sent_event)
 {
     boost::asio::io_service io;
 
-	auto tested_object = std::make_shared<client_connection_t>(http::proto_version::HTTP11);
+	auto tested_object = std::make_shared<client_connection_t>();
 	bool called;
 	http::http_request preamble = make_dumb_request();
 	MockConnector::wcb write_callback = [](dstring d){};
@@ -92,7 +92,7 @@ TEST(client_connection, request_sent_event)
 TEST(client_connection, read_before_write_failure)
 {
     boost::asio::io_service io;
-	auto tested_object = std::make_shared<client_connection_t>(http::proto_version::HTTP11);
+	auto tested_object = std::make_shared<client_connection_t>();
 	MockConnector::wcb write_callback = [](dstring){};
 	auto mock = std::make_shared<MockConnector>(io, write_callback);
 	bool called;
@@ -122,7 +122,7 @@ TEST(client_connection, pingpong)
     boost::asio::io_service io;
 
 
-	auto tested_object = std::make_shared<client_connection_t>(http::proto_version::HTTP11);
+	auto tested_object = std::make_shared<client_connection_t>();
 	//now register a mock connector; than go on.
 
 	std::string body{"ciao"};
@@ -187,7 +187,7 @@ TEST(client_connection, multiple_requests_multiple_responses)
 
 	boost::asio::io_service io;
 	boost::asio::io_service::work *w = new boost::asio::io_service::work(io);
-	auto tested_object = std::make_shared<client_connection_t>(http::proto_version::HTTP11);
+	auto tested_object = std::make_shared<client_connection_t>();
 	MockConnector::wcb write_callback;
 	auto mock = std::make_shared<MockConnector>(io, write_callback);
 	size_t finished_requests{0};
@@ -304,7 +304,7 @@ TEST(client_connection, response_continue)
 	boost::asio::io_service io;
 
 
-	auto tested_object = std::make_shared<client_connection_t>(http::proto_version::HTTP11);
+	auto tested_object = std::make_shared<client_connection_t>();
 	//now register a mock connector; than go on.
 
 	std::string body{"ciao"};
@@ -338,7 +338,7 @@ TEST(client_connection, response_continue)
 TEST(client_connection, pipeline)
 {
 	boost::asio::io_service io;
-	auto tested_object = std::make_shared<client_connection_t>(http::proto_version::HTTP11);
+	auto tested_object = std::make_shared<client_connection_t>();
 	auto r1 = make_dumb_request();
 	auto r2 = make_dumb_request();
 	r1.header("request-id", "1");
@@ -430,7 +430,7 @@ TEST(client_connection, http11_persistent)
 {
 	boost::asio::io_service io;
 	boost::asio::io_service::work *w = new boost::asio::io_service::work(io);
-	auto tested_object = std::make_shared<client_connection_t>(http::proto_version::HTTP11);
+	auto tested_object = std::make_shared<client_connection_t>();
 	auto r1 = make_dumb_request();
 	auto handlers = tested_object->get_user_handlers();
 	auto &req = handlers.second;
@@ -472,7 +472,7 @@ TEST(client_connection, http11_not_persistent_request)
 {
 	boost::asio::io_service io;
 	boost::asio::io_service::work *w = new boost::asio::io_service::work(io);
-	auto tested_object = std::make_shared<client_connection_t>(http::proto_version::HTTP11);
+	auto tested_object = std::make_shared<client_connection_t>();
 	auto r1 = make_dumb_request();
 	r1.header("connection", "close");
 	auto handlers = tested_object->get_user_handlers();
@@ -516,7 +516,7 @@ TEST(client_connection, http11_not_persistent_response)
 {
 	boost::asio::io_service io;
 	boost::asio::io_service::work *w = new boost::asio::io_service::work(io);
-	auto tested_object = std::make_shared<client_connection_t>(http::proto_version::HTTP11);
+	auto tested_object = std::make_shared<client_connection_t>();
 	auto r1 = make_dumb_request();
 	auto handlers = tested_object->get_user_handlers();
 	auto &req = handlers.second;
@@ -559,7 +559,7 @@ TEST(client_connection, http10_not_persistent_request)
 {
 	boost::asio::io_service io;
 	boost::asio::io_service::work *w = new boost::asio::io_service::work(io);
-	auto tested_object = std::make_shared<client_connection_t>(http::proto_version::HTTP11);
+	auto tested_object = std::make_shared<client_connection_t>();
 	auto r1 = make_dumb_request();
 	r1.protocol(http::proto_version::HTTP10);
 	auto handlers = tested_object->get_user_handlers();
@@ -602,7 +602,7 @@ TEST(client_connection, http10_not_persistent_response)
 {
 	boost::asio::io_service io;
 	boost::asio::io_service::work *w = new boost::asio::io_service::work(io);
-	auto tested_object = std::make_shared<client_connection_t>(http::proto_version::HTTP11);
+	auto tested_object = std::make_shared<client_connection_t>();
 	auto r1 = make_dumb_request();
 	r1.protocol(http::proto_version::HTTP10);
 	r1.header("connection", "keep-alive");
@@ -646,7 +646,7 @@ TEST(client_connection, http10_persistent)
 {
 	boost::asio::io_service io;
 	boost::asio::io_service::work *w = new boost::asio::io_service::work(io);
-	auto tested_object = std::make_shared<client_connection_t>(http::proto_version::HTTP11);
+	auto tested_object = std::make_shared<client_connection_t>();
 	auto r1 = make_dumb_request();
 	r1.protocol(http::proto_version::HTTP10);
 	r1.header("connection", "keep-alive");

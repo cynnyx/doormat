@@ -124,16 +124,16 @@ void access_recorder::request( const http::http_request& r )
 	}
 	using namespace http;
 
-	if ( service::locator::inspector_log().active() )
-	{
-		method = r.method();
-		schema = r.schema();
-		urihost = r.urihost();
-		port = r.port();
-		query = r.query();
-		fragment = r.fragment();
-		protocol = http::proto_to_string( r.channel() );
-	}
+// 	if ( service::locator::inspector_log().active() )
+// 	{
+// 		method = r.method();
+// 		schema = r.schema();
+// 		urihost = r.urihost();
+// 		port = r.port();
+// 		query = r.query();
+// 		fragment = r.fragment();
+// 		protocol = http::proto_to_string( r.channel() );
+// 	}
 
 	std::string line;
 	line.append(r.method())
