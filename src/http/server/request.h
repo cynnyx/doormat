@@ -3,8 +3,7 @@
 
 #include <memory>
 #include <functional>
-#include <experimental/optional>
-#include <iostream>
+
 #include "../http_request.h"
 #include "../message_error.h"
 
@@ -37,8 +36,9 @@ public:
     request& operator=(const request&) = delete;
 
     /** Callback types. */
+	using data_t = std::unique_ptr<const char[]>;
     using headers_callback_t = std::function<void(std::shared_ptr<request>)>;
-    using body_callback_t = std::function<void(std::shared_ptr<request>, std::unique_ptr<char> char_array, size_t size)>;
+	using body_callback_t = std::function<void(std::shared_ptr<request>, data_t char_array, size_t size)>;
     using trailer_callback_t = std::function<void(std::shared_ptr<request>, std::string k, std::string v)>;
     using finished_callback_t = std::function<void(std::shared_ptr<request>)>;
     using error_callback_t = std::function<void(std::shared_ptr<request>, const http::connection_error &err)>;
@@ -61,9 +61,9 @@ private:
 
     /** External handlers allowing to trigger events to be communicated to the user */
     void headers(http::http_request &&);
-    void body(dstring&& d);
+	void body(data_t d, size_t);
 	void error(http::connection_error err);
-    void trailer(dstring&&, dstring&&);
+	void trailer(std::string&&, std::string&&);
     void finished();
 
 	bool ended() { return request_terminated;  }
@@ -71,11 +71,11 @@ private:
 
 	bool request_terminated{false};
 	/* User registered events */
-    std::experimental::optional<headers_callback_t> headers_callback;
-    std::experimental::optional<body_callback_t> body_callback;
-    std::experimental::optional<error_callback_t> error_callback;
-    std::experimental::optional<trailer_callback_t> trailer_callback;
-    std::experimental::optional<finished_callback_t> finished_callback;
+	headers_callback_t headers_callback;
+	body_callback_t body_callback;
+	error_callback_t error_callback;
+	trailer_callback_t trailer_callback;
+	finished_callback_t finished_callback;
 
 	std::shared_ptr<server_connection> connection_keepalive;
     /** Ptr-to-self: to grant the user that, until finished() or error() event is propagated, the request will be alive*/

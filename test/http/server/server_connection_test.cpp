@@ -8,11 +8,18 @@
 
 using namespace http;
 
+// todo: why do we need this copy?
+static std::unique_ptr<char[]> make_data_ptr(const std::string& s)
+{
+	auto ptr = std::make_unique<char[]>(s.size());
+	std::copy(s.begin(), s.end(), ptr.get());
+	return std::move(ptr);
+}
 
 class server_connection_test : public ::testing::Test {
 public:
 	virtual void SetUp() {
-		_write_cb = [](dstring chunk) {};
+		_write_cb = [](std::string chunk) {};
 		mock_connector = std::make_shared<MockConnector>(io, _write_cb);
 		_handler = std::make_shared<server::handler_http1<http::server_traits>>(http::proto_version::HTTP11);
 		mock_connector->handler(_handler);
@@ -115,7 +122,7 @@ TEST_F(server_connection_test, on_connector_nulled) {
 TEST_F(server_connection_test, response_continue) {
 	std::string accumulator{};
 	bool rcvd{false};
-	_write_cb = [&accumulator, &rcvd](dstring chunk) {
+	_write_cb = [&accumulator, &rcvd](std::string chunk) {
 		accumulator += std::string(chunk);
 		if (accumulator == "HTTP/1.1 100 Continue\r\ncontent-length: 0\r\n\r\n") {
 			rcvd = true;
@@ -153,7 +160,7 @@ TEST_F(server_connection_test, http1_persistent) {
 			r.header("date", "Tue, 17 May 2016 14:53:09 GMT");
 			r.content_len(body.size());
 			res->headers(std::move(r));
-			res->body(dstring{body.c_str(), body.size()});
+			res->body(make_data_ptr(body), body.size());
 			res->end();
 		});
 	});
@@ -201,7 +208,7 @@ TEST_F(server_connection_test, http1_non_persistent) {
 			r.header("date", "Tue, 17 May 2016 14:53:09 GMT");
 			r.content_len(body.size());
 			res->headers(std::move(r));
-			res->body(dstring{body.c_str(), body.size()});
+			res->body(make_data_ptr(body), body.size());
 			res->end();
 		});
 	});
@@ -252,7 +259,7 @@ TEST_F(server_connection_test, http1_pipelining) {
 			r.header("date", "Tue, 17 May 2016 14:53:09 GMT");
 			r.content_len(body.size());
 			res->headers(std::move(r));
-			res->body(dstring{body.c_str(), body.size()});
+			res->body(make_data_ptr(body), body.size());
 			res->end();
 		});
 	});

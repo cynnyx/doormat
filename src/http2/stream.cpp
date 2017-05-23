@@ -15,7 +15,7 @@
 
 #define MAKE_NV(NAME, VALUE) \
 { \
-	(uint8_t *)NAME.cdata(), (uint8_t *)VALUE.cdata(), NAME.size(), VALUE.size(), \
+	(uint8_t *)NAME.data(), (uint8_t *)VALUE.data(), NAME.size(), VALUE.size(), \
 		NGHTTP2_NV_FLAG_NO_COPY_NAME | NGHTTP2_NV_FLAG_NO_COPY_VALUE \
 }
 
@@ -83,13 +83,13 @@ void stream::on_request_header( http::http_request::header_t&& h )
 	request.header( h.first, h.second );
 }
 
-void stream::on_request_body( dstring&& c )
+void stream::on_request_body( data_t d, size_t size )
 {
-	logger.append_request_body( c );
+	logger.append_request_body( dstring{d.get(), size} );
 	//managed_chain->on_request_body( std::move( c ) );
     if(auto s =req.lock())
     {
-        s->body(std::move(c));
+		s->body(std::move(d), size);
     }
 }
 
@@ -285,12 +285,12 @@ void stream::flush() noexcept
 	session_->do_write();
 }
 
-void stream::on_body( dstring&& c )
+void stream::on_body( data_t data, size_t size )
 {
 	LOGTRACE("stream::on_body");
-	if ( service::locator::inspector_log().active() ) logger.append_response_body( c );
-	logger.add_request_size( c.size() );
-	body.emplace_back( c );
+	if ( service::locator::inspector_log().active() ) logger.append_response_body( dstring{data.get(), size} );
+	logger.add_request_size( size );
+	body.emplace_back( data.get(), size );
 	flush();
 }
 

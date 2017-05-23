@@ -10,6 +10,15 @@
 
 using client_connection_t = server::handler_http1<http::client_traits>;
 
+// todo: why do we need this copy?
+static std::unique_ptr<char[]> make_data_ptr(const std::string& s)
+{
+	auto ptr = std::make_unique<char[]>(s.size());
+	std::copy(s.begin(), s.end(), ptr.get());
+	return std::move(ptr);
+}
+
+
 http::http_request make_dumb_request() {
 	http::http_request preamble;
 	preamble.protocol(http::proto_version::HTTP11);
@@ -48,7 +57,7 @@ TEST(client_connection, send_request)
 	auto &req = user_handlers.second;
 	auto &res = user_handlers.first;
 	req->headers(std::move(preamble));
-	req->body("ciao");
+	req->body(make_data_ptr("ciao"), 4);
 	req->end();
 	//res->abort();
 	res->get_connection()->close();
@@ -152,7 +161,7 @@ TEST(client_connection, pingpong)
 		++response_events;
 	});
 
-    res->on_body([&](auto r, std::unique_ptr<char[]> body, size_t s){
+	res->on_body([&](auto r, std::unique_ptr<const char[]> body, size_t s){
 		std::string rcvd{body.get(), s};
 		ASSERT_EQ(rcvd, "Ave client, dummy node says hello");
 		++response_events;
@@ -164,7 +173,7 @@ TEST(client_connection, pingpong)
 	});
 
 	req->headers(std::move(preamble));
-	req->body("ciao");
+	req->body(make_data_ptr("ciao"), 4);
 	req->end();
 	mock->io_service().run();
 	ASSERT_EQ(expected_request, received_data);

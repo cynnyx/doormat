@@ -4,7 +4,7 @@
 #include <string>
 #include <ctime>
 
-static dstring empty;
+static std::string empty;
 
 namespace http
 {
@@ -35,8 +35,9 @@ bool http_structured_data::has_same_headers ( const http::http_structured_data& 
 	return rv;
 }
 
-void http_structured_data::header( const dstring& key, const dstring& value ) noexcept
+void http_structured_data::header( const std::string& key, const std::string& value_out ) noexcept
 {
+	dstring value{value_out}; // ugly string/dstring proxying
 	if( key == http::hf_connection )
 	{
 		remove_header(key);
@@ -56,7 +57,7 @@ void http_structured_data::header( const dstring& key, const dstring& value ) no
 	_headers.insert( std::make_pair( key, value ) );
 }
 
-const dstring& http_structured_data::header( const dstring& key ) const noexcept
+std::string http_structured_data::header( const std::string& key ) const noexcept
 {
 	auto&& element = _headers.find( key );
 	if ( element != _headers.end() )
@@ -64,30 +65,40 @@ const dstring& http_structured_data::header( const dstring& key ) const noexcept
 	return empty;
 }
 
-std::list<dstring> http_structured_data::headers( const dstring& key ) const noexcept
+std::list<std::string> http_structured_data::headers( const std::string& key ) const noexcept
 {
 	auto&& span = _headers.equal_range(key);
-	std::list<dstring> hl;
+	std::list<std::string> hl;
 	std::for_each( span.first, span.second, [&hl](const header_t& h){hl.emplace_back(h.second);});
 	return hl;
 }
 
-void http_structured_data::remove_header(const dstring& key) noexcept
+http_structured_data::headers_map http_structured_data::headers() const
+{
+	// TODO: we are copying all the headers each time...
+	headers_map ret;
+	for(auto&& h : _headers)
+		ret.emplace(std::string{h.first}, std::string{h.second});
+
+	return ret;
+}
+
+void http_structured_data::remove_header(const std::string& key) noexcept
 {
 	_headers.erase( key );
 }
 
-bool http_structured_data::has( const dstring& key ) const noexcept
+bool http_structured_data::has( const std::string& key ) const noexcept
 {
 	return header( key ).size();
 }
 
-bool http_structured_data::has(const dstring& key, const dstring& val ) const noexcept
+bool http_structured_data::has(const std::string& key, const std::string& val ) const noexcept
 {
-	return has( key, [&val](const dstring& v){ return v == val;} );
+	return has( key, [&val](const auto& v){ return v == val;} );
 }
 
-bool http_structured_data::has(const dstring& key, std::function<bool(const dstring&)> pred ) const noexcept
+bool http_structured_data::has(const std::string& key, std::function<bool(const std::string&)> pred ) const noexcept
 {
 	auto&& hl = _headers.equal_range( key );
 	auto&& it = std::find_if( hl.first, hl.second, [&pred](const header_t& h){ return pred(h.second);});
@@ -163,7 +174,7 @@ void http_structured_data::protocol ( const proto_version& val ) noexcept
 	}
 }
 
-dstring proto_to_string( proto_version pv ) noexcept
+std::string proto_to_string( proto_version pv ) noexcept
 {
 	switch ( pv )
 	{
@@ -178,12 +189,12 @@ dstring proto_to_string( proto_version pv ) noexcept
 	}
 }
 
-dstring http_structured_data::protocol() const noexcept
+std::string http_structured_data::protocol() const noexcept
 {
 	return proto_to_string( _protocol );
 }
 
-dstring http_structured_data::serialize() const noexcept
+std::string http_structured_data::serialize() const noexcept
 {
 	dstring msg;
 	const dstring* last_key = nullptr;

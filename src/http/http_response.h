@@ -22,10 +22,10 @@ public:
 	bool operator!=(const http_response&res);
 
 	void status(uint16_t val) noexcept;
-	void status(uint16_t code, const dstring& msg) noexcept;
+	void status(uint16_t code, const std::string& msg) noexcept;
 	uint16_t status_code() const noexcept{return _status_code;}
-	const dstring& status_message() const noexcept{return _status_message;}
-	dstring serialize() const noexcept;
+	std::string status_message() const noexcept{return _status_message;}
+	std::string serialize() const noexcept;
 };
 
 }

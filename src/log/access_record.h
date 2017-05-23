@@ -17,19 +17,19 @@ struct access_record
 {
 	using clock = std::chrono::steady_clock;
 
-	dstring remote_addr;
-	dstring remote_user;
-	dstring req;
+	std::string remote_addr;
+	std::string remote_user;
+	std::string req;
 	uint16_t status{0};
 	size_t body_bytes_sent{0};
-	dstring referer;
-	dstring user_agent;
+	std::string referer;
+	std::string user_agent;
 	clock::time_point start;
 	clock::time_point end;
 	bool pipe{false};
 	size_t req_length{0};
-	dstring x_debug_cyn_ip;
-	dstring host;
+	std::string x_debug_cyn_ip;
+	std::string host;
 };
 
 class access_recorder final
@@ -38,19 +38,19 @@ class access_recorder final
 	using clock = access_record::clock;
 	
 	access_record ar_;
-	dstring method;
-	dstring urihost;
-	dstring port;
-	dstring query;
-	dstring fragment;
-	dstring protocol;
-	dstring schema;
-	std::multimap<dstring,dstring> req_headers;
-	std::list<dstring> req_body;
-	std::multimap<dstring,dstring> req_trailers;
-	std::multimap<dstring,dstring> resp_headers;
-	std::list<dstring> resp_body;
-	std::multimap<dstring,dstring> resp_trailers;
+	std::string method;
+	std::string urihost;
+	std::string port;
+	std::string query;
+	std::string fragment;
+	std::string protocol;
+	std::string schema;
+	std::multimap<std::string, std::string> req_headers;
+	std::list<std::string> req_body;
+	std::multimap<std::string, std::string> req_trailers;
+	std::multimap<std::string, std::string> resp_headers;
+	std::list<std::string> resp_body;
+	std::multimap<std::string, std::string> resp_trailers;
 	
 	std::size_t req_len{0};
 	std::size_t req_body_len{0};
@@ -78,10 +78,10 @@ public:
 	void commit() noexcept;
 	void request( const http::http_request& r );
 	void response( const http::http_response& r );
-	void append_response_body( const dstring& body );
-	void append_response_trailer( const dstring& k, const dstring& v );
-	void append_request_body( const dstring& body );
-	void append_request_trailer( const dstring& k, const dstring& v );
+	void append_response_body( const std::string& body );
+	void append_response_trailer( const std::string& k, const std::string& v );
+	void append_request_body( const std::string& body );
+	void append_request_trailer(const std::string& k, const std::string& v );
 	void add_request_size( std::size_t s ) noexcept { ar_.req_length += s; }
 
 	const access_record& access() const noexcept { return ar_; }

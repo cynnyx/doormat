@@ -16,26 +16,26 @@ namespace logging
 
 access_recorder::access_recorder( const access_recorder & o )
 {
-	method = o.method.clone();
-	urihost = o.urihost.clone();
-	port = o.port.clone();
-	query = o.query.clone();
-	fragment = o.fragment.clone();
-	protocol = o.protocol.clone();
-	schema = o.schema.clone();
+	method = o.method;
+	urihost = o.urihost;
+	port = o.port;
+	query = o.query;
+	fragment = o.fragment;
+	protocol = o.protocol;
+	schema = o.schema;
 
 	for ( auto&& p : o.req_headers )
-		req_headers.insert ( std::pair<dstring, dstring>{ p.first.clone(), p.second.clone() } );
+		req_headers.insert ( std::make_pair(p.first, p.second) );
 	for ( auto&& b : o.req_body )
-		req_body.emplace_back( b.clone() );
+		req_body.emplace_back( b );
 	for ( auto&& p : o.req_trailers )
-		req_trailers.insert ( std::pair<dstring, dstring>{ p.first.clone(), p.second.clone() } );
+		req_trailers.insert ( std::make_pair(p.first, p.second) );
 	for ( auto&& p : o.resp_headers )
-		resp_headers.insert ( std::pair<dstring, dstring>{ p.first.clone(), p.second.clone() } );
+		resp_headers.insert ( std::make_pair(p.first, p.second) );
 	for ( auto&& b : o.resp_body )
-		req_body.emplace_back( b.clone() );
+		req_body.emplace_back( b );
 	for ( auto&& p : o.resp_trailers )
-		req_trailers.insert ( std::pair<dstring, dstring>{ p.first.clone(), p.second.clone() } );
+		req_trailers.insert ( std::make_pair(p.first, p.second) );
 }
 
 void access_recorder::set_request_start()
@@ -53,13 +53,13 @@ void access_recorder::set_pipe(bool pipe) noexcept
 	ar_.pipe = pipe;
 }
 
-void access_recorder::append_response_body( const dstring& body )
+void access_recorder::append_response_body(const std::string& body )
 {
 	resp_body.push_back( body );
 	resp_body_len += body.size();
 }
 
-void access_recorder::append_request_body( const dstring& body )
+void access_recorder::append_request_body( const std::string& body )
 {
 	req_body.push_back( body );
 	req_body_len += body.size();
@@ -107,13 +107,12 @@ void access_recorder::commit() noexcept
 
 void access_recorder::request( const http::http_request& r )
 {
-	const auto& tmp = r.origin().to_string();
-	ar_.remote_addr = dstring{tmp.data(), tmp.size()};
+	ar_.remote_addr = r.origin().to_string();
 
 	auto h0 = r.headers("Authorization");
 	if ( ! h0.empty() )
 	{
-		static const dstring tag_{"basic "};
+		static const std::string tag_{"basic "};
 		auto auth = utils::base64_decode(h0.front());
 		if( auth.substr(0, tag_.size(), ::tolower) == tag_ )
 		{
@@ -136,12 +135,12 @@ void access_recorder::request( const http::http_request& r )
 		protocol = http::proto_to_string( r.channel() );
 	}
 
-	dstring line;
+	std::string line;
 	line.append(r.method())
 		.append(space);
 
 	auto&& _schema = r.schema();
-	if(_schema.is_valid())
+	if(!_schema.empty())
 		line.append(_schema)
 			.append(colon)
 			.append(slash)
@@ -151,25 +150,23 @@ void access_recorder::request( const http::http_request& r )
 	//if(_userinfo.valid())
 	//	chunks.push_back(_userinfo);
 
-	auto _host = r.urihost();
-	if(_host.is_valid())
-		line.append( _host);
+	auto&& _host = r.urihost();
+	line.append( _host);
 
-	auto _port = r.port();
-	if(_port.is_valid())
+	auto&& _port = r.port();
+	if(!_port.empty())
 		line.append( colon ).append( _port );
 
-	auto _path = r.path();
-	if(_path.is_valid())
-		line.append( _path);
+	auto&& _path = r.path();
+	line.append( _path);
 
-	auto _query = r.query();
-	if(_query.is_valid())
+	auto&& _query = r.query();
+	if(!_query.empty())
 		line.append( questionmark )
 			.append( _query );
 
-	auto _fragment = r.fragment();
-	if(_fragment.is_valid())
+	auto&& _fragment = r.fragment();
+	if(!_fragment.empty())
 		line.append( hash )
 			.append( _fragment );
 
@@ -180,7 +177,7 @@ void access_recorder::request( const http::http_request& r )
 	ar_.req_length += line.size();
 
 	const http::http_structured_data::headers_map& headers = r.headers();
-	std::set<dstring> keys;
+	std::set<std::string> keys;
 	for ( const http::http_structured_data::header_t& value : headers )
 	{
 		keys.insert( value.first );
@@ -222,12 +219,12 @@ void access_recorder::response( const http::http_response& r)
 	}
 }
 
-void access_recorder::append_request_trailer(const dstring& k, const dstring& v)
+void access_recorder::append_request_trailer(const std::string& k, const std::string& v)
 {
 	req_trailers.insert( std::make_pair<>( k, v ) );
 }
 
-void access_recorder::append_response_trailer(const dstring& k, const dstring& v)
+void access_recorder::append_response_trailer(const std::string& k, const std::string& v)
 {
 	resp_trailers.insert( std::make_pair<>( k, v ) );
 }

@@ -5,7 +5,8 @@
 #include <experimental/optional>
 #include <functional>
 #include <memory>
-#include "../../utils/dstring.h"
+#include <string>
+
 #include "../http_response.h"
 #include "../connection_error.h"
 
@@ -29,6 +30,7 @@ class response : public std::enable_shared_from_this<response>
 public:
 	using error_callback_t = std::function<void()>;
 	using write_callback_t = std::function<void(std::shared_ptr<response>)>;
+	using data_t = std::unique_ptr<const char[]>;
 
 	enum class state {
 		send_continue,
@@ -40,11 +42,11 @@ public:
 	};
 
 	response(std::function<void()> content_notification);
-	response(std::function<void(http_response&&)>, std::function<void(dstring&&)>, std::function<void(dstring &&, dstring&&)>, std::function<void()>);
+	response(std::function<void(http_response&&)>, std::function<void(data_t, size_t)>, std::function<void(std::string&&, std::string&&)>, std::function<void()>);
 
 	void headers(http_response &&res);
-	void body(dstring &&d);
-	void trailer(dstring &&k, dstring&& v);
+	void body(data_t d, size_t);
+	void trailer(std::string&& k, std::string&& v);
 	void end();
 	void send_continue() { continue_required = true; notify_continue();  }
 	void on_error(error_callback_t ecb);
@@ -52,10 +54,9 @@ public:
 
 	state get_state() noexcept;
 	http_response get_preamble();
-	dstring get_body();
-	std::pair<dstring, dstring> get_trailer();
+	std::string get_body();
+	std::pair<std::string, std::string> get_trailer();
 
-	~response() = default;
 private:
 	std::shared_ptr<response> myself{nullptr};
 
@@ -77,14 +78,14 @@ private:
 	std::experimental::optional<error_callback_t> error_callback;
 	std::experimental::optional<write_callback_t> write_callback;
 	std::experimental::optional<http_response> response_headers;
-	dstring content;
-	std::queue<std::pair<dstring, dstring>> trailers;
+	std::string content;
+	std::queue<std::pair<std::string, std::string>> trailers;
 	std::function<void()> content_notification;
 
 
 	std::function<void(http_response&&)> hcb;
-	std::function<void(dstring&&)> bcb;
-	std::function<void(dstring &&, dstring&&)> tcb;
+	std::function<void(data_t, size_t)> bcb;
+	std::function<void(std::string&&, std::string&&)> tcb;
 	std::function<void()> ccb;
 	std::function<void()> notify_continue;
 

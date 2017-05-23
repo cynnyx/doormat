@@ -68,6 +68,8 @@ class stream final
 
 public:
 
+	using data_t = std::unique_ptr<const char[]>;
+
 //	stream( std::function<void(stream*, session*)> des );
 	stream(std::shared_ptr<server::http_handler> s, std::function<void(stream*, session*)> des, std::int16_t prio = 0 );
 	stream( const stream& ) = delete;
@@ -104,12 +106,12 @@ public:
 // 	void on_request_preamble(http::http_request&& message);
 	void on_request_header( http::http_request::header_t&& h ); // NGHttp2 friendly
 	void on_request_header_complete();
-	void on_request_body(dstring&& c);
+	void on_request_body(data_t, size_t);
 	// on request trailer missing?
 	void on_request_finished();
 	void on_request_ack();
 	void on_header(http::http_response &&);
-	void on_body(dstring&&);
+	void on_body(data_t, size_t);
 	void on_trailer(dstring&&, dstring&&);
 	void on_eom();
 	void on_error(const int &);
