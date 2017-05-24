@@ -228,11 +228,16 @@ private:
 	void notify_all(http::error_code err) {
 
 		for(auto current_remote: remote_objects) {
-			current_remote->error(err);
+			if(auto s = connector()) s->io_service().post([current_remote, err](){current_remote->error(err);});
+			else current_remote->error(err);
 		}
 		for(auto &res: local_objects)
 		{
-			if(auto s = res.lock()) s->error(err);
+			if(auto s = res.lock())
+			{
+				if(auto c = connector())	c->io_service().post([s, err](){s->error(err);});
+				else s->error(err);
+			}
 		}
 		remote_objects.clear();
 		local_objects.clear();
