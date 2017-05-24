@@ -317,6 +317,83 @@ TEST_F(server_connection_test, http11_pipelining)
 }
 
 
+TEST_F(server_connection_test, http11_missing_response)
+{
+	_handler->set_persistent(true);
+	int req_counter{0};
+
+	_handler->on_request([&](auto conn, auto req, auto res) {
+		++req_counter;
+		if(req_counter == 2)
+			return;
+
+		req->on_finished([res](auto req) {
+			bool keep_alive = req->preamble().keepalive();
+			http::http_response r;
+			r.protocol(http::proto_version::HTTP11);
+			std::string body{"Ave client, dummy node says hello"};
+			r.status(200);
+			r.keepalive(keep_alive);
+			r.header("content-type", "text/plain");
+			r.header("date", "Tue, 17 May 2016 14:53:09 GMT");
+			r.content_len(body.size());
+			res->headers(std::move(r));
+			res->body(make_data_ptr(body), body.size());
+			res->end();
+		});
+
+		res->on_error([](){
+			std::cout << "called" << std::endl;
+		});
+
+		conn->on_error([](auto conn, const http::connection_error &error) {
+			ASSERT_TRUE(conn);
+			ASSERT_EQ(error.errc(), http::error_code::missing_response);
+			conn->close();
+		});
+	});
+
+	// list of chunks that I expect to receive inside the on_write()
+	std::string expected_response =
+			"HTTP/1.1 200 OK\r\n"
+					"connection: keep-alive\r\n"
+					"content-length: 33\r\n"
+					"content-type: text/plain\r\n"
+					"date: Tue, 17 May 2016 14:53:09 GMT\r\n"
+					"\r\n"
+					"Ave client, dummy node says hello";
+
+	bool terminated{false};
+	_write_cb = [this, &terminated, &expected_response](dstring chunk) {
+		response.append(chunk);
+		if (response == expected_response) {
+			terminated = true;
+		}
+	};
+
+	mock_connector->io_service().post([this]() {
+		mock_connector->read("GET / HTTP/1.1\r\n"
+				                     "host:localhost:1443\r\n"
+				                     "date: Tue, 17 May 2016 14:53:09 GMT\r\n"
+				                     "\r\n"
+				                     "GET / HTTP/1.1\r\n"
+				                     "host:localhost:1443\r\n"
+				                     "date: Tue, 17 May 2016 14:53:09 GMT\r\n"
+				                     "\r\n"
+				                     "GET / HTTP/1.1\r\n"
+				                     "host:localhost:1443\r\n"
+				                     "date: Tue, 17 May 2016 14:53:09 GMT\r\n"
+				                     "connection: close\r\n"
+				                     "\r\n");
+	});
+
+	mock_connector->io_service().run();
+	ASSERT_TRUE(terminated);
+	ASSERT_TRUE(response.find("connection: keep-alive\r\n") != std::string::npos);
+}
+
+
+
 TEST_F(server_connection_test, http10_persistent)
 {
 	_handler->set_persistent(false);
