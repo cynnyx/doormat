@@ -4,11 +4,8 @@
 #include "../utils/utils.h"
 #include "../http/http_structured_data.h"
 #include "../http/http_commons.h"
-// #include "../service_locator/service_locator.h"
 #include "../endpoints/chain_factory.h"
 #include "../chain_of_responsibility/callback_initializer.h"
-#include "../log/log.h"
-#include "../log/inspector_serializer.h"
 #include "../http/server/request.h"
 #include "../protocol/http_handler.h"
 
@@ -55,7 +52,6 @@ stream::stream(std::shared_ptr<server::http_handler> s, std::function<void(strea
 	prd.source.ptr =  static_cast<void*> ( this );
 	prd.read_callback = stream::data_source_read_callback;
 
-	logger.set_request_start();
 	// Not all streams are supposed to send data - it would be better to have a
 	// lazy creation
 	request.protocol( http::proto_version::HTTP11 );
@@ -65,7 +61,6 @@ stream::stream(std::shared_ptr<server::http_handler> s, std::function<void(strea
 
 void stream::on_request_header_complete()
 {
-	logger.request( request );
 	LOGTRACE("stream headers complete!");
 /*	auto cor = service::locator::chain_factory().get_chain( request );
 	callback_cor_initializer<stream>( cor, this );
@@ -85,7 +80,6 @@ void stream::on_request_header( http::http_request::header_t&& h )
 
 void stream::on_request_body( dstring&& c )
 {
-	logger.append_request_body( c );
 	//managed_chain->on_request_body( std::move( c ) );
     if(auto s =req.lock())
     {
@@ -288,8 +282,6 @@ void stream::flush() noexcept
 void stream::on_body( dstring&& c )
 {
 	LOGTRACE("stream::on_body");
-	//if ( service::locator::inspector_log().active() ) logger.append_response_body( c );
-	logger.add_request_size( c.size() );
 	body.emplace_back( c );
 	flush();
 }
@@ -342,8 +334,6 @@ void stream::on_header(  http::http_response && resp )
 		resp.header( "Transfer-Encoding", "trailers" );
 	}
 
-	logger.response( resp );
-
 	status = resp.status_code();
 	http::http_structured_data::header_t _status{ ":status", dstring::to_string( status ) };
 	prepared_headers.emplace( _status );
@@ -380,15 +370,12 @@ void stream::on_header(  http::http_response && resp )
 void stream::on_trailer( dstring&& key, dstring&& value )
 {
 	LOGTRACE("stream:", this, " on_trailer");
-// 	if ( service::locator::inspector_log().active()  ) logger.append_request_trailer( key, value );
 	trailers.emplace( http::http_structured_data::header_t{key, value} );
 }
 
 stream::~stream()
 {
 	LOGTRACE("Stream ", this, " destroyed");
-	logger.set_request_end();
-	logger.commit();
 	if ( nva ) destroy_headers( &nva );
 	if ( trailers_nva ) destroy_headers( &trailers_nva );
 }
@@ -407,6 +394,12 @@ void stream::uri_host( const dstring &p ) noexcept
 //  every behaviour is fine.
 	request.hostname( p );
 	request.urihost( p );
+}
+
+void stream::set_handlers(std::shared_ptr< http::request > req_handler, std::shared_ptr< http::response > res_handler)
+{
+    req = req_handler;
+    res = res_handler;
 }
 
 }

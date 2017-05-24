@@ -221,6 +221,22 @@ int session::on_header_callback( nghttp2_session *session_,
 	return 0;
 }
 
+void session::trigger_timeout_event() 
+{
+	/* TODO */
+}
+
+std::shared_ptr<session> session::get_shared()
+{
+	return std::static_pointer_cast<session>(this->shared_from_this());
+}
+
+std::pair<std::shared_ptr<http::request>, std::shared_ptr<http::response>> 
+	session::get_user_handlers()
+{
+	return std::pair<std::shared_ptr<http::request>, std::shared_ptr<http::response>>{}; //fixme
+}
+
 void session::do_write()
 {
 	LOGTRACE("do_write");
@@ -233,8 +249,21 @@ void session::do_write()
 	}
 }
 
+void session::close() 
+{
+	if(auto s = connector()) s->close();
+}
+
+session::~session() 
+{
+	nghttp2_option_del( options );
+}
+
+void session::set_timeout(std::chrono::milliseconds) { /*todo */ }
+
 void session::on_connector_nulled()
-{ //todo: send events
+{ 
+	//todo: send events
 	LOGTRACE("on_connector_nulled");
 // 	s->on_request_canceled(error_code_distruction)
 	// Streams should be destroyed by nghttp2

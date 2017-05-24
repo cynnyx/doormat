@@ -15,8 +15,6 @@
 
 namespace http2
 {
-
-
 	
 class stream final
 {
@@ -30,8 +28,6 @@ class stream final
 	bool closed_{false};
 	// TODO Used for prioritization! In the future.
 	std::int32_t weight_{0};
-	
-
 	std::list<dstring> body;
 	std::size_t body_index{0};
 	nghttp2_nv* nva{nullptr}; // headers HTTP2
@@ -47,7 +43,6 @@ class stream final
 	
 	nghttp2_data_provider prd;
 	
-	logging::access_recorder logger;
 	// Output - when the library wants to read our buffer to send everything to the client.
 	static ssize_t data_source_read_callback ( nghttp2_session *session, std::int32_t stream_id, std::uint8_t *buf, 
 		std::size_t length, std::uint32_t *data_flags, nghttp2_data_source *source, void *user_data );
@@ -62,10 +57,6 @@ class stream final
 	bool body_eof() const noexcept;
 	
 	std::function<void(stream*, session*)> destructor;
-
-
-
-
 public:
 
 //	stream( std::function<void(stream*, session*)> des );
@@ -83,11 +74,7 @@ public:
 	void add_header( const dstring& key, const dstring& value ) { request.header( key, value ); }
 	void query( const dstring& query ) { request.query( query ); }
 	void fragment( const dstring& frag ) { request.fragment( frag ); }
-	void set_handlers(std::shared_ptr<http::request> req_handler, std::shared_ptr<http::response> res_handler)
-	{
-		req = req_handler;
-		res = res_handler;
-	}
+	void set_handlers(std::shared_ptr<http::request> req_handler, std::shared_ptr<http::response> res_handler);
 
 	std::weak_ptr<http::request> req;
 	std::weak_ptr<http::response> res;

@@ -10,11 +10,12 @@
 
 #include "connection_error.h"
 
-namespace http {
+namespace http 
+{
 
 
-struct connection : std::enable_shared_from_this<connection> {
-
+struct connection : std::enable_shared_from_this<connection> 
+{
 	using error_callback = std::function<void(std::shared_ptr<connection>, const http::connection_error &)>;
 	using timeout_callback = std::function<void(std::shared_ptr<connection>)>;
 
@@ -32,7 +33,6 @@ struct connection : std::enable_shared_from_this<connection> {
     virtual void close() = 0;
 
 	virtual ~connection() = default;
-
 protected:
 	bool persistent{true};
 	virtual void set_timeout(std::chrono::milliseconds)=0;

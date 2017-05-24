@@ -230,10 +230,10 @@ TEST_F(server_connection_test, http11_non_persistent) {
 
 	mock_connector->io_service().post([this]() {
 		mock_connector->read("GET / HTTP/1.1\r\n"
-									 "host:localhost:1443\r\n"
-									 "date: Tue, 17 May 2016 14:53:09 GMT\r\n"
-									 "connection: close\r\n"
-									 "\r\n");
+			"host:localhost:1443\r\n"
+			"date: Tue, 17 May 2016 14:53:09 GMT\r\n"
+			"connection: close\r\n"
+			"\r\n");
 	});
 
 	mock_connector->io_service().run();
