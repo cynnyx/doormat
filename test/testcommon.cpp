@@ -1,7 +1,7 @@
 #include "testcommon.h"
 
 
-http::http_request make_request(http::proto_version protocol, http_method method, const dstring& host, const dstring& path)
+http::http_request make_request(http::proto_version protocol, http_method method, const std::string& host, const std::string& path)
 {
 	static constexpr auto accept = "accept";
 	static constexpr auto accept_val = "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8";
@@ -103,7 +103,7 @@ std::string request_generator(const http_method method, const std::string& conte
 	if(!chunked)
 		req.append(http::hf_content_len)
 			.append(": ")
-			.append(dstring::to_string(content.size()))
+			.append(std::to_string(content.size()))
 			.append(http::crlf);
 
 	req.append("date: Wed,  6 Jul 2016 11:07:20 CEST")

@@ -155,13 +155,13 @@ struct first_node : node_interface
 	static void reset();
 
 	void on_request_preamble(http::http_request&& r);
-	void on_request_body(dstring&& c);
-	void on_request_trailer(dstring&& k, dstring&& v);
+	void on_request_body(data_t data, size_t len);
+	void on_request_trailer(std::string&& k, std::string&& v);
 	void on_request_finished();
 
 	void on_header(http::http_response&& r);
-	void on_body(dstring&&);
-	void on_trailer(dstring&&, dstring&&);
+	void on_body(data_t, size_t);
+	void on_trailer(std::string&&, std::string&&);
 	void on_end_of_message();
 	void on_error(const errors::error_code& ec);
 	void on_response_continue();
@@ -182,15 +182,15 @@ struct last_node : node_interface
 	static void reset();
 
 	void on_request_preamble(http::http_request&& r);
-	void on_request_body(dstring&& c);
-	void on_request_trailer(dstring&& k, dstring&& v);
+	void on_request_body(data_t, size_t);
+	void on_request_trailer(std::string&& k, std::string&& v);
 	void on_request_finished();
 	void on_request_canceled(const errors::error_code& ec);
 
 	static boost::optional<http::http_response> response;
-	static std::list<dstring> body_parts;
-	static dstring trailer_key;
-	static dstring trailer_value;
+	static std::list<std::string> body_parts;
+	static std::string trailer_key;
+	static std::string trailer_value;
 };
 
 struct blocked_node : node_interface
@@ -200,8 +200,8 @@ struct blocked_node : node_interface
 	blocked_node() {}
 
 	void on_request_preamble(http::http_request&&){ FAIL(); }
-	void on_request_body(dstring&&) { FAIL(); }
-	void on_request_trailer(dstring&&, dstring&&) { FAIL(); }
+	void on_request_body(data_t, size_t) { FAIL(); }
+	void on_request_trailer(std::string&&, std::string&&) { FAIL(); }
 	void on_request_finished(){ FAIL(); }
 };
 

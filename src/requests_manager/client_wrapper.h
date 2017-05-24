@@ -39,8 +39,8 @@ public:
 
 	/** events from the chain to which the client wrapper responds. */
 	void on_request_preamble(http::http_request&& message);
-	void on_request_body(dstring&& chunk);
-	void on_request_trailer(dstring&& k, dstring&& v);
+	void on_request_body(data_t data, size_t len);
+	void on_request_trailer(std::string&& k, std::string&& v);
 	void on_request_canceled(const errors::error_code &err);
 	void on_request_finished();
 
@@ -75,7 +75,7 @@ private:
 	//used in order to manage connect.
 	std::shared_ptr<http::client_connection> connection;
 	std::shared_ptr<http::client_request> local_request;
-	dstring tmp_body;
+	std::string tmp_body;
 
 	uint8_t waiting_count{0};
 	std::unique_ptr<network::socket_factory<boost::asio::ip::tcp::socket>> factory;

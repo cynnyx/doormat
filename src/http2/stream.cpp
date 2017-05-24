@@ -55,7 +55,7 @@ stream::stream(std::shared_ptr<server::http_handler> s, std::function<void(strea
 	prd.source.ptr =  static_cast<void*> ( this );
 	prd.read_callback = stream::data_source_read_callback;
 
-	logger.set_request_start();
+	//logger.set_request_start();
 	// Not all streams are supposed to send data - it would be better to have a
 	// lazy creation
 	request.protocol( http::proto_version::HTTP11 );
@@ -65,17 +65,15 @@ stream::stream(std::shared_ptr<server::http_handler> s, std::function<void(strea
 
 void stream::on_request_header_complete()
 {
-	logger.request( request );
+	//logger.request( request );
 	LOGTRACE("stream headers complete!");
 /*	auto cor = service::locator::chain_factory().get_chain( request );
 	callback_cor_initializer<stream>( cor, this );
 	managed_chain = std::move( cor );
 	managed_chain->on_request_preamble( std::move( request ) );*/
 	//to send back the headers, we need to get the handlers!
-	if(auto s =req.lock())
-	{
-		s->headers(std::move(request));
-	}
+	req->headers(std::move(request));
+
 }
 
 void stream::on_request_header( http::http_request::header_t&& h )
@@ -85,12 +83,9 @@ void stream::on_request_header( http::http_request::header_t&& h )
 
 void stream::on_request_body( data_t d, size_t size )
 {
-	logger.append_request_body( std::string{d.get(), size} );
+	//logger.append_request_body( c );
 	//managed_chain->on_request_body( std::move( c ) );
-    if(auto s =req.lock())
-    {
-		s->body(std::move(d), size);
-    }
+   req->body(std::move(d), size);
 }
 
 void stream::on_request_canceled( const errors::error_code &ec)
@@ -103,7 +98,7 @@ void stream::on_request_finished()
 {
 	LOGTRACE("stream ", this, " request end detected");
 	//managed_chain->on_request_finished();
-    if(auto s = req.lock()) s->finished();
+    req->finished();
 }
 
 void stream::on_request_ack()
@@ -288,8 +283,9 @@ void stream::flush() noexcept
 void stream::on_body( data_t data, size_t size )
 {
 	LOGTRACE("stream::on_body");
-	//if ( service::locator::inspector_log().active() ) logger.append_response_body( c );
-	logger.add_request_size( size );
+
+	//if ( service::locator::inspector_log().active() ) //logger.append_response_body( c );
+	//logger.add_request_size( c.size() );
 	body.emplace_back( data.get(), size );
 	flush();
 }
@@ -342,7 +338,7 @@ void stream::on_header(  http::http_response && resp )
 		resp.header( "Transfer-Encoding", "trailers" );
 	}
 
-	logger.response( resp );
+	//logger.response( resp );
 
 	status = resp.status_code();
 	http::http_structured_data::header_t _status{ ":status", dstring::to_string( status ) };
@@ -380,15 +376,15 @@ void stream::on_header(  http::http_response && resp )
 void stream::on_trailer( std::string&& key, std::string&& value )
 {
 	LOGTRACE("stream:", this, " on_trailer");
-// 	if ( service::locator::inspector_log().active()  ) logger.append_request_trailer( key, value );
+// 	if ( service::locator::inspector_log().active()  ) //logger.append_request_trailer( key, value );
 	trailers.emplace( http::http_structured_data::header_t{key, value} );
 }
 
 stream::~stream()
 {
 	LOGTRACE("Stream ", this, " destroyed");
-	logger.set_request_end();
-	logger.commit();
+	//logger.set_request_end();
+	//logger.commit();
 	if ( nva ) destroy_headers( &nva );
 	if ( trailers_nva ) destroy_headers( &trailers_nva );
 }
