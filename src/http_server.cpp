@@ -2,7 +2,9 @@
 #include "utils/log_wrapper.h"
 #include "http/server/server_connection.h"
 #include "http/client/client_connection.h"
+#include "service_locator/service_locator.h"
 #include <boost/lexical_cast.hpp>
+#include "./configuration/configuration_wrapper.h"
 
 using namespace std;
 using namespace boost::asio;
@@ -45,21 +47,13 @@ void http_server::start(boost::asio::io_service &io) noexcept
 {
     if(running) return;
     running = true;
-
-    if(_ssl)
-    {
-		if ( sni.size() != 0 )
-		{
-			_ssl_ctx = &(sni.begin()->context);
-			for(auto&& iter = sni.begin(); iter != sni.end(); ++iter)
-				_handlers.register_protocol_selection_callbacks(iter->context.native_handle());
-			listen(io, true);
-		}
-		else
-		{
-			LOGERROR("Forgotten certificates!");
-			_ssl = false;
-		}
+	_ssl = _ssl && sni.load_certificates();
+	if(_ssl)
+	{
+		_ssl_ctx = &(sni.begin()->context);
+		for(auto&& iter = sni.begin(); iter != sni.end(); ++iter)
+			_handlers.register_protocol_selection_callbacks(iter->context.native_handle());
+		listen(io, true);
     }
 
     listen(io);
@@ -89,7 +83,6 @@ void http_server::start_accept(ssl_context& ssl_ctx, tcp_acceptor& acceptor)
 {
 	if(running.load() == false)
 		return;
-	std::cout << "context ptr is " << _ssl_ctx << std::endl;
 	auto socket = std::make_shared<ssl_socket>(acceptor.get_io_service(), ssl_ctx);
 	acceptor.async_accept(socket->lowest_layer(),[this, &ssl_ctx, &acceptor, socket]( const boost::system::error_code &ec)
 	{
@@ -131,7 +124,7 @@ void http_server::start_accept(ssl_context& ssl_ctx, tcp_acceptor& acceptor)
 			};
             socket->async_handshake(ssl::stream_base::server, handshake_cb);
 		}
-		else //LOGERROR(ec.message());
+	//	else //LOGERROR(ec.message());
 
 		start_accept(ssl_ctx, acceptor);
 	});
@@ -212,14 +205,10 @@ void http_server::listen(boost::asio::io_service &io, bool ssl )
 	}
 }
 
-bool http_server::load_certificate(const std::string& cert, const std::string& key, const std::string& pass) noexcept
+void http_server::add_certificate(const std::string &cert, const std::string &key, const std::string &pass)
 {
-    std::ifstream pwdfile;
-    pwdfile.open(pass);
-    std::string pwd {};
-    std::string c;
-    while(std::getline(pwdfile, c)) pwd +=c;
-    return sni.load_certificate(cert, key, pass);
+	if(running.load()) throw std::invalid_argument{"Could not add certificate when the server is running"};
+	sni.add_certificate(cert, key, pass);
 }
 
 }//namespace

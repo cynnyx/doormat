@@ -19,7 +19,7 @@ void MockConnector::do_write()
 	auto all_cbs = _handler->write_feedbacks();
 	for(auto &cb : all_cbs)
 	{
-		io_service().post(cb);
+		io_service().post(cb.first);
 	}
 }
 

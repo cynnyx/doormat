@@ -89,7 +89,7 @@ public:
 		res = res_handler;
 	}
 
-	std::weak_ptr<http::request> req;
+	std::shared_ptr<http::request> req;
 	std::weak_ptr<http::response> res;
 	bool valid() const noexcept { return id_ >= 0; }
 	void invalidate() noexcept;
