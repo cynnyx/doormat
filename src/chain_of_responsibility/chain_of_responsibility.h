@@ -25,13 +25,13 @@ struct node
 		, next{n}
 		, t(
 			[this](http::http_request&& message){ next->request_preamble(std::move(message)); },
-			[this](dstring &&chunk) { next->request_body(std::move(chunk)); },
-			[this](dstring&& k, dstring&& v) { next->request_trailer(std::move(k),std::move(v)); },
+			[this](auto&& data, auto len) { next->request_body(std::move(data), len); },
+			[this](auto&& k, auto&& v) { next->request_trailer(std::move(k),std::move(v)); },
 			[this](const errors::error_code&ec){next->request_canceled(ec);},
 			[this](){next->request_finished(); },
 			[this](http::http_response &&header) { prev->header(std::move(header)); },
-			[this](dstring &&chunk) {prev->body(std::move(chunk)); },
-			[this](dstring&& k, dstring&& v) {prev->trailer(std::move(k),std::move(v)); },
+			[this](auto&& data, auto len) {prev->body(std::move(data), len); },
+			[this](auto&& k, auto&& v) {prev->trailer(std::move(k),std::move(v)); },
 			[this](){prev->end_of_message();},
 			[this](const errors::error_code &ec){prev->error(ec);},
 			[this](){prev->response_continue();}, aclogger)
@@ -121,13 +121,13 @@ struct node<I, 0, M, T...>
 		, next{n}
 		, t(
 			[this](http::http_request&& message){ next->request_preamble(std::move(message)); },
-			[this](dstring&& chunk){ next->request_body(std::move(chunk)); },
-			[this](dstring&& k, dstring&& v){ next->request_trailer(std::move(k), std::move(v)); },
+			[this](auto&& data, auto len){ next->request_body(std::move(data), len); },
+			[this](auto&& k, auto&& v){ next->request_trailer(std::move(k), std::move(v)); },
 			[this](const errors::error_code&ec){next->request_canceled(ec);},
 			[this](){next->request_finished(); },
 			[this](http::http_response &&header) { prev->header(std::move(header)); },
-			[this](dstring&& chunk) {prev->body(std::move(chunk)); },
-			[this](dstring&& k, dstring&& v) {prev->trailer(std::move(k), std::move(v));},
+			[this](auto&& data, auto len) {prev->body(std::move(data), len); },
+			[this](auto&& k, auto&& v) {prev->trailer(std::move(k), std::move(v));},
 			[this](){prev->end_of_message(); },
 			[this](const errors::error_code &ec){prev->error(ec); },
 			[this](){prev->response_continue();}, aclogger)
@@ -215,13 +215,13 @@ struct node<I, 0, 0, T>
 		: prev{p}
 		, t(
 			[this](http::http_request&&){ /*do nothing: we need to receive body. */},
-			[this](dstring &&) { /* do nothing, we don't know if it is the last one! */},
-			[this](dstring&&, dstring&&){},
+			[this](auto&&, auto) { /* do nothing, we don't know if it is the last one! */},
+			[this](auto&&, auto&&){},
 			[this](const errors::error_code&ec){this->error(ec);},
 			[this](){ },
 			[this](http::http_response &&header) { prev->header(std::move(header)); },
-			[this](dstring&& chunk) { prev->body(std::move(chunk)); },
-			[this](dstring&& k, dstring&& v) { prev->trailer(std::move(k), std::move(v)); },
+			[this](auto&& data, auto len) { prev->body(std::move(data), len); },
+			[this](auto&& k, auto&& v) { prev->trailer(std::move(k), std::move(v)); },
 			[this](){ prev->end_of_message(); },
 			[this](const errors::error_code &ec){ prev->error(ec); },
 			[this](){prev->response_continue();}, aclogger)
@@ -309,13 +309,13 @@ struct node<I,N, N, T...>
 		, t(
 			//request forward callback
 			[this](http::http_request&&){},
-			[this](dstring&&) {},
-			[this](dstring&&,dstring&&) {},
+			[this](auto&&, auto) {},
+			[this](auto&&,auto&&) {},
 			[this](const errors::error_code&ec){this->error(ec); },
 			[this](){ },
 			[this](http::http_response &&header) { prev->header(std::move(header));},
-			[this](dstring&& chunk){ prev->body(std::move(chunk)); },
-			[this](dstring&& k, dstring&& v){ prev->trailer(std::move(k), std::move(v)); },
+			[this](auto&& data, auto len){ prev->body(std::move(data), len); },
+			[this](auto&& k, auto&& v){ prev->trailer(std::move(k), std::move(v)); },
 			[this](){prev->end_of_message();},
 			[this](const errors::error_code &ec){prev->error(ec);},
 			[this](){prev->response_continue();}, aclogger)
@@ -398,14 +398,14 @@ struct chain<T,impl::integer_sequence<std::size_t, I...>, N...>: public T
 {
 	chain(logging::access_recorder *aclogger = nullptr)
 		: T(
-			[this](http::http_request&& message){ request_preamble(std::move(message));},
-			[this](dstring&& chunk) { request_body(std::move(chunk)); },
-			[this](dstring&& k, dstring&& v) { request_trailer(std::move(k), std::move(v)); },
-			[this](const errors::error_code&ec) { request_canceled(ec); },
-			[this](){ request_finished();},
+			[this](http::http_request&& message){ this->request_preamble(std::move(message));},
+			[this](auto&& data, auto len) { this->request_body(std::move(data), len); },
+			[this](auto&& k, auto&& v) { this->request_trailer(std::move(k), std::move(v)); },
+			[this](const errors::error_code&ec) { this->request_canceled(ec); },
+			[this](){ this->request_finished();},
 			[](http::http_response &&){ },
-			[](dstring&&){ },
-			[](dstring&& , dstring&&){ },
+			[](auto&&, auto){ },
+			[](auto&& , auto&&){ },
 			[](){ },
 			[](const errors::error_code &){ },
 			[](){}, nullptr

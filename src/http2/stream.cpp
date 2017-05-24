@@ -12,7 +12,7 @@
 
 #define MAKE_NV(NAME, VALUE) \
 { \
-	(uint8_t *)NAME.cdata(), (uint8_t *)VALUE.cdata(), NAME.size(), VALUE.size(), \
+	(uint8_t *)NAME.data(), (uint8_t *)VALUE.data(), NAME.size(), VALUE.size(), \
 		NGHTTP2_NV_FLAG_NO_COPY_NAME | NGHTTP2_NV_FLAG_NO_COPY_VALUE \
 }
 
@@ -67,10 +67,8 @@ void stream::on_request_header_complete()
 	managed_chain = std::move( cor );
 	managed_chain->on_request_preamble( std::move( request ) );*/
 	//to send back the headers, we need to get the handlers!
-	if(auto s =req.lock())
-	{
-		s->headers(std::move(request));
-	}
+	req->headers(std::move(request));
+
 }
 
 void stream::on_request_header( http::http_request::header_t&& h )
@@ -78,13 +76,10 @@ void stream::on_request_header( http::http_request::header_t&& h )
 	request.header( h.first, h.second );
 }
 
-void stream::on_request_body( dstring&& c )
+void stream::on_request_body( data_t d, size_t size )
 {
 	//managed_chain->on_request_body( std::move( c ) );
-    if(auto s =req.lock())
-    {
-        s->body(std::move(c));
-    }
+   req->body(std::move(d), size);
 }
 
 void stream::on_request_canceled( const errors::error_code &ec)
@@ -97,7 +92,7 @@ void stream::on_request_finished()
 {
 	LOGTRACE("stream ", this, " request end detected");
 	//managed_chain->on_request_finished();
-    if(auto s = req.lock()) s->finished();
+    req->finished();
 }
 
 void stream::on_request_ack()
@@ -212,7 +207,7 @@ ssize_t stream::data_source_read_callback ( nghttp2_session *session_, std::int3
 		return 0;
 
 	//*data_flags |= NGHTTP2_DATA_FLAG_NO_COPY; needed sooner or later
-	dstring& first = s_this->body.front();
+	auto& first = s_this->body.front();
 
 	std::size_t len = first.size() - s_this->body_index;
 	ssize_t r = std::min( len, length );
@@ -279,10 +274,11 @@ void stream::flush() noexcept
 	session_->do_write();
 }
 
-void stream::on_body( dstring&& c )
+void stream::on_body( data_t data, size_t size )
 {
 	LOGTRACE("stream::on_body");
-	body.emplace_back( c );
+
+	body.emplace_back( data.get(), size );
 	flush();
 }
 
@@ -343,7 +339,7 @@ void stream::on_header(  http::http_response && resp )
 		http::http_structured_data::headers_map::iterator found = prepared_headers.find( it.first );
 		if ( found != prepared_headers.end() )
 		{
-			dstring cval = found->second;
+			auto cval = found->second;
 			cval.append( ", " );
 			cval.append( it.second );
 			prepared_headers.emplace( http::http_structured_data::header_t{ it.first, cval } );
@@ -367,7 +363,7 @@ void stream::on_header(  http::http_response && resp )
 	flush();
 }
 
-void stream::on_trailer( dstring&& key, dstring&& value )
+void stream::on_trailer( std::string&& key, std::string&& value )
 {
 	LOGTRACE("stream:", this, " on_trailer");
 	trailers.emplace( http::http_structured_data::header_t{key, value} );
@@ -380,7 +376,7 @@ stream::~stream()
 	if ( trailers_nva ) destroy_headers( &trailers_nva );
 }
 
-void stream::uri_host( const dstring &p ) noexcept
+void stream::uri_host( const std::string &p ) noexcept
 {
 //	From RFC!
 //	Clients that generate HTTP/2 requests directly SHOULD use the ":authority"

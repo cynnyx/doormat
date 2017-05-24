@@ -4,7 +4,7 @@
 #include <functional>
 #include <utility>
 #include <string>
-#include <iostream>
+#include <memory>
 
 #include <assert.h>
 #include <boost/noncopyable.hpp>
@@ -16,15 +16,15 @@
 
 /*Functions used to send data and events downstream*/
 using req_preamble_fn = std::function<void(http::http_request &&)>;
-using req_chunk_fn = std::function<void(dstring&&)>;
-using req_trailer_fn = std::function<void(dstring&&, dstring&&)>;
+using req_chunk_fn = std::function<void(std::unique_ptr<const char[]>, size_t)>;
+using req_trailer_fn = std::function<void(std::string&&, std::string&&)>;
 using req_finished_fn = std::function<void(void)>;
 using req_canceled_fn = std::function<void(const errors::error_code &)>;
 
 /** Functions used to send data and events upstream*/
 using header_callback = std::function<void(http::http_response &&)>;
-using body_callback = std::function<void(dstring&&)>;
-using trailer_callback = std::function<void(dstring&&, dstring&&)>;
+using body_callback = std::function<void(std::unique_ptr<const char[]>, size_t)>;
+using trailer_callback = std::function<void(std::string&&, std::string&&)>;
 using end_of_message_callback = std::function<void()>;
 using error_callback = std::function<void(const errors::error_code &)>;
 using response_continue_callback = std::function<void()>;
@@ -32,6 +32,7 @@ using response_continue_callback = std::function<void()>;
 struct node_interface : private boost::noncopyable
 {
 	using base = node_interface;
+	using data_t = std::unique_ptr<const char[]>;
 
 	node_interface() = default;
 	node_interface(req_preamble_fn request_preamble, req_chunk_fn request_body, req_trailer_fn request_trailer,
@@ -69,14 +70,14 @@ struct node_interface : private boost::noncopyable
 	 *  the reference.
 	 * */
 	void on_request_preamble(http::http_request&& message) { request_preamble(std::move(message)); }
-	void on_request_body(dstring&& chunk) { request_body(std::move(chunk)); }
-	void on_request_trailer(dstring&& k, dstring&& v) { request_trailer(std::move(k),std::move(v)); }
+	void on_request_body(data_t data, size_t len) { request_body(std::move(data), len); }
+	void on_request_trailer(std::string&& k, std::string&& v) { request_trailer(std::move(k),std::move(v)); }
 	void on_request_finished(){ request_finished(); }
 	void on_request_canceled(const errors::error_code&ec){ request_canceled(ec); }
 
 	void on_header(http::http_response &&h) { header(std::move(h)); }
-	void on_body(dstring&& chunk){body(std::move(chunk));}
-	void on_trailer(dstring&& k, dstring&& v){trailer(std::move(k),std::move(v));}
+	void on_body(data_t data, size_t len) { body(std::move(data), len); }
+	void on_trailer(std::string&& k, std::string&& v){trailer(std::move(k),std::move(v));}
 	void on_end_of_message() { end_of_message(); }
 
 	void on_error(const errors::error_code &ec) { error(ec); }
@@ -95,15 +96,15 @@ protected:
 private:
 	//entry point not defined in derived class
 	req_preamble_fn request_preamble = [](http::http_request&&) {assert(false);};
-	req_chunk_fn request_body = [](dstring&&){assert(false); };
-	req_trailer_fn request_trailer = [](dstring&&, dstring&&){assert(false); };
+	req_chunk_fn request_body = [](auto&&, auto&&){assert(false); };
+	req_trailer_fn request_trailer = [](std::string&&, std::string&&){assert(false); };
 	req_canceled_fn request_canceled = [](const errors::error_code &){ assert(false); };
 	req_finished_fn request_finished = [](){assert(false); };
 
 	//triggers
 	header_callback header = [](http::http_response &&){};
-	body_callback body = [](dstring&&){};
-	trailer_callback trailer = [](dstring&&,dstring&&){};
+	body_callback body = [](auto&&, auto&&){};
+	trailer_callback trailer = [](std::string&&,std::string&&){};
 	end_of_message_callback end_of_message = [](){};
 	error_callback error = [](const errors::error_code &){};
 

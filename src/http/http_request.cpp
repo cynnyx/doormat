@@ -12,7 +12,7 @@ namespace http
 #undef YY
 
 
-dstring http_request::serialize() const noexcept
+std::string http_request::serialize() const noexcept
 {
 	dstring msg;
 	msg.append(method()).append(http::space);
@@ -50,7 +50,7 @@ void http_request::method(const std::string& val) noexcept
 	}
 }
 
-dstring http_request::method() const noexcept
+std::string http_request::method() const noexcept
 {
 	return dstring{method_mapper[_method]};
 }

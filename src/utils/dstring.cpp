@@ -97,6 +97,10 @@ dstring::dstring(const unsigned char* c , size_t len, const bool caseins) noexce
 	: dstring{reinterpret_cast<const char*>(c), len, caseins}
 {}
 
+dstring::dstring(const std::string& s)
+	: dstring{s.data(), s.size(), false}
+{}
+
 dstring::~dstring() noexcept
 {
 	reset();

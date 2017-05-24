@@ -137,6 +137,9 @@ static void parse_opt(int argc, char** argv)
 
 int doormat( int argc, char** argv )
 {
+	parse_opt(argc, argv);
+	std::cout << configuration_file_path << std::endl;
+	service::initializer::load_configuration(configuration_file_path, check_configuration_mode);
 	/*
 	int rv{EXIT_FAILURE};
 
@@ -148,7 +151,7 @@ int doormat( int argc, char** argv )
 	signals_handlers::set(SIGUSR1, &l_handler);
 
 	//Load Configuration
-	bool valid_conf = service::initializer::load_configuration(configuration_file_path, check_configuration_mode);
+
 	if(check_configuration_mode)
 		exit(!valid_conf);
 
@@ -211,10 +214,13 @@ int doormat( int argc, char** argv )
 	//Main loop
 	log_wrapper::init(false, "error", "/tmp/doormat_log.txt");
 	doormat_srv.reset(new server::http_server{1000, 1443, 8888});
-	doormat_srv->load_certificate("./etc/doormat/certificates/npn/newcert.pem", 
-		"./etc/doormat/certificates/npn/newkey.pem", "pippo123");
-	doormat_srv->load_certificate("./etc/doormat/certificates/npn1/newcert.pem", 
-		"./etc/doormat/certificates/npn1/newkey.pem", "pippo123");
+	auto& configuration_wrapper = service::locator::configuration();
+	auto certificates_iterator = configuration_wrapper.iterator();
+	while(certificates_iterator.is_valid()){
+
+		doormat_srv->add_certificate(certificates_iterator.certificate_file(), certificates_iterator.key_file(), certificates_iterator.key_password());
+		certificates_iterator.next();
+	}
 
 	doormat_srv->on_client_connect([&io](auto conn)
 	{
@@ -231,7 +237,7 @@ int doormat( int argc, char** argv )
 						r->clear_preamble();
 					});
 
-					r->on_body([](auto r, std::unique_ptr<char> body, size_t s)
+					r->on_body([](auto r, auto&& body, size_t s)
 					{
 						std::cout << "received body" << std::endl;
 						//std::cout << std::string{body.get(), s} << std::endl;
@@ -243,10 +249,10 @@ int doormat( int argc, char** argv )
 						http::http_response res;
 						res.protocol(http::proto_version::HTTP11);
 						res.status(200);
-						std::string body{"ciao"};
-						res.content_len(body.size());
+						auto body = std::unique_ptr<char[]>(new char[4]{'c', 'i', 'a', 'o'});
+						res.content_len(4);
 						b->headers(std::move(res));
-						b->body(dstring{body.c_str(), body.size()});
+						b->body(std::move(body), 4);
 						b->end();
 
 					});

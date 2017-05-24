@@ -34,13 +34,13 @@ public:
 	void on_error(const errors::error_code &ec);
 
 	void on_request_preamble(http::http_request&& preamble);
-	void on_request_body(dstring&& chunk);
-	void on_request_trailer(dstring&& k, dstring&& v);
+	void on_request_body(data_t data, size_t len);
+	void on_request_trailer(std::string&& k, std::string&& v);
 	void on_request_finished();
 
     void on_header(http::http_response&&res);
-    void on_body(dstring &&);
-    void on_trailer(dstring &&, dstring &&);
+	void on_body(data_t, size_t);
+	void on_trailer(std::string &&, std::string &&);
     void on_end_of_message();
 };
 

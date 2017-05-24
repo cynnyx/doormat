@@ -15,6 +15,8 @@
 namespace http
 {
 
+// TODO: this interface needs to be reviewed after dstring death
+
 /** Headers needed, whatever happens:
  * . Connection
  * . Content-Length / Chunked Enconding
@@ -22,13 +24,13 @@ namespace http
 class http_structured_data
 {
 public:
-	using headers_map = std::multimap<dstring, dstring>;
+	using headers_map = std::multimap<std::string, std::string>;
 private:
 	std::type_index _type;
 
 	proto_version _protocol {proto_version::UNSET};
 	proto_version _channel {proto_version::UNSET};
-	headers_map _headers;
+	std::multimap<dstring, dstring> _headers;
 
 	bool _chunked {false};
 	bool _keepalive {false};
@@ -61,24 +63,21 @@ public:
 	// Better make it protected and not virtual
 	virtual ~http_structured_data() noexcept = default;
 
-	void header( const dstring& key, const dstring& value ) noexcept;
-	void remove_header( const dstring& key ) noexcept;
+	void header( const std::string& key, const std::string& value ) noexcept;
+	void remove_header( const std::string& key ) noexcept;
 
 	// I feel lucky, I'd take only the first hit
-	const dstring& header( const dstring& key ) const noexcept;
-	std::list<dstring> headers( const dstring& key ) const noexcept;
+	std::string header( const std::string& key ) const noexcept;
+	std::list<std::string> headers( const std::string& key ) const noexcept;
 
 	// HTTP2ng needs this
-	const headers_map& headers() const noexcept { return _headers; }
+	headers_map headers() const;
 	std::size_t headers_count() const noexcept { return _headers.size(); }
 
-	//void add_destination_header( const dstring& key );
-	//void set_destination_header( const routing::abstract_destination_provider::address& );
-
-	bool has( const dstring& ) const noexcept;
+	bool has( const std::string& ) const noexcept;
 	bool has( std::function<bool ( const header_t& ) > ) const noexcept;
-	bool has( const dstring& , const dstring& ) const noexcept;
-	bool has( const dstring& , std::function<bool(const dstring&)> ) const noexcept;
+	bool has( const std::string& , const std::string& ) const noexcept;
+	bool has( const std::string& , std::function<bool(const std::string&)> ) const noexcept;
 	void filter ( std::function< bool ( const header_t& ) > );
 
 	bool chunked() const noexcept { return _chunked; }
@@ -87,22 +86,22 @@ public:
 	proto_version protocol_version() const noexcept { return _protocol; }
 	proto_version channel() const noexcept { return _channel; }
 	boost::asio::ip::address origin() const noexcept { return _origin; }
-	dstring protocol() const noexcept;
-	const dstring& date() const noexcept { return header( http::hf_date ); }
-	const dstring& hostname() const noexcept { return header( http::hf_host ); }
+	std::string protocol() const noexcept;
+	std::string date() const noexcept { return header( http::hf_date ); }
+	std::string hostname() const noexcept { return header( http::hf_host ); }
 
 	void chunked ( bool val ) noexcept;
 	void keepalive ( bool val ) noexcept;
 	void content_len ( const size_t& val ) noexcept;
 	void protocol ( const proto_version& val ) noexcept;
 	void channel ( const proto_version& val ) noexcept { _channel = val; }
-	void hostname ( const dstring& val ) noexcept { header(http::hf_host, val );}
-	void date ( const dstring& val ) noexcept { remove_header(http::hf_date); header ( http::hf_date, val ); }
+	void hostname ( const std::string& val ) noexcept { header(http::hf_host, val );}
+	void date ( const std::string& val ) noexcept { remove_header(http::hf_date); header ( http::hf_date, val ); }
 	void origin ( const boost::asio::ip::address& a ) { _origin = a; }
 
-	dstring serialize() const noexcept;
+	std::string serialize() const noexcept;
 };
 
-dstring proto_to_string( proto_version pv ) noexcept;
+std::string proto_to_string( proto_version pv ) noexcept;
 
 }

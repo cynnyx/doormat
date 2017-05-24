@@ -39,9 +39,9 @@ public:
 	virtual bool start() noexcept = 0;
 	virtual bool should_stop() const noexcept = 0;
 	virtual bool on_read(const char*, unsigned long) = 0;
-	virtual bool on_write(dstring& chunk) = 0;
+	virtual bool on_write(std::string& chunk) = 0;
 	virtual void trigger_timeout_event() =0;
-	virtual std::vector<std::function<void()>> write_feedbacks(){ return {}; }
+	virtual std::vector<std::pair<std::function<void()>, std::function<void()>>> write_feedbacks(){ return {}; }
 
 	virtual ~http_handler() = default;
 };

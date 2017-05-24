@@ -19,7 +19,7 @@ TEST(cor_propagation, request_propagation)
 		using node_interface::node_interface;
 
         void on_request_preamble(http::http_request&& message) {  ++count; base::on_request_preamble(std::move(message)); }
-		void on_request_body(dstring&& chunk) {  ++count; base::on_request_body(std::move(chunk)); }
+		void on_request_body(data_t data, size_t len) {  ++count; base::on_request_body(std::move(data), len); }
 	};
 
 	struct n2 : public node_interface
@@ -27,16 +27,16 @@ TEST(cor_propagation, request_propagation)
 		using node_interface::node_interface;
 
         void on_request_preamble(http::http_request&& message) { ++count; base::on_request_preamble(std::move(message)); }
-		void on_request_body(dstring&& chunk) { ++count; base::on_request_body(std::move(chunk)); }
+		void on_request_body(data_t data, size_t len) { ++count; base::on_request_body(std::move(data), len); }
 	};
 
 	auto c = make_unique_chain<node_interface,n2, n1, n2, n1,n2, n1, n2, n1>();
-    c->initialize_callbacks([](http::http_response &&) {}, [](dstring &&) {}, [](dstring &&, dstring &&) {}, []() {},
-                            [](const errors::error_code &) {}, []() {});
+	c->initialize_callbacks([](http::http_response &&) {}, [](auto&&, auto&&) {}, [](auto&&, auto&&) {}, []() {},
+							[](const errors::error_code &) {}, []() {});
 
 	http::http_request msg{true};
 	c->on_request_preamble(std::move(msg));
-	c->on_request_body({});
+	c->on_request_body({}, 0);
 	c->on_request_finished();
 	ASSERT_EQ(count, 16);
 }
@@ -50,9 +50,9 @@ TEST(cor_propagation, request_propagation_and_on_body)
 
 		n1() {}
 
-		void on_body(dstring&& chunk)
+		void on_body(data_t data, size_t len)
 		{
-			base::on_body(std::move(chunk));
+			base::on_body(std::move(data), len);
 		}
 	};
 
@@ -60,12 +60,12 @@ TEST(cor_propagation, request_propagation_and_on_body)
 	{
 		using node_interface::node_interface;
 
-        n2() {}
+		n2() {}
 
-        void on_body(dstring&& chunk)
+		void on_body(data_t data, size_t len)
 		{
 			++count;
-			base::on_body(std::move(chunk));
+			base::on_body(std::move(data), len);
 		}
 	};
 
@@ -78,14 +78,14 @@ TEST(cor_propagation, request_propagation_and_on_body)
 		void on_request_preamble(http::http_request&& message)
 		{
 
-			base::on_body({});
+			base::on_body({}, 0);
 		}
 	};
 
 	auto c = make_unique_chain<node_interface,n1, n2, n3>();
-    c->initialize_callbacks([](http::http_response &&) {}, [](dstring &&) { ++count; }, [](dstring &&, dstring &&) {},
-                            []() {},
-                            [](const errors::error_code &ec) {}, []() {});
+	c->initialize_callbacks([](http::http_response &&) {}, [](auto&&, auto&&) { ++count; }, [](auto&&, auto&&) {},
+							[]() {},
+							[](const errors::error_code &ec) {}, []() {});
 
 	http::http_request msg{true};
 	c->on_request_preamble(std::move(msg));
@@ -99,33 +99,33 @@ TEST(cor_propagation, multiple_body_propagation)
 	{
 		using node_interface::node_interface;
 
-        n1() {}
-    };
+		n1() {}
+	};
 
 	struct n2 : public node_interface
 	{
 		using node_interface::node_interface;
 
-        n2() {}
-    };
+		n2() {}
+	};
 
 	struct n3 : public node_interface
 	{
 		using node_interface::node_interface;
 
-        n3() {}
+		n3() {}
 
-        void on_request_preamble(http::http_request&& message)
+		void on_request_preamble(http::http_request&& message)
 		{
-			base::on_body({});
-			base::on_body({});
+			base::on_body({}, 0);
+			base::on_body({}, 0);
 		}
 	};
 
 	auto c = make_unique_chain<node_interface,n1, n2, n3>();
-    c->initialize_callbacks([](http::http_response &&) {}, [](dstring &&) { ++count; }, [](dstring &&, dstring &&) {},
-                            []() {},
-                            [](const errors::error_code &ec) {}, []() {});
+	c->initialize_callbacks([](http::http_response &&) {}, [](auto&&, auto&&) { ++count; }, [](auto&&, auto&&) {},
+							[]() {},
+							[](const errors::error_code &ec) {}, []() {});
 
 	http::http_request msg{true};
 	c->on_request_preamble(std::move(msg));
@@ -139,11 +139,11 @@ TEST(cor_propagation, request_propagation_on_header)
 	{
 		using node_interface::node_interface;
 
-        n1() {}
+		n1() {}
 
-        void on_body(dstring&& chunk)
+		void on_body(data_t data, size_t len)
 		{
-			base::on_body(std::move(chunk));
+			base::on_body(std::move(data), len);
 		}
 	};
 
@@ -151,9 +151,9 @@ TEST(cor_propagation, request_propagation_on_header)
 	{
 		using node_interface::node_interface;
 
-        n2() {}
+		n2() {}
 
-        void on_header(http::http_response &&h)
+		void on_header(http::http_response &&h)
 		{
 			++count;
 			base::on_header(std::move(h));
@@ -164,18 +164,18 @@ TEST(cor_propagation, request_propagation_on_header)
 	{
 		using node_interface::node_interface;
 
-        n3() {}
+		n3() {}
 
-        void on_request_preamble(http::http_request&& message)
+		void on_request_preamble(http::http_request&& message)
 		{
 			base::on_header({});
 		}
 	};
 
 	auto c = make_unique_chain<node_interface,n1, n2, n3>();
-    c->initialize_callbacks([](http::http_response &&) { ++count; }, [](dstring &&) {}, [](dstring &&, dstring &&) {},
-                            []() {},
-                            [](const errors::error_code &ec) {}, []() {});
+	c->initialize_callbacks([](http::http_response &&) { ++count; }, [](auto&&, auto&&) {}, [](auto&&, auto&&) {},
+							[]() {},
+							[](const errors::error_code &ec) {}, []() {});
 
 	http::http_request msg{true};
 	c->on_request_preamble(std::move(msg));
@@ -189,34 +189,34 @@ TEST(cor_propagation, end_of_message)
 	{
 		using node_interface::node_interface;
 
-        n1() {}
-    };
+		n1() {}
+	};
 
 	struct n2 : public node_interface
 	{
 		using node_interface::node_interface;
 
-        n2() {}
-    };
+		n2() {}
+	};
 
 	struct n3 : public node_interface
 	{
 		using node_interface::node_interface;
 
-        n3() {}
+		n3() {}
 
-        void on_request_preamble(http::http_request&& message)
+		void on_request_preamble(http::http_request&& message)
 		{
-			base::on_body({});
-			base::on_body({});
+			base::on_body({}, 0);
+			base::on_body({}, 0);
 			base::on_end_of_message();
 		}
 	};
 
 	auto c = make_unique_chain<node_interface,n1, n2, n3>();
-    c->initialize_callbacks([](http::http_response &&) {}, [](dstring &&) { ++count; }, [](dstring &&, dstring &&) {},
-                            []() { ++count; },
-                            [](const errors::error_code &ec) {}, []() {});
+	c->initialize_callbacks([](http::http_response &&) {}, [](auto&&, auto&&) { ++count; }, [](auto&&, auto&&) {},
+							[]() { ++count; },
+							[](const errors::error_code &ec) {}, []() {});
 
 	http::http_request msg{true};
 	c->on_request_preamble(std::move(msg));
@@ -230,32 +230,32 @@ TEST(cor_propagation, error)
 	{
 		using node_interface::node_interface;
 
-        n1() {}
-    };
+		n1() {}
+	};
 
 	struct n2 : public node_interface
 	{
 		using node_interface::node_interface;
 
-        n2() {}
-    };
+		n2() {}
+	};
 
 	struct n3 : public node_interface
 	{
 		using node_interface::node_interface;
 
-        n3() {}
+		n3() {}
 
-        void on_request_preamble(http::http_request&& message)
+		void on_request_preamble(http::http_request&& message)
 		{
 			base::on_error( INTERNAL_ERROR_LONG(500) );
 		}
 	};
 
 	auto c = make_unique_chain<node_interface,n1, n2, n3>();
-    c->initialize_callbacks([](http::http_response &&) { count = 0; }, [](dstring &&) { count = 0; },
-                            [](dstring &&, dstring &&) {}, []() { count = 0; },
-                            [](const errors::error_code &ec) { ++count; }, []() {});
+	c->initialize_callbacks([](http::http_response &&) { count = 0; }, [](auto&&, auto&&) { count = 0; },
+							[](auto&&, auto&&) {}, []() { count = 0; },
+							[](const errors::error_code &ec) { ++count; }, []() {});
 
 	http::http_request msg{true};
 	c->on_request_preamble(std::move(msg));
@@ -270,9 +270,9 @@ TEST(cor_propagation, trailer_propagation)
 	{
 		using node_interface::node_interface;
 
-        n1() {}
+		n1() {}
 
-		void on_trailer(dstring&& k, dstring&& v)
+		void on_trailer(std::string&& k, std::string&& v)
 		{
 			base::on_trailer(std::move(k), std::move(v));
 		}
@@ -282,9 +282,9 @@ TEST(cor_propagation, trailer_propagation)
 	{
 		using node_interface::node_interface;
 
-        n2() {}
+		n2() {}
 
-		void on_trailer(dstring&& k, dstring&& v)
+		void on_trailer(std::string&& k, std::string&& v)
 		{
 			++count;
 			base::on_trailer(std::move(k), std::move(v));
@@ -304,9 +304,9 @@ TEST(cor_propagation, trailer_propagation)
 	};
 
 	auto c = make_unique_chain<node_interface,n1, n2, n3>();
-    c->initialize_callbacks([](http::http_response &&) {}, [](dstring &&) {}, [](dstring &&, dstring &&) { ++count; },
-                            []() {},
-                            [](const errors::error_code &ec) {}, []() {});
+	c->initialize_callbacks([](http::http_response &&) {}, [](auto&&, auto&&) {}, [](auto&&, auto&&) { ++count; },
+							[]() {},
+							[](const errors::error_code &ec) {}, []() {});
 
 	http::http_request msg{true};
 	c->on_request_preamble(std::move(msg));
@@ -320,16 +320,16 @@ TEST(cor_propagation, middle_error)
 	{
 		using node_interface::node_interface;
 
-        n1() {}
-    };
+		n1() {}
+	};
 
 	struct n2 : public node_interface
 	{
 		using node_interface::node_interface;
 
-        n2() {}
+		n2() {}
 
-        void on_request_preamble(http::http_request&& message)
+		void on_request_preamble(http::http_request&& message)
 		{
 			auto ciao = INTERNAL_ERROR(666);
 			base::on_error(ciao);
@@ -340,11 +340,11 @@ TEST(cor_propagation, middle_error)
 	{
 		using node_interface::node_interface;
 
-        n3() {}
+		n3() {}
 
-        void on_request_preamble(http::http_request&& message) { count = 0;}
+		void on_request_preamble(http::http_request&& message) { count = 0;}
 		void on_header(http::http_structured_data &&h) {count=0;}
-		void on_body(dstring&& chunk){count = 0;}
+		void on_body(data_t, size_t){count = 0;}
 		void on_error(const errors::error_code &ec) {count=0;}
 		void on_end_of_message(){count=0;}
 		void on_request_preamble_complete(){count=0; }
@@ -352,9 +352,9 @@ TEST(cor_propagation, middle_error)
 	};
 
 	auto c = make_unique_chain<node_interface,n1, n2, n3, n3, n3, n3>();
-    c->initialize_callbacks([](http::http_response &&) { count = 0; }, [](dstring &&) { count = 0; },
-                            [](dstring &&, dstring &&) {}, []() { count = 0; },
-                            [](const errors::error_code &ec) { ++count; }, []() {});
+	c->initialize_callbacks([](http::http_response &&) { count = 0; }, [](auto&&, auto&&) { count = 0; },
+							[](auto&&, auto&&) {}, []() { count = 0; },
+							[](const errors::error_code &ec) { ++count; }, []() {});
 
 	http::http_request msg{true};
 	c->on_request_preamble(std::move(msg));
@@ -370,9 +370,9 @@ TEST(cor_propagation, asynchronous_fw)
 	struct n1 : public node_interface {
 		using node_interface::node_interface;
 
-        n1() {}
+		n1() {}
 
-        void on_request_preamble(http::http_request&& message)
+		void on_request_preamble(http::http_request&& message)
 		{
 			count = 1;
 			base::on_request_preamble(std::move(message));
@@ -381,9 +381,9 @@ TEST(cor_propagation, asynchronous_fw)
 
 	struct n2 : public node_interface
 	{
-        n2() {}
+		n2() {}
 
-        int ciao = 0;
+		int ciao = 0;
 		using node_interface::node_interface;
 		void on_request_preamble(http::http_request&& message)
 		{
@@ -399,9 +399,9 @@ TEST(cor_propagation, asynchronous_fw)
 	{
 		using node_interface::node_interface;
 
-        n3() {}
+		n3() {}
 
-        void on_request_preamble(http::http_request&& message)
+		void on_request_preamble(http::http_request&& message)
 		{
 			ASSERT_TRUE(has_called_asynchronously);
 			ASSERT_EQ(count, 1);
@@ -411,8 +411,8 @@ TEST(cor_propagation, asynchronous_fw)
 	};
 
 	auto c = make_unique_chain<node_interface,n1, n2, n3>();
-    c->initialize_callbacks([](http::http_response &&) {}, [](dstring &&) {}, [](dstring &&, dstring &&) {}, []() {},
-                            [](const errors::error_code &ec) {}, []() {});
+	c->initialize_callbacks([](http::http_response &&) {}, [](auto&&, auto&&) {}, [](auto&&, auto&&) {}, []() {},
+							[](const errors::error_code &ec) {}, []() {});
 
 	http::http_request msg{true};
 	c->on_request_preamble(std::move(msg));
@@ -430,9 +430,9 @@ TEST(cor_propagation, asynchronous_bw)
 	struct n1 : public node_interface {
 		using node_interface::node_interface;
 
-        n1() {}
+		n1() {}
 
-        void on_request_preamble(http::http_request&& message)
+		void on_request_preamble(http::http_request&& message)
 		{
 			count = 1;
 			base::on_request_preamble(std::move(message));
@@ -441,9 +441,9 @@ TEST(cor_propagation, asynchronous_bw)
 
 	struct n2 : public node_interface
 	{
-        n2() {}
+		n2() {}
 
-        int ciao = 0;
+		int ciao = 0;
 		using node_interface::node_interface;
 		void on_request_preamble(http::http_request&& message)
 		{
@@ -472,24 +472,24 @@ TEST(cor_propagation, asynchronous_bw)
 	{
 		using node_interface::node_interface;
 
-        n3() {}
+		n3() {}
 
-        void on_request_preamble(http::http_request&& message)
+		void on_request_preamble(http::http_request&& message)
 		{
 			ASSERT_EQ(count, 1);
 			count++;
 			base::on_request_preamble(std::move(message));
 		}
 
-        void on_request_finished()
-        {
-            on_header(http::http_response{});
-        }
+		void on_request_finished()
+		{
+			on_header(http::http_response{});
+		}
 	};
 
 	auto c = make_unique_chain<node_interface,n1, n2, n3>();
-    c->initialize_callbacks([](http::http_response &&) {}, [](dstring &&) {}, [](dstring &&, dstring &&) {}, []() {},
-                            [](const errors::error_code &ec) {}, []() {});
+	c->initialize_callbacks([](http::http_response &&) {}, [](auto&&, auto&&) {}, [](auto&&, auto&&) {}, []() {},
+							[](const errors::error_code &ec) {}, []() {});
 
 	http::http_request msg{true};
 	c->on_request_preamble(std::move(msg));

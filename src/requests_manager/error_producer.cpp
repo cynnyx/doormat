@@ -49,19 +49,19 @@ void error_producer::on_error( const errors::error_code& ec )
     //the creation of the error factory object switches the behaviour of the node, not allowing anymore any information
     //to pass from upstream.
     efa->produce_error_response(
-            [this](http::http_response res){  base::on_header(std::move(res)); },
-            [this](dstring d) {  base::on_body(std::move(d)); },
-            [this](dstring k, dstring v) { base::on_trailer(std::move(k), std::move(v));},
-            [this](){ base::on_end_of_message(); }
+			[this](auto&& res){ static_cast<base*>(this)->on_header(std::move(res)); },
+			[this](auto&& data, auto&& len) { static_cast<base*>(this)->on_body(std::move(data), len); },
+			[this](auto&& k, auto&& v) { static_cast<base*>(this)->on_trailer(std::move(k), std::move(v)); },
+			[this](){ static_cast<base*>(this)->on_end_of_message(); }
     );
 }
 
-void error_producer::on_request_body( dstring&& chunk )
+void error_producer::on_request_body(data_t data , size_t len)
 {
-	if (!efa) base::on_request_body( std::move( chunk ) );
+	if (!efa) base::on_request_body( std::move( data ), len );
 }
 
-void error_producer::on_request_trailer(dstring&& k, dstring&& v)
+void error_producer::on_request_trailer(std::string&& k, std::string&& v)
 {
 	if(!efa) base::on_request_trailer( std::move( k ), std::move( v ) );
 }
@@ -76,16 +76,16 @@ void error_producer::on_header(http::http_response&& header)
 }
 
 
-void error_producer::on_body(dstring &&d)
+void error_producer::on_body(data_t data, size_t len)
 {
     if(!efa)
     {
-        return base::on_body(std::move(d));
+		return base::on_body(std::move(data), len);
     }
 }
 
 
-void error_producer::on_trailer(dstring &&k, dstring &&v)
+void error_producer::on_trailer(std::string&& k, std::string&& v)
 {
 
     if(!efa)

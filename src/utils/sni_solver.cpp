@@ -2,15 +2,20 @@
 #include "utils.h"
 #include "log_wrapper.h"
 
+#include "../service_locator/service_locator.h"
+#include "../configuration/configuration_wrapper.h"
+
+#include <fstream>
 #include <openssl/ssl.h>
 #include <boost/asio.hpp>
 #include <boost/system/error_code.hpp>
 #include <openssl/x509v3.h>
+#include <iostream>
 
 namespace ssl_utils
 {
 
-static const char *const DEFAULT_CIPHER_LIST =
+const char *const DEFAULT_CIPHER_LIST =
 	"ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:ECDHE-ECDSA-"
 	"AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-"
 	"SHA384:ECDHE-RSA-AES256-GCM-SHA384:DHE-RSA-AES128-GCM-SHA256:DHE-RSA-"
@@ -22,7 +27,7 @@ static const char *const DEFAULT_CIPHER_LIST =
 	"SHA256:AES256-GCM-SHA384:AES128-SHA256:AES256-SHA256:AES128-SHA:AES256-"
 	"SHA:DES-CBC3-SHA:!DSS";
 
-static void configure_tls_context_easy(SSL_CTX *ctx)
+void configure_tls_context_easy(SSL_CTX *ctx)
 {
 	auto ssl_opts = (SSL_OP_ALL & ~SSL_OP_DONT_INSERT_EMPTY_FRAGMENTS) |
 		SSL_OP_NO_SSLv2 | SSL_OP_NO_SSLv3 | SSL_OP_NO_COMPRESSION |
@@ -40,60 +45,110 @@ static void configure_tls_context_easy(SSL_CTX *ctx)
 	EC_KEY_free(ecdh);
 	}
 #endif /* OPENSSL_NO_EC */
+
+/*
+	SSL_CTX_set_next_protos_advertised_cb( ctx,
+	  [](SSL *s, const unsigned char **data, unsigned int *len, void *arg) {
+		auto &token = get_alpn_token();
+
+		*data = token.data();
+		*len = token.size();
+
+		return SSL_TLSEXT_ERR_OK;
+	  },
+	  nullptr);
+
+#if OPENSSL_VERSION_NUMBER >= 0x10002000L
+	// ALPN selection callback
+	SSL_CTX_set_alpn_select_cb(ctx, alpn_select_proto_cb, nullptr);
+#endif // OPENSSL_VERSION_NUMBER >= 0x10002000L
+*/
 }
 
-bool sni_solver::load_certificate(const std::string& cert, const std::string& key, const std::string& password) noexcept
+
+bool sni_solver::load_certificates()
 {
+	/** This will load all certificates; however it cannot work, since we don't have enough info! */
+
+	for(auto &t: raw_certificates)
+	{
+		if(!prepare_certificate(std::get<0>(t), std::get<1>(t), std::get<2>(t))) return false;
+	}
+
+
+	if(certificates_list.empty())
+	{
+		LOGWARN("could not load any certificate. HTTPS will not started.");
+		return false;
+	}
+
+	return true;
+}
+
+bool sni_solver::prepare_certificate(std::string certificate_file, std::string key_file, std::string key_password)
+{
+	certificates_list.emplace_back("", boost::asio::ssl::context::tlsv12);
+	auto& certificate = certificates_list.back();
+	auto& context = certificate.context;
+	configure_tls_context_easy( context.native_handle() );
+	std::ifstream password_file;
 	try
 	{
-		boost::asio::ssl::context ctx{boost::asio::ssl::context::tlsv12};
-
-		auto ssl_ctx = ctx.native_handle();
-		configure_tls_context_easy(ssl_ctx);
-		ctx.set_password_callback(
+		std::string decrypt_key_password = key_password;
+		password_file.open( decrypt_key_password );
+		std::string password;
+		std::getline( password_file, password );
+		password_file.close();
+		context.set_password_callback(
 			[ password ]( size_t maxLength, boost::asio::ssl::context::password_purpose purpose ) -> std::string
 			{
 				return password;
-			});
-		
-		ctx.use_private_key_file( key, boost::asio::ssl::context::pem );
-		ctx.use_certificate_chain_file( cert );
-		
-		SSL* ssl = SSL_new(ssl_ctx);
-		SSL_set_connect_state( ssl );
-		X509* x509 = SSL_get_certificate( ssl );
-		CRYPTO_add( &x509->references, 1, CRYPTO_LOCK_X509 );
-		SSL_free( ssl );
-		X509_NAME* subject = X509_get_subject_name( x509 );
-		if ( !subject )
-		{
-			LOGWARN("could not get server name from certificate.");
-			return false;
-		}
+			} );
+		context.use_private_key_file(key_file, boost::asio::ssl::context::pem);
+		context.use_certificate_chain_file(certificate_file);
+	}
+	catch ( const boost::system::error_code& ec )
+	{
+		LOGWARN("error while setting the password callback");
+		certificates_list.pop_back();
+		return false;
+	}
+	catch ( const std::ifstream::failure& open_error )
+	{
+		certificates_list.pop_back();
+		LOGWARN("could not open the password file, hence we cannot decrypt the certificate file");
+		return false;
+	} catch(...)
+	{
+		certificates_list.pop_back();
+		return false;
+	}
 
-		char cn[65];
-		std::memset(cn, 0, 65);
-		//int res = X509_NAME_get_text_by_NID( subject, NID_commonName, cn, 64 );
-		cn[64] = '\0';
-		ssl_ctx->tlsext_servername_arg = this;
-		std::string servername = std::string{ cn };
-		//certificate.x509 = x509;
-		SSL_CTX_set_tlsext_servername_callback( ssl_ctx, sni_callback );
-		
-		certificate current_cert{ servername, std::move(ctx), x509 };
-		certificates_list.emplace_back( std::move( current_cert ) ) ;
-		
-		return true;
-	}
-	catch ( boost::system::system_error& error )
+
+
+	//get server name from certificate
+	SSL* ssl = SSL_new( context.native_handle());
+	SSL_set_connect_state( ssl );
+	X509* x509 = SSL_get_certificate( ssl );
+	CRYPTO_add( &x509->references, 1, CRYPTO_LOCK_X509 );
+	SSL_free( ssl );
+	X509_NAME* subject = X509_get_subject_name( x509 );
+	if ( !subject )
 	{
-		LOGERROR("Certificate not loaded ", error.what(), " cert: ", cert, " key file: ", key, " password: ", password );
+		LOGWARN("could not get server name from certificate.");
+		return false;
 	}
-	catch ( ... )
-	{
-		LOGERROR("Certificate not loaded");
-	}
-	return false;
+
+	char cn[65];
+	std::memset(cn, 0, 65);
+	//int res = X509_NAME_get_text_by_NID( subject, NID_commonName, cn, 64 );
+	cn[64] = '\0';
+	auto ssl_ctx = context.native_handle();
+	ssl_ctx->tlsext_servername_arg = this;
+	certificate.server_name = std::string{ cn };
+	certificate.x509 = x509;
+	SSL_CTX_set_tlsext_servername_callback( ssl_ctx, sni_callback );
+	return true;
 }
 
 static std::string clean_wildcard_name( const std::string& name )

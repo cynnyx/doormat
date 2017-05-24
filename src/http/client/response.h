@@ -3,8 +3,7 @@
 
 #include <memory>
 #include <functional>
-#include <experimental/optional>
-#include <iostream>
+
 #include "../http_response.h"
 #include "../message_error.h"
 
@@ -37,8 +36,9 @@ public:
 	client_response& operator=(const client_response&) = delete;
 
 	/** Callback types. */
+	using data_t = std::unique_ptr<const char[]>;
 	using headers_callback_t = std::function<void(std::shared_ptr<client_response>)>;
-    using body_callback_t = std::function<void(std::shared_ptr<client_response>, std::unique_ptr<char[]> char_array, size_t size)>;
+	using body_callback_t = std::function<void(std::shared_ptr<client_response>, data_t char_array, size_t size)>;
 	using trailer_callback_t = std::function<void(std::shared_ptr<client_response>, std::string k, std::string v)>;
 	using finished_callback_t = std::function<void(std::shared_ptr<client_response>)>;
 	using error_callback_t = std::function<void(std::shared_ptr<client_response>, const http::connection_error &err)>;
@@ -62,21 +62,21 @@ private:
 
 	/** External handlers allowing to trigger events to be communicated to the user */
 	void headers(http::http_response &&);
-	void body(dstring&& d);
+	void body(data_t, size_t);
 	void error(http::connection_error err);
-	void trailer(dstring&&, dstring&&);
+	void trailer(std::string&&, std::string&&);
 	void finished();
 	void response_continue();
 
-	bool ended() { return response_ended; }
+	bool ended() const noexcept { return response_ended; }
 
 	/* User registered events */
-	std::experimental::optional<headers_callback_t> headers_callback;
-	std::experimental::optional<body_callback_t> body_callback;
-	std::experimental::optional<error_callback_t> error_callback;
-	std::experimental::optional<trailer_callback_t> trailer_callback;
-	std::experimental::optional<finished_callback_t> finished_callback;
-	std::experimental::optional<continue_callback_t> continue_callback;
+	headers_callback_t headers_callback;
+	body_callback_t body_callback;
+	error_callback_t error_callback;
+	trailer_callback_t trailer_callback;
+	finished_callback_t finished_callback;
+	continue_callback_t continue_callback;
 
 	std::shared_ptr<client_connection> connection_keepalive;
 	/** Ptr-to-self: to grant the user that, until finished() or error() event is propagated, the client_response will be alive*/
