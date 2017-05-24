@@ -53,15 +53,15 @@ inspector_log::inspector_log( const std::string &log_dir, const std::string &fil
 	logfile->open( log_dir + "/" + file_prefix + val + ".json" );
 }
 
-void inspector_log::jsonize_body( nlohmann::json &json, const std::list<dstring> &body )
+void inspector_log::jsonize_body( nlohmann::json &json, const std::list<std::string> &body )
 {
 	if ( body.size() == 0 || body.front().size() == 0 )
 		return;
 	std::list<std::string> encoded_body;
 	std::size_t len{0};
-	for ( const dstring& chunk : body )
+	for ( const std::string& chunk : body )
 	{
-		std::string ebody = utils::base64_encode( reinterpret_cast<const unsigned char*>( chunk.cdata() ),
+		std::string ebody = utils::base64_encode( reinterpret_cast<const unsigned char*>( chunk.data() ),
 			chunk.size() );
 		encoded_body.emplace_back( std::move( ebody ) );
 	}
@@ -83,8 +83,8 @@ void inspector_log::jsonize_headers( nlohmann::json &json, const http::http_stru
 	std::string multi_key;
 	for ( const http::http_structured_data::header_t& values : hrs )
 	{
-		dstring key = values.first;
-		dstring value = values.second;
+		auto& key = values.first;
+		auto& value = values.second;
 		if ( ! multi_key.empty() && multi_key != static_cast<std::string>( key ) )
 		{
 			json[multi_key] = multi_values;

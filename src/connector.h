@@ -9,7 +9,6 @@
 #include <boost/noncopyable.hpp>
 #include <boost/date_time/posix_time/posix_time_duration.hpp>
 
-#include "utils/dstring.h"
 #include "utils/reusable_buffer.h"
 #include "utils/log_wrapper.h"
 #include "protocol/http_handler.h"
@@ -41,7 +40,7 @@ public:
 	virtual void start(bool tcp_no_delay = false) = 0;
 protected:
 	reusable_buffer<MAXINBYTESPERLOOP> _rb;
-	dstring _out;
+	std::string _out;
 };
 
 // http_handler will become a template!?
@@ -215,14 +214,14 @@ public:
 		if (_writing || _stopped)
 			return;
 
-		_out = dstring{};
+		_out = {};
 		if ( !_handler->on_write(_out) )
 		{
 			//LOGDEBUG(this," error on_write - write failed");
 			return;
 		}
 
-		if( !_out.is_valid() && _handler->should_stop() )
+		if( _out.empty() && _handler->should_stop() )
 		{
 			//LOGDEBUG(this," nothing left to write, stopping");
 			stop();
@@ -231,13 +230,13 @@ public:
 
 		renew_ttl();
 
-		if( !_out.is_valid() )
+		if( _out.empty() )
 			return;
 
 		//LOGTRACE(this," triggered a write of ", _out.size(), " bytes");
 		_writing = true;
 		auto self = this->shared_from_this(); //Let the connector live inside the callback
-		boost::asio::async_write(*_socket, boost::asio::buffer(_out.cdata(), _out.size()),
+		boost::asio::async_write(*_socket, boost::asio::buffer(_out.data(), _out.size()),
 			[self, cbs = _handler->write_feedbacks()](const berror_code& ec, size_t s)
 			{
 				self->cancel_deadline();

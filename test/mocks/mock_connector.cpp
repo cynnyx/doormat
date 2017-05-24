@@ -13,7 +13,7 @@ MockConnector::~MockConnector()
 
 void MockConnector::do_write()
 {
-	dstring chunk;
+	std::string chunk;
 	_handler->on_write(chunk);
 	write_cb(chunk);
 	auto all_cbs = _handler->write_feedbacks();

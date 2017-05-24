@@ -97,10 +97,10 @@ stream* session::create_stream ( std::int32_t id )
 	{
 		stream_data->on_header(std::move(res));
 	},
-	[stream_data](dstring&& b){
-		stream_data->on_body(std::move(b));
+	[stream_data](auto&& b, auto len){
+		stream_data->on_body(std::move(b), len);
 	},
-	[stream_data](dstring &&k, dstring&&v) {
+	[stream_data](auto&& k, auto&& v) {
 		stream_data->on_trailer(std::move(k), std::move(v));
 	},
 	[stream_data]() {
@@ -308,8 +308,9 @@ int session::on_data_chunk_recv_callback(nghttp2_session *session_, uint8_t flag
 	session* s_this = static_cast<session*>( user_data );
 	stream* req = static_cast<stream*>( nghttp2_session_get_stream_user_data(session_, stream_id) );
 
-	dstring body{ data, len }; /// @warning : we don't have ownership of this stuff - this should come out of input
-	req->on_request_body( std::move(body) );
+	auto ptr = std::make_unique<char[]>(len);
+	std::copy(data, data + len, ptr.get()); /// @warning : we don't have ownership of this stuff - this should come out of input
+	req->on_request_body( std::move(ptr), len );
 
 	/// @note return  NGHTTP2_ERR_PAUSE ; to pause input
 
@@ -361,7 +362,7 @@ int session::frame_not_send_callback ( nghttp2_session *session_, const nghttp2_
 	return 0;
 }
 
-bool session::on_write( dstring& ch )
+bool session::on_write(std::string& ch )
 {
 	if ( connector() == nullptr ) return false;
 
@@ -375,7 +376,7 @@ bool session::on_write( dstring& ch )
 
 	if ( consumed >= 0 )
 	{
-		dstring tdata{data, static_cast<size_t>(consumed)};
+		std::string tdata{data, data + static_cast<size_t>(consumed)};
 		ch = std::move( tdata );
 	}
 	return true;

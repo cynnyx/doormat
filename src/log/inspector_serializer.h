@@ -30,7 +30,7 @@ class inspector_log final
 	std::unique_ptr<writer> logfile;
 
 	void jsonize_headers( nlohmann::json& json, const http::http_structured_data::headers_map& hrs );
-	void jsonize_body( nlohmann::json& json, const std::list<dstring>& body );
+	void jsonize_body(nlohmann::json& json, const std::list<std::string>& body );
 	void jsonize(  access_recorder& r ) noexcept;
 public:
 	inspector_log( const std::string &log_dir, const std::string &file_prefix, bool active, writer *w = nullptr );

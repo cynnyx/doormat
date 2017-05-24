@@ -66,7 +66,7 @@ public:
 	// Connector should catch exception from here and shut down connection
 	bool start() noexcept override;
 	bool on_read(const char*, size_t) override;
-	bool on_write( dstring& chunk ) override;
+	bool on_write( std::string& chunk ) override;
 	bool should_stop() const noexcept override;
 
     void do_write() override;

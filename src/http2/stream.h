@@ -68,6 +68,8 @@ class stream final
 
 public:
 
+	using data_t = std::unique_ptr<const char[]>;
+
 //	stream( std::function<void(stream*, session*)> des );
 	stream(std::shared_ptr<server::http_handler> s, std::function<void(stream*, session*)> des, std::int16_t prio = 0 );
 	stream( const stream& ) = delete;
@@ -75,14 +77,14 @@ public:
 	stream( stream&& o ) noexcept;
 	stream& operator=( stream&& o ) noexcept;
 	
-	void path( const dstring& p ) { request.path( p ); }
-	dstring path() const { return request.path(); }
-	void method( const dstring& p ) { request.method( p ); }
-	void uri_host( const dstring& p ) noexcept;
-	void scheme( const dstring& p ) noexcept { request.schema( p ); }
-	void add_header( const dstring& key, const dstring& value ) { request.header( key, value ); }
-	void query( const dstring& query ) { request.query( query ); }
-	void fragment( const dstring& frag ) { request.fragment( frag ); }
+	void path( const std::string& p ) { request.path( p ); }
+	std::string path() const { return request.path(); }
+	void method( const std::string& p ) { request.method( p ); }
+	void uri_host( const std::string& p ) noexcept;
+	void scheme( const std::string& p ) noexcept { request.schema( p ); }
+	void add_header( const std::string& key, const std::string& value ) { request.header( key, value ); }
+	void query( const std::string& query ) { request.query( query ); }
+	void fragment( const std::string& frag ) { request.fragment( frag ); }
 	void set_handlers(std::shared_ptr<http::request> req_handler, std::shared_ptr<http::response> res_handler)
 	{
 		req = req_handler;
@@ -104,13 +106,13 @@ public:
 // 	void on_request_preamble(http::http_request&& message);
 	void on_request_header( http::http_request::header_t&& h ); // NGHttp2 friendly
 	void on_request_header_complete();
-	void on_request_body(dstring&& c);
+	void on_request_body(data_t, size_t);
 	// on request trailer missing?
 	void on_request_finished();
 	void on_request_ack();
 	void on_header(http::http_response &&);
-	void on_body(dstring&&);
-	void on_trailer(dstring&&, dstring&&);
+	void on_body(data_t, size_t);
+	void on_trailer(std::string&&, std::string&&);
 	void on_eom();
 	void on_error(const int &);
 	void on_response_continue();

@@ -7,17 +7,17 @@ namespace http
 
 response::response(std::function<void()> content_notification)
 {
-	hcb = [this, content_notification](http_response &&res){
+	hcb = [this, content_notification](http_response&& res){
 		response_headers.emplace(std::move(res));
 		content_notification();
 	};
 
-	bcb = [this, content_notification](dstring &&d) {
-		content.append(d);
+	bcb = [this, content_notification](data_t d, size_t s) {
+		content.append(d.get(), s);
 		content_notification();
 	};
 
-	tcb =[this, content_notification](dstring &&k, dstring&&v) {
+	tcb =[this, content_notification](std::string&& k, std::string&& v) {
 		trailers.emplace(std::make_pair(std::move(k), std::move(v)));
 		content_notification();
 	};
@@ -30,15 +30,15 @@ response::response(std::function<void()> content_notification)
 	notify_continue = content_notification;
 }
 
-response::response(std::function<void(http_response&&)> hcb, std::function<void(dstring &&)> bcb, std::function<void(dstring &&, dstring &&)> tcb,
+response::response(std::function<void(http_response&&)> hcb, std::function<void(data_t, size_t)> bcb, std::function<void(std::string&&, std::string&&)> tcb,
 				   std::function<void()> ccb) :
     hcb{std::move(hcb)}, bcb{std::move(bcb)}, tcb{std::move(tcb)}, ccb{std::move(ccb)}
 {}
 
 
 void response::headers(http_response &&res) { hcb(std::move(res));  }
-void response::body(dstring &&d){ bcb(std::move(d));  }
-void response::trailer(dstring &&k, dstring&& v) { tcb(std::move(k), std::move(v)); }
+void response::body(data_t d, size_t s){ bcb(std::move(d), s);  }
+void response::trailer(std::string&& k, std::string&& v) { tcb(std::move(k), std::move(v)); }
 void response::end() { myself = this->shared_from_this(); ccb();   }
 
 void response::on_error(error_callback_t ecb) { error_callback.emplace(std::move(ecb)); }
@@ -76,13 +76,13 @@ http_response response::get_preamble()
 	return empty_response;
 }
 
-dstring response::get_body() {
-	dstring tmp = content;
-	content = dstring{};
-	return tmp;
+std::string response::get_body() {
+	std::string ret;
+	std::swap(content, ret);
+	return ret;
 }
 
-std::pair<dstring, dstring> response::get_trailer() {
+std::pair<std::string, std::string> response::get_trailer() {
 	auto trailer = trailers.front();
 	trailers.pop();
 	return trailer;
