@@ -51,7 +51,7 @@ namespace http
 		return "Damn!"; // Default value: Some Microsoft clients behave badly if the reason string is empty
 	}
 
-	dstring http_response::serialize() const noexcept
+	std::string http_response::serialize() const noexcept
 	{
 		dstring msg;
 		msg.append(protocol())
@@ -70,7 +70,7 @@ namespace http
 		_status_message = get_default_message(code);
 	}
 
-	void http_response::status(uint16_t code, const dstring& msg) noexcept
+	void http_response::status(uint16_t code, const std::string& msg) noexcept
 	{
 		_status_code = code;
 		_status_message = msg;

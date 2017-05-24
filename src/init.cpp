@@ -231,7 +231,7 @@ int doormat( int argc, char** argv )
 						r->clear_preamble();
 					});
 
-					r->on_body([](auto r, std::unique_ptr<char> body, size_t s)
+					r->on_body([](auto r, auto&& body, size_t s)
 					{
 						std::cout << "received body" << std::endl;
 						//std::cout << std::string{body.get(), s} << std::endl;
@@ -243,10 +243,10 @@ int doormat( int argc, char** argv )
 						http::http_response res;
 						res.protocol(http::proto_version::HTTP11);
 						res.status(200);
-						std::string body{"ciao"};
-						res.content_len(body.size());
+						auto body = std::unique_ptr<char[]>(new char[4]{'c', 'i', 'a', 'o'});
+						res.content_len(4);
 						b->headers(std::move(res));
-						b->body(dstring{body.c_str(), body.size()});
+						b->body(std::move(body), 4);
 						b->end();
 
 					});

@@ -49,7 +49,10 @@ void client_wrapper::perform_request(http::http_request&& preamble)
 	auto p = connection->create_transaction();
 	this->local_request = std::move(p.first);
 	this->local_request->headers(std::move(preamble));
-	this->local_request->body(std::move(tmp_body));
+	// TODO: again... copying
+	auto ptr = std::make_unique<char[]>(tmp_body.size());
+	std::copy(tmp_body.cbegin(), tmp_body.cend(), ptr.get());
+	this->local_request->body(std::move(ptr), tmp_body.size());
 	auto& res = p.second;
 	res->on_headers([this](auto res)
 	{
@@ -127,7 +130,12 @@ void client_wrapper::on_request_body(dstring&& chunk)
 	if(!errcode)
 	{
 		if(local_request)
-			local_request->body(std::move(chunk));
+		{
+			// TODO: copying...
+			auto ptr = std::make_unique<char[]>(chunk.size());
+			std::copy(chunk.cbegin(), chunk.cend(), ptr.get());
+			local_request->body(std::move(ptr), chunk.size());
+		}
 		else
 			tmp_body.append(std::move(chunk));
 	}

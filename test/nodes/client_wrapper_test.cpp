@@ -10,8 +10,8 @@
 namespace
 {
 
-dstring host{"provaprova.com"};
-dstring path{"/static/ciaone/"};
+std::string host{"provaprova.com"};
+std::string path{"/static/ciaone/"};
 std::string body{"000000000000"};
 uint16_t port = 8454;
 
@@ -35,8 +35,8 @@ struct client_wrapper_test : public ::testing::Test
 		decoder.register_callback(
 			[this](http::http_structured_data** dest){*dest = &received_request;},
 			[this](){},
-			[this](dstring&& ch){received_request_body.append(ch);},
-			[this](dstring&&, dstring&&){},
+			[this](std::string&& ch){received_request_body.append(ch);},
+			[this](std::string&&, std::string&&){},
 			[this](){},
 			[this](int, bool&){FAIL() << "Decoding has failed. The message has been corrupted by client wrapper."; }
 		);
@@ -122,7 +122,7 @@ protected:
 
 TEST_F(client_wrapper_test, custom_destination_fail)
 {
-	dstring fake_port = 9879;
+	std::string fake_port = std::to_string(9879);
 	//test case to validate that client_wrapper does not corrupt the data.
 	http::http_request submitted_req;
 	submitted_req.protocol(http::proto_version::HTTP11);

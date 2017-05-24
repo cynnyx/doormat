@@ -29,6 +29,7 @@ public:
 	using remote_t = typename handler_traits::remote_t;
 	using local_t = typename handler_traits::local_t;
 	using local_t_object = typename std::remove_reference<decltype(((local_t*)nullptr)->get_preamble())>::type;
+	using data_t = std::unique_ptr<const char[]>;
 
 	std::shared_ptr<handler_http1> get_shared()
 	{
@@ -76,8 +77,14 @@ public:
 		connection_t::init();
 		auto scb = [this](http::http_structured_data** data) { decoding_start(data); };
 		auto hcb = [this]()	{ decoded_headers(); };
-		auto bcb = [this](dstring&& b) { decoded_body(std::move(b)); };
-		auto tcb = [this](dstring&& k, dstring&& v) { decoded_trailer(std::move(k), std::move(v));};
+		auto bcb = [this](dstring chunk)
+		{
+			// TODO: we need to remove dstrings from http_codec
+			auto ptr = std::make_unique<char[]>(chunk.size());
+			std::copy(chunk.cbegin(), chunk.cend(), ptr.get());
+			decoded_body(std::move(ptr), chunk.size());
+		};
+		auto tcb = [this](std::string&& k, std::string&& v) { decoded_trailer(std::move(k), std::move(v));};
 		auto ccb = [this]() {decoding_end(); };
 		auto ecb = [this](int error,bool&) {decoding_failure();};
 
@@ -108,7 +115,7 @@ public:
 		remote_objects.pop_front(); //finished, hence we remove the current decoded remote object from the queue.
 	}
 
-	void decoded_trailer(dstring &&k, dstring &&v)
+	void decoded_trailer(std::string&& k, std::string&& v)
 	{
 		auto current_remote = get_current();
 		if(!current_remote) return;
@@ -119,15 +126,19 @@ public:
 							});
 	}
 
-	void decoded_body(dstring &&b)
+	void decoded_body(data_t b, size_t size)
 	{
 		auto current_remote = get_current();
 		if(!current_remote) return;
 
-		io_service().post([s = current_remote, b = ::std::move(b)]() mutable
-			                  {
-				                  s->body(std::move(b));
-			                  });
+		io_service().post([s = current_remote, ptr = b.release(), size]() mutable
+		{
+			// TODO: this is an ugly mess...
+			auto data = std::make_unique<char[]>(size);
+			std::copy(ptr, ptr + size, data.get());
+			delete[] ptr;
+			s->body(std::move(data), size);
+		});
 	}
 
 	void update_persistent()
@@ -182,13 +193,14 @@ public:
 		return rv;
 	}
 
-	bool on_write(dstring& data) override
+	bool on_write(std::string& data) override
 	{
 		if(connector())
 		{
 			if(!serialization.empty())
 			{
 				data = std::move(serialization);
+				serialization = {};
 				return true;
 			}
 		}
@@ -333,14 +345,13 @@ private:
 		do_write();
 	}
 
-	void notify_local_body(dstring &&b)
+	void notify_local_body(std::string&& body)
 	{
-
-		serialization.append(encoder.encode_body(b));
+		serialization.append(encoder.encode_body(std::move(body)));
 		do_write();
 	}
 
-	void notify_local_trailer(dstring &&k, dstring &&v)
+	void notify_local_trailer(std::string&& k, std::string&& v)
 	{
 
 		serialization.append(encoder.encode_trailer(k, v));

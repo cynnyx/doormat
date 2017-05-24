@@ -12,12 +12,12 @@ client_request::client_request(std::function<void()> content_notification)
 		content_notification();
 	};
 
-	bcb = [this, content_notification](dstring &&d) {
-		content.append(d);
+	bcb = [this, content_notification](data_t d, size_t s) {
+		content.append(d.get(), s);
 		content_notification();
 	};
 
-	tcb =[this, content_notification](dstring &&k, dstring&&v) {
+	tcb =[this, content_notification](std::string&& k, std::string&& v) {
 		trailers.emplace(std::make_pair(std::move(k), std::move(v)));
 		content_notification();
 	};
@@ -28,19 +28,19 @@ client_request::client_request(std::function<void()> content_notification)
 	};
 }
 
-client_request::client_request(std::function<void(http_request&&)> hcb, std::function<void(dstring &&)> bcb, std::function<void(dstring &&, dstring &&)> tcb,
+client_request::client_request(std::function<void(http_request&&)> hcb, std::function<void(data_t, size_t)> bcb, std::function<void(std::string&&, std::string&&)> tcb,
 				   std::function<void()> ccb) :
 	hcb{std::move(hcb)}, bcb{std::move(bcb)}, tcb{std::move(tcb)}, ccb{std::move(ccb)}
 {}
 
 
 void client_request::headers(http_request &&res) { hcb(std::move(res));  }
-void client_request::body(dstring &&d){ bcb(std::move(d));  }
-void client_request::trailer(dstring &&k, dstring&& v) { tcb(std::move(k), std::move(v)); }
+void client_request::body(data_t d, size_t s){ bcb(std::move(d), s);  }
+void client_request::trailer(std::string&& k, std::string&& v) { tcb(std::move(k), std::move(v)); }
 void client_request::end() { ccb(); }
 
-void client_request::on_error(error_callback_t ecb) { error_callback.emplace(std::move(ecb)); }
-void client_request::on_write(write_callback_t wcb) { write_callback.emplace(std::move(wcb)); }
+void client_request::on_error(error_callback_t ecb) { error_callback = std::move(ecb); }
+void client_request::on_write(write_callback_t wcb) { write_callback = std::move(wcb); }
 client_request::state client_request::get_state() const noexcept
 {
 	if(bool(request_headers))
@@ -61,13 +61,13 @@ http_request client_request::get_preamble()
 	return empty_response;
 }
 
-dstring client_request::get_body() {
-	dstring tmp = content;
-	content = dstring{};
-	return tmp;
+std::string client_request::get_body() {
+	std::string ret;
+	std::swap(ret, content);
+	return ret;
 }
 
-std::pair<dstring, dstring> client_request::get_trailer() {
+std::pair<std::string, std::string> client_request::get_trailer() {
 	auto trailer = trailers.front();
 	trailers.pop();
 	return trailer;

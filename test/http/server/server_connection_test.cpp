@@ -8,13 +8,20 @@
 
 using server_connection_t = server::handler_http1<http::server_traits>;
 
+// todo: why do we need this copy?
+static std::unique_ptr<char[]> make_data_ptr(const std::string& s)
+{
+	auto ptr = std::make_unique<char[]>(s.size());
+	std::copy(s.begin(), s.end(), ptr.get());
+	return std::move(ptr);
+}
 
 class server_connection_test : public ::testing::Test
 {
 public:
 	void SetUp()
 	{
-		_write_cb = [](dstring chunk) {};
+		_write_cb = [](auto) {};
 		mock_connector = std::make_shared<MockConnector>(io, _write_cb);
 		_handler = std::make_shared<server_connection_t>();
 		mock_connector->handler(_handler);
@@ -119,7 +126,7 @@ TEST_F(server_connection_test, response_continue)
 {
 	std::string accumulator{};
 	bool rcvd{false};
-	_write_cb = [&accumulator, &rcvd](dstring chunk) {
+	_write_cb = [&accumulator, &rcvd](std::string chunk) {
 		accumulator += std::string(chunk);
 		if (accumulator == "HTTP/1.1 100 Continue\r\n"
 				                   "content-length: 0\r\n"
@@ -160,7 +167,7 @@ TEST_F(server_connection_test, http11_persistent)
 			r.header("date", "Tue, 17 May 2016 14:53:09 GMT");
 			r.content_len(body.size());
 			res->headers(std::move(r));
-			res->body(dstring{body.c_str(), body.size()});
+			res->body(make_data_ptr(body), body.size());
 			res->end();
 		});
 	});
@@ -209,7 +216,7 @@ TEST_F(server_connection_test, http11_non_persistent)
 			r.header("date", "Tue, 17 May 2016 14:53:09 GMT");
 			r.content_len(body.size());
 			res->headers(std::move(r));
-			res->body(dstring{body.c_str(), body.size()});
+			res->body(make_data_ptr(body), body.size());
 			res->end();
 		});
 	});
@@ -261,7 +268,7 @@ TEST_F(server_connection_test, http11_pipelining)
 			r.header("date", "Tue, 17 May 2016 14:53:09 GMT");
 			r.content_len(body.size());
 			res->headers(std::move(r));
-			res->body(dstring{body.c_str(), body.size()});
+			res->body(make_data_ptr(body), body.size());
 			res->end();
 		});
 	});
@@ -324,7 +331,7 @@ TEST_F(server_connection_test, http10_persistent)
 			r.header("date", "Tue, 17 May 2016 14:53:09 GMT");
 			r.content_len(body.size());
 			res->headers(std::move(r));
-			res->body(dstring{body.c_str(), body.size()});
+			res->body(make_data_ptr(body), body.size());
 			res->end();
 		});
 	});
@@ -374,7 +381,7 @@ TEST_F(server_connection_test, http10_non_persistent)
 			r.header("date", "Tue, 17 May 2016 14:53:09 GMT");
 			r.content_len(body.size());
 			res->headers(std::move(r));
-			res->body(dstring{body.c_str(), body.size()});
+			res->body(make_data_ptr(body), body.size());
 			res->end();
 		});
 	});
@@ -425,7 +432,7 @@ TEST_F(server_connection_test, http10_pipelining)
 			r.header("date", "Tue, 17 May 2016 14:53:09 GMT");
 			r.content_len(body.size());
 			res->headers(std::move(r));
-			res->body(dstring{body.c_str(), body.size()});
+			res->body(make_data_ptr(body), body.size());
 			res->end();
 		});
 	});
@@ -447,7 +454,7 @@ TEST_F(server_connection_test, http10_pipelining)
 					"Ave client, dummy node says hello";
 
 	bool terminated{false};
-	_write_cb = [this, &terminated, &expected_response](dstring chunk) {
+	_write_cb = [this, &terminated, &expected_response](auto chunk) {
 		response.append(chunk);
 		if (response == expected_response) {
 			terminated = true;

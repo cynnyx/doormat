@@ -211,8 +211,8 @@ public:
 					req->urihost(host);
 				else
 				{
-					req->urihost(dstring{host.cdata(), pos++});
-					req->port(dstring{host.cdata() + pos, host.size() - pos});
+					req->urihost(std::string{host.data(), pos++});
+					req->port(std::string{host.data() + pos, host.size() - pos});
 				}
 			}
 		}
