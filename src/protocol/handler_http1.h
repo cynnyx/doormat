@@ -336,9 +336,9 @@ private:
 				else break;
 			} else
 			{
-				http::connection_error err{http::error_code::missing_response};
+				http::connection_error err{http::error_code::missing_stream_element};
 				connection_t::error(err);
-				notify_all(http::error_code::missing_response);
+				notify_all(http::error_code::missing_stream_element);
 				connection_t::deinit();
 			}
 		}
@@ -374,7 +374,7 @@ private:
 				break;
 			}
 			case local_t::state::ended:
-				pending_clear_callbacks.emplace_back([loc](){ loc->cleared(); }, [loc](){loc->error(http::error_code::missing_response); });
+				pending_clear_callbacks.emplace_back([loc](){ loc->cleared(); }, [loc](){loc->error(http::error_code::missing_stream_element); });
 				notify_local_end();
 				connection_t::cleared();
 				return true;
@@ -480,7 +480,7 @@ bool handler_http1<http::server_traits>::poll_local(std::shared_ptr<http::server
 				break;
 			}
 			case local_t::state::ended:
-				pending_clear_callbacks.emplace_back([loc](){ loc->cleared(); }, [loc](){loc->error(http::error_code::missing_response); });
+				pending_clear_callbacks.emplace_back([loc](){ loc->cleared(); }, [loc](){loc->error(http::error_code::missing_stream_element); });
 				notify_local_end();
 				//delaying this is very important; otherwise the client could send another request while the state is wrong.
 				connection_t::cleared();
