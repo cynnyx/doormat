@@ -263,6 +263,9 @@ private:
 		connection_t::error(err);
 		//should notify everybody in the connection of the error!
 		connection_t::deinit();
+		for(auto &cb : pending_clear_callbacks) {
+			cb.second();
+		}
 		pending_clear_callbacks.clear();
 	}
 
@@ -316,7 +319,7 @@ private:
 				break;
 			}
 			case local_t::state::ended:
-				pending_clear_callbacks.push_back([loc](){ loc->cleared(); });
+				pending_clear_callbacks.emplace_back([loc](){ loc->cleared(); }, [loc](){loc->error(http::error_code::missing_response); });
 				notify_local_end();
 				connection_t::cleared();
 				return true;
@@ -328,7 +331,7 @@ private:
 	}
 
 
-	std::vector<std::function<void()>> write_feedbacks() override {
+	std::vector<std::pair<std::function<void()>, std::function<void()>>> write_feedbacks() override {
 		auto d = std::move(pending_clear_callbacks);
 		pending_clear_callbacks = {};
 		return d;
@@ -385,7 +388,7 @@ private:
 	bool decoding_error{false};
 
 	/** List of callbacks to be called when the next write is successful. */
-	std::vector<std::function<void()>> pending_clear_callbacks{};
+	std::vector<std::pair<std::function<void()>, std::function<void()>>> pending_clear_callbacks{};
 	bool managing_continue{false};
 
 };
@@ -419,7 +422,7 @@ bool handler_http1<http::server_traits>::poll_local(std::shared_ptr<http::server
 				break;
 			}
 			case local_t::state::ended:
-				pending_clear_callbacks.push_back([loc](){ loc->cleared(); });
+				pending_clear_callbacks.emplace_back([loc](){ loc->cleared(); }, [loc](){loc->error(http::error_code::missing_response); });
 				notify_local_end();
 				//delaying this is very important; otherwise the client could send another request while the state is wrong.
 				connection_t::cleared();

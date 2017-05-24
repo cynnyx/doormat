@@ -188,7 +188,6 @@ public:
 				{
 					//LOGTRACE(self.get()," received:",bytes_transferred," Bytes");
 					assert(bytes_transferred);
-
 					auto tmp = self->_rb.produce(bytes_transferred);
 					if( self->_handler->on_read(tmp, bytes_transferred) )
 					{
@@ -206,10 +205,6 @@ public:
 				{
 					//LOGERROR(self.get()," error during read: ", ec.message());
 					self->stop();
-				}
-				else
-				{
-					//LOGDEBUG(self.get()," read canceled");
 				}
 			});
 	}
@@ -248,20 +243,23 @@ public:
 				self->_writing = false;
 				if(!ec)
 				{
-					for(auto &cb: cbs) {
-						self->io_service().post(cb);
+					for(auto &cb: cbs)
+					{
+						self->io_service().post(cb.first);
 					}
 					//LOGDEBUG(self.get()," correctly wrote ", s," bytes");
 					self->do_write();
+					return;
 				}
 				else if(ec != boost::system::errc::operation_canceled)
 				{
 					//LOGERROR(self.get()," error during write: ", ec.message());
 					self->stop();
 				}
-				else
+
+				for(auto &cb: cbs)
 				{
-					//LOGTRACE(self.get()," write canceled");
+					self->io_service().post(cb.second);
 				}
 			}
 		);
