@@ -39,7 +39,7 @@ response::response(std::function<void(http_response&&)> hcb, std::function<void(
 void response::headers(http_response &&res) { hcb(std::move(res));  }
 void response::body(data_t d, size_t s){ bcb(std::move(d), s);  }
 void response::trailer(std::string&& k, std::string&& v) { tcb(std::move(k), std::move(v)); }
-void response::end() { myself = this->shared_from_this(); ccb();   }
+void response::end() { myself = this->shared_from_this(); ccb();}
 
 void response::on_error(error_callback_t ecb) { error_callback.emplace(std::move(ecb)); }
 void response::on_write(write_callback_t wcb) { write_callback.emplace(std::move(wcb)); }
