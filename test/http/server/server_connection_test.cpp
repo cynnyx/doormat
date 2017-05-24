@@ -323,16 +323,12 @@ TEST_F(server_connection_test, http11_missing_response)
 	_handler->set_persistent(true);
 	int req_counter{0};
 
-	std::shared_ptr<http::response> responses[]{nullptr, nullptr, nullptr};
 	_handler->on_request([&](auto conn, auto req, auto res) {
-
 		++req_counter;
 		if(req_counter == 2)
 			return;
-		responses[req_counter-1] = res;
 
-		req->on_finished([req_counter, &responses](auto req) {
-			std::cout << "on_finished" << req_counter << std::endl;
+		req->on_finished([res](auto req) {
 			bool keep_alive = req->preamble().keepalive();
 			http::http_response r;
 			r.protocol(http::proto_version::HTTP11);
@@ -342,23 +338,14 @@ TEST_F(server_connection_test, http11_missing_response)
 			r.header("content-type", "text/plain");
 			r.header("date", "Tue, 17 May 2016 14:53:09 GMT");
 			r.content_len(body.size());
-			auto &res = responses[req_counter-1];
 			res->headers(std::move(r));
 			res->body(make_data_ptr(body), body.size());
 			res->end();
 		});
 
-		res->on_error([req_counter](){
-			std::cout << "called" << req_counter << std::endl;
-		});
-
-		res->on_write([req_counter](auto res){
-			std::cout << "wrote" << req_counter << std::endl;
-		});
-
 		conn->on_error([](auto conn, const http::connection_error &error) {
 			ASSERT_TRUE(conn);
-			ASSERT_EQ(error.errc(), http::error_code::missing_response);
+			ASSERT_EQ(error.errc(), http::error_code::missing_stream_element);
 			conn->close();
 		});
 	});
@@ -401,7 +388,6 @@ TEST_F(server_connection_test, http11_missing_response)
 	mock_connector->io_service().run();
 	ASSERT_TRUE(terminated);
 	ASSERT_TRUE(response.find("connection: keep-alive\r\n") != std::string::npos);
-	std::cout << "counter is" << responses[0].use_count() << "; " << responses[2].use_count() << std::endl;
 }
 
 
