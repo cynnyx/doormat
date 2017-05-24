@@ -66,7 +66,7 @@ void client_wrapper::perform_request(http::http_request&& preamble)
 		assert(!finished_response);
 		LOGTRACE("client_wrapper ",this," response body cb triggered");
 		if(!managing_continue)
-			this->on_body(dstring{data.get(), length});
+			this->on_body(std::move(data), length);
 	});
 	res->on_trailer([this](auto res, auto k, auto v)
 	{
@@ -124,24 +124,21 @@ void client_wrapper::on_request_preamble(http::http_request&& preamble)
 	}, proto_v, address, static_cast<uint16_t>(port), tls);
 }
 
-void client_wrapper::on_request_body(dstring&& chunk)
+void client_wrapper::on_request_body(data_t data, size_t len)
 {
 	LOGTRACE("client_wrapper ",this," on_request_body");
 	if(!errcode)
 	{
 		if(local_request)
 		{
-			// TODO: copying...
-			auto ptr = std::make_unique<char[]>(chunk.size());
-			std::copy(chunk.cbegin(), chunk.cend(), ptr.get());
-			local_request->body(std::move(ptr), chunk.size());
+			local_request->body(std::move(data), len);
 		}
 		else
-			tmp_body.append(std::move(chunk));
+			tmp_body.append(data.get(), len);
 	}
 }
 
-void client_wrapper::on_request_trailer(dstring&& k, dstring&& v)
+void client_wrapper::on_request_trailer(std::string&& k, std::string&& v)
 {
 	if(!errcode)
 	{

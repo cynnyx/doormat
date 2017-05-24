@@ -48,7 +48,6 @@ set(DOORMAT_COMMON_SOURCES
 	endpoints/chain_factory.cpp
 	network/cloudia_pool.cpp
 	network/communicator/dns_communicator_factory.cpp
-	errors/error_factory.cpp
 	requests_manager/error_producer.cpp
 	requests_manager/client_wrapper.cpp
 	http/connection.cpp

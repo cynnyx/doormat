@@ -13,8 +13,8 @@ class error_factory
 {
 
     using header_callback_t = std::function<void(http::http_response)>;
-    using body_callback_t = std::function<void(dstring)>;
-    using trailer_callback_t = std::function<void(dstring, dstring)>;
+	using body_callback_t = std::function<void(std::unique_ptr<const char[]>, size_t)>;
+	using trailer_callback_t = std::function<void(std::string, std::string)>;
     using eom_callback_t = std::function<void()>;
 
     http_error_code ec;
@@ -27,11 +27,14 @@ public:
     void produce_error_response(header_callback_t hcb, body_callback_t bcb, trailer_callback_t tcb, eom_callback_t ecb) {
         http::http_response res;
         std::string errmsg = errors::to_string(ec);
-        res.status(static_cast<uint16_t>(ec), dstring{errmsg.data(), errmsg.size()});
+		res.status(static_cast<uint16_t>(ec), errmsg);
         res.protocol(pv);
         res.content_len(errmsg.size());
         hcb(std::move(res));
-        bcb(dstring{errmsg.data(), errmsg.size()});
+		// todo: avoid or at least hide copying
+		auto ptr = std::make_unique<char[]>(errmsg.size());
+		std::copy(errmsg.begin(), errmsg.end(), ptr.get());
+		bcb(std::move(ptr), errmsg.size());
         ecb();
         return;
     }

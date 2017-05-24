@@ -11,7 +11,7 @@
 #include "utils/log_wrapper.h"
 #include "log/format.h"
 
-static constexpr auto message = "Ave client, dummy node says hello";
+static const std::string message = "Ave client, dummy node says hello";
 static constexpr auto host = "localhost";
 static constexpr auto date = "Tue, 17 May 2016 14:53:09 GMT";
 
@@ -34,9 +34,11 @@ struct dummy_node : public node_interface
 					preamble.date(date);
 					preamble.status(200);
 					preamble.header(http::hf_content_type, http::hv_text_plain);
-					preamble.content_len(strlen(message));
+					preamble.content_len(message.size());
 					on_header(std::move(preamble));
-					on_body(message);
+					auto ptr = std::make_unique<char[]>(message.size());
+					std::copy(message.begin(), message.end(), ptr.get());
+					on_body(std::move(ptr), message.size());
 					on_end_of_message();
 				}
 				else
@@ -45,12 +47,12 @@ struct dummy_node : public node_interface
 		);
 	}
 
-	void on_request_body(dstring&& chunk)
+	void on_request_body(data_t data, size_t len)
 	{
 		LOGTRACE("dummy node got a chunk");
 	}
 	
-	void on_request_trailer(dstring&& k, dstring&& v) { }
+	void on_request_trailer(std::string&& k, std::string&& v) { }
 	void on_request_canceled(const errors::error_code &err) { }
 	void on_request_finished() { }
 

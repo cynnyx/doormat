@@ -49,13 +49,13 @@ void first_node::on_request_preamble(http::http_request&& r)
 	base::on_request_preamble(std::move(r));
 }
 
-void first_node::on_request_body(dstring&& c)
+void first_node::on_request_body(data_t data, size_t len)
 {
 	++req_body;
-	base::on_request_body(std::move(c));
+	base::on_request_body(std::move(data), len);
 }
 
-void first_node::on_request_trailer(dstring&& k, dstring&& v)
+void first_node::on_request_trailer(std::string&& k, std::string&& v)
 {
 	++req_trailer;
 	base::on_request_trailer(std::move(k), std::move(v));
@@ -72,13 +72,13 @@ void first_node::on_header(http::http_response&& r)
 	response = r;
 }
 
-void first_node::on_body(dstring&& c)
+void first_node::on_body(data_t data, size_t len)
 {
-	res_body_str.append( c );
+	res_body_str.append(data.get(), len);
 	++res_body;
 }
 
-void first_node::on_trailer(dstring&&, dstring&&)
+void first_node::on_trailer(std::string&&, std::string&&)
 {
 	++res_trailer;
 }
@@ -114,9 +114,9 @@ uint last_node::req_trailer{0};
 uint last_node::req_eom{0};
 errors::error_code last_node::err{};
 
-std::list<dstring> last_node::body_parts;
-dstring last_node::trailer_key{};
-dstring last_node::trailer_value{};
+std::list<std::string> last_node::body_parts;
+std::string last_node::trailer_key{};
+std::string last_node::trailer_value{};
 
 void last_node::reset()
 {
@@ -128,8 +128,8 @@ void last_node::reset()
 
 	body_parts.clear();
 	body_parts.emplace_back(std::string(1024, 'b').c_str());
-	trailer_key = dstring{"trailer-key"};
-	trailer_value = dstring{"trailer-value"};
+	trailer_key = std::string{"trailer-key"};
+	trailer_value = std::string{"trailer-value"};
 
 	response.reset({});
 	response->protocol(http::proto_version::HTTP11);
@@ -142,12 +142,12 @@ void last_node::on_request_preamble(http::http_request&& r)
 	request = r;
 }
 
-void last_node::on_request_body(dstring&& c)
+void last_node::on_request_body(data_t, size_t)
 {
 	++req_body;
 }
 
-void last_node::on_request_trailer(dstring&& k, dstring&& v)
+void last_node::on_request_trailer(std::string&& k, std::string&& v)
 {
 	++req_trailer;
 }
@@ -163,7 +163,9 @@ void last_node::on_request_finished()
 		on_header(std::move(response.get()));
 		response.reset();
 		for( auto&& b : body_parts ) {
-			on_body(std::move(b));
+			auto ptr = std::make_unique<char[]>(b.size());
+			std::copy(b.begin(), b.end(), ptr.get());
+			on_body(std::move(ptr), b.size());
 		}
 
 		if( chunked )

@@ -9,7 +9,7 @@
 
 
 // build request preamble with headers in chromium style#include "../src/http/http_request.h"
-http::http_request make_request(http::proto_version protocol, http_method method, const dstring& host, const dstring& path);
+http::http_request make_request(http::proto_version protocol, http_method method, const std::string& host, const std::string& path);
 
 // html pages
 extern const std::string forbidden_html;
