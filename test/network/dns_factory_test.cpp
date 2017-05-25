@@ -4,7 +4,7 @@
 #include "../src/io_service_pool.h"
 #include "src/network/communicator/communicator.h"
 #include "src/network/communicator/dns_communicator_factory.h"
-#include "../mock_server/mock_server.h"
+#include "mocks/mock_server/mock_server.h"
 #include "testcommon.h"
 struct dns_factory_test: public ::testing::Test
 {

@@ -4,7 +4,7 @@
 #include "../src/requests_manager/client_wrapper.h"
 #include "src/http/http_codec.h"
 #include "common.h"
-#include "mock_server/mock_server.h"
+#include "mocks/mock_server/mock_server.h"
 #include <functional>
 
 namespace

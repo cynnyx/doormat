@@ -1,7 +1,7 @@
 #include "../src/http/server/server_connection.h"
 #include "../src/protocol/handler_http1.h"
 #include "../src/http/server/server_traits.h"
-#include "mocks/mock_connector.h"
+#include "mocks/mock_connector/mock_connector.h"
 #include <gtest/gtest.h>
 #include <gmock/gmock.h>
 
@@ -526,6 +526,7 @@ TEST_F(server_connection_test, http10_non_persistent)
 	ASSERT_TRUE(terminated);
 	ASSERT_TRUE(response.find("connection: close\r\n") != std::string::npos);
 }
+
 
 TEST_F(server_connection_test, http10_pipelining)
 {

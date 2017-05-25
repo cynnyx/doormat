@@ -6,8 +6,8 @@
 #include <type_traits>
 #include "boost/asio.hpp"
 #include "boost/asio/ssl.hpp"
-#include "../../src/service_locator/service_locator.h"
-#include "../src/io_service_pool.h"
+#include "src/service_locator/service_locator.h"
+#include "src/io_service_pool.h"
 
 /** \brief the mock server is used in order to simulate a board; it reads from a socket and responds on it
  * depending on the content that it received.*/

@@ -1,5 +1,5 @@
 
-#include "../src/connector.h"
+#include "src/connector.h"
 #include "mock_connector.h"
 
 MockConnector::MockConnector(boost::asio::io_service &io, wcb& cb)
