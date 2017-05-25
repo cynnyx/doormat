@@ -221,8 +221,9 @@ void teardown( std::unique_ptr<node_interface>& chain )
 
 void init_thread_local()
 {
+
 	service::locator::stats_manager().register_handler();
-	service::initializer::set_communicator_factory( new network::dns_connector_factory() );
+	service::initializer::set_communicator_factory( new network::dns_connector_factory(service::locator::service_pool().get_thread_io_service()) );
 }
 
 void stop_thread_local()

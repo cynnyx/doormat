@@ -6,6 +6,7 @@
 #include "src/network/communicator/dns_communicator_factory.h"
 #include "../mock_server/mock_server.h"
 #include "testcommon.h"
+/*
 struct dns_factory_test: public ::testing::Test
 {
     class mockconf: public configuration::configuration_wrapper
@@ -59,3 +60,4 @@ TEST_F(dns_factory_test, fail_connect)
     service::locator::service_pool().run();
     ASSERT_EQ(count, 1);
 }
+*/

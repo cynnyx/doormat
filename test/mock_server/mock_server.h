@@ -6,8 +6,6 @@
 #include <type_traits>
 #include "boost/asio.hpp"
 #include "boost/asio/ssl.hpp"
-#include "../../src/service_locator/service_locator.h"
-#include "../src/io_service_pool.h"
 
 /** \brief the mock server is used in order to simulate a board; it reads from a socket and responds on it
  * depending on the content that it received.*/
@@ -26,14 +24,14 @@ class mock_server
 	std::unique_ptr<socket_t> socket;
 	bool stopped{false};
 	boost::asio::ssl::context ctx;
-
+	boost::asio::io_service &io;
 	std::unique_ptr<socket_t> make_socket(boost::asio::io_service&);
 
 public:
 	using read_feedback = std::function<void(std::string)>;
 	using write_feedback = std::function<void(size_t)>;
 
-	mock_server(uint16_t listening_port=8454);
+	mock_server(boost::asio::io_service &io, uint16_t listening_port=8454);
 	void start(std::function<void()> on_start_function, bool once = false);
 	void stop();
 	void read(int bytes, read_feedback rf = {});
