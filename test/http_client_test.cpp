@@ -32,22 +32,21 @@ TEST_F(http_client_test, connect_ipv4_clear)
 {
 	mock_server<> server{io};
 	server.start([]{});
-	bool succeded{false};
+
+	bool succeeded{false};
 	http_client client{io};
-	client.connect([&server, &succeded](auto connection)
-	{
-		SUCCEED();
-		succeded = true;
-	//	service::locator::service_pool().allow_graceful_termination();
-		server.stop();
-	},
-	[](auto error)
-	{
-		FAIL();
-	}, http::proto_version::HTTP11, "127.0.0.1", port, false);
+	client.connect([&server, &succeeded](auto connection) {
+		               SUCCEED();
+		               succeeded = true;
+		               server.stop();
+	               },
+	               [](auto error) {
+		               FAIL();
+	               },
+	               http::proto_version::HTTP11, "127.0.0.1", port, false);
 
 	io.run();
-	ASSERT_TRUE(succeded);
+	ASSERT_TRUE(succeeded);
 }
 
 
@@ -55,11 +54,12 @@ TEST_F(http_client_test, connect_ipv4_ssl)
 {
 	mock_server<true> server{io};
 	server.start([]{});
-	bool succeded{false};
+
+	bool succeeded{false};
 	http_client client{io};
-	client.connect([&server, &succeded](auto connection)
+	client.connect([&server, &succeeded](auto connection)
 	{
-		succeded = true;
+		succeeded = true;
 		SUCCEED();
 		server.stop();
 	},
@@ -69,20 +69,21 @@ TEST_F(http_client_test, connect_ipv4_ssl)
 	}, http::proto_version::HTTP11, "127.0.0.1", port, true);
 
 	io.run();
-	ASSERT_TRUE(succeded); 
+	ASSERT_TRUE(succeeded);
 }
-/*
+
 
 TEST_F(http_client_test, connect_ipv6_clear)
 {
-	mock_server<> server;
+	mock_server<> server{io};
 	server.start([]{});
 
-	http_client client;
-	client.connect([&server](auto connection)
+	bool succeeded{false};
+	http_client client{io};
+	client.connect([&server, &succeeded](auto connection)
 	{
+		succeeded = true;
 		SUCCEED();
-		service::locator::service_pool().allow_graceful_termination();
 		server.stop();
 	},
 	[](auto error)
@@ -90,20 +91,22 @@ TEST_F(http_client_test, connect_ipv6_clear)
 		FAIL();
 	}, http::proto_version::HTTP11, "::1", port, false);
 
-	service::locator::service_pool().run();
+	io.run();
+	ASSERT_TRUE(succeeded);
 }
 
 
 TEST_F(http_client_test, connect_ipv6_ssl)
 {
-	mock_server<true> server;
+	mock_server<true> server{io};
 	server.start([]{});
 
-	http_client client;
-	client.connect([&server](auto connection)
+	bool succeeded{false};
+	http_client client{io};
+	client.connect([&server, &succeeded](auto connection)
 	{
+		succeeded = true;
 		SUCCEED();
-		service::locator::service_pool().allow_graceful_termination();
 		server.stop();
 	},
 	[](auto error)
@@ -111,26 +114,29 @@ TEST_F(http_client_test, connect_ipv6_ssl)
 		FAIL();
 	}, http::proto_version::HTTP11, "::1", port, true);
 
-	service::locator::service_pool().run();
+	io.run();
+	ASSERT_TRUE(succeeded);
 }
 
 
 TEST_F(http_client_test, fail_connect)
 {
-	mock_server<true> server;
+	mock_server<true> server{io};
 	server.start([]{});
 
-	http_client client;
+	bool called {false};
+	http_client client{io};
 	client.connect([](auto connection)
 	{
 		FAIL();
 	},
-	[&server](auto error)
+	[&server, &called](auto error)
 	{
 		SUCCEED();
-		service::locator::service_pool().allow_graceful_termination();
+		called = true;
 		server.stop();
 	}, http::proto_version::HTTP11, "::1", port + 1, true);
 
-	service::locator::service_pool().run();
-}*/
+	io.run();
+	ASSERT_TRUE(called);
+}
