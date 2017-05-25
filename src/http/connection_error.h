@@ -13,6 +13,7 @@ enum class error_code : int
 	invalid_read = 3,
 	connection_closed = 4,
 	missing_stream_element = 5,
+	write_error = 6
 };
 
 

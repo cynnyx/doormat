@@ -15,7 +15,7 @@ namespace http2
 {
 
 class stream;
-
+static constexpr const std::int32_t default_max_concurrent_streams = 100;
 extern const std::size_t header_size_bytes;
 
 class session : public server::http_handler, public http::server_connection
@@ -51,13 +51,22 @@ class session : public server::http_handler, public http::server_connection
 	// TODO
 	void set_timeout(std::chrono::milliseconds) override;
 
-	std::pair<std::shared_ptr<http::request>, std::shared_ptr<http::response>>
-		get_user_handlers() override;
-
+	std::pair<std::shared_ptr<http::request>, std::shared_ptr<http::response>> get_user_handlers() override;
 	std::shared_ptr<session> get_shared();
+	std::uint32_t max_concurrent_streams;
+	std::vector<std::pair<std::function<void()>, std::function<void()>>> pending;
 public:
-    session();
+    session(std::uint32_t max_concurrent_streams = default_max_concurrent_streams);
+	virtual std::vector<std::pair<std::function<void()>, std::function<void()>>> write_feedbacks()
+	{
+		auto all_pending = std::move(pending);
+		pending = {};
+		return all_pending;
+	};
 
+	void add_pending_callbacks(std::function<void()> clear, std::function<void()> error) {
+		pending.emplace_back(std::move(clear), std::move(error));
+	}
 	// TODO!
     void trigger_timeout_event() override;
     // Connector should catch exception from here and shut down connection
@@ -77,6 +86,8 @@ public:
 
     nghttp2_session* next_layer() noexcept { return session_data.get(); }
     nghttp2_mem* next_layer_allocator() noexcept { return &all; }
+
+
 };
 
 }

@@ -26,8 +26,6 @@ class stream final
 	bool eof_{false};
 	bool errored{false};
 	bool closed_{false};
-	// TODO Used for prioritization! In the future.
-	std::int32_t weight_{0};
 	std::list<dstring> body;
 	std::size_t body_index{0};
 	nghttp2_nv* nva{nullptr}; // headers HTTP2
@@ -36,7 +34,7 @@ class stream final
 	nghttp2_nv* trailers_nva{nullptr};
 	std::size_t trailers_nvlen{0};
 
-	std::shared_ptr<server::http_handler> const s_owner{nullptr};
+	std::shared_ptr<session> s_owner{nullptr};
 	session * const session_{nullptr};
 	http::http_structured_data::headers_map prepared_headers;
 	http::http_request request{};
@@ -55,7 +53,7 @@ class stream final
 	std::size_t body_length() const noexcept;
 	bool is_last_frame( std::size_t length ) const noexcept;
 	bool body_eof() const noexcept;
-	
+	bool _headers_sent{false};
 	std::function<void(stream*, session*)> destructor;
 public:
 
@@ -67,13 +65,14 @@ public:
 	stream& operator=( const stream& ) = delete;
 	stream( stream&& o ) noexcept;
 	stream& operator=( stream&& o ) noexcept;
-	
+
+	//fixme
 	void path( const std::string& p ) { request.path( p ); }
 	std::string path() const { return request.path(); }
 	void method( const std::string& p ) { request.method( p ); }
 	void uri_host( const std::string& p ) noexcept;
 	void scheme( const std::string& p ) noexcept { request.schema( p ); }
-	void add_header( const std::string& key, const std::string& value ) { request.header( key, value ); }
+	void add_header(std::string key, std::string value);
 	void query( const std::string& query ) { request.query( query ); }
 	void fragment( const std::string& frag ) { request.fragment( frag ); }
 	void set_handlers(std::shared_ptr<http::request> req_handler, std::shared_ptr<http::response> res_handler);
@@ -81,30 +80,19 @@ public:
 	std::shared_ptr<http::request> req;
 	std::weak_ptr<http::response> res;
 	bool valid() const noexcept { return id_ >= 0; }
-	void invalidate() noexcept;
-	
+
 	std::int32_t id() const noexcept { return id_; }
 	void id( std::int32_t i ) noexcept { id_ = i; }
-	
-	std::int16_t weight() const noexcept{ return weight_; }
-	void weight( std::int16_t p ) noexcept;
-	
-	// Request / Response management 
-// 	void on_request_preamble(http::http_request&& message);
-	void on_request_header( http::http_request::header_t&& h ); // NGHttp2 friendly
+
+	// Request / Response management
 	void on_request_header_complete();
 	void on_request_body(data_t, size_t);
-	// on request trailer missing?
 	void on_request_finished();
-	void on_request_ack();
 	void on_header(http::http_response &&);
 	void on_body(data_t, size_t);
 	void on_trailer(std::string&&, std::string&&);
 	void on_eom();
-	void on_error(const int &);
-	void on_response_continue();
-	void on_request_canceled(const errors::error_code &ec);
-	
+
 	void flush() noexcept;
 	void die() noexcept;
 	~stream();

@@ -480,6 +480,7 @@ bool handler_http1<http::server_traits>::poll_local(std::shared_ptr<http::server
 				break;
 			}
 			case local_t::state::ended:
+				//todo: avoid hardcoded error in this function; it is just a very, very bad idea.
 				pending_clear_callbacks.emplace_back([loc](){ loc->cleared(); }, [loc](){loc->error(http::error_code::missing_stream_element); });
 				notify_local_end();
 				//delaying this is very important; otherwise the client could send another request while the state is wrong.

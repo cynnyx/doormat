@@ -7,6 +7,7 @@
 #include "../endpoints/chain_factory.h"
 #include "../chain_of_responsibility/callback_initializer.h"
 #include "../http/server/request.h"
+#include "../http/server/response.h"
 #include "../protocol/http_handler.h"
 
 
@@ -19,18 +20,11 @@
 namespace http2
 {
 
-void stream::invalidate() noexcept
-{
-	id_ = -1;
-}
-
 stream::stream ( stream && o) noexcept
 {
 	id_ = o.id_;
 	request = std::move( o.request );
 	destructor = std::move( o.destructor );
-
-	LOGTRACE("stream moved ", this );
 }
 
 stream& stream::operator=( stream&& o ) noexcept
@@ -45,15 +39,14 @@ stream& stream::operator=( stream&& o ) noexcept
 }
 
 stream::stream(std::shared_ptr<server::http_handler> s, std::function<void(stream*, session*)> des, std::int16_t prio ):
-	weight_{prio}, s_owner{s}, session_{dynamic_cast<session *>(s_owner.get())}, destructor{des}
+	s_owner{std::static_pointer_cast<session>(s)}, session_{dynamic_cast<session *>(s_owner.get())}, destructor{des}
 {
-	LOGTRACE("stream ", this, " session", session_ );
 	assert(session_ != nullptr);
 	prd.source.ptr =  static_cast<void*> ( this );
 	prd.read_callback = stream::data_source_read_callback;
 
-	// Not all streams are supposed to send data - it would be better to have a
-	// lazy creation
+	//todo: check the following comment:
+	// not all streams are supposed to send data - it would be better to have a lazy creation
 	request.protocol( http::proto_version::HTTP11 );
 	request.channel( http::proto_version::HTTP20 );
 	request.origin( session_->find_origin() );
@@ -61,19 +54,15 @@ stream::stream(std::shared_ptr<server::http_handler> s, std::function<void(strea
 
 void stream::on_request_header_complete()
 {
-	LOGTRACE("stream headers complete!");
-/*	auto cor = service::locator::chain_factory().get_chain( request );
-	callback_cor_initializer<stream>( cor, this );
-	managed_chain = std::move( cor );
-	managed_chain->on_request_preamble( std::move( request ) );*/
-	//to send back the headers, we need to get the handlers!
 	req->headers(std::move(request));
-
+	_headers_sent = true;
 }
 
-void stream::on_request_header( http::http_request::header_t&& h )
+void stream::add_header(std::string key, std::string value)
 {
-	request.header( h.first, h.second );
+	if(!_headers_sent) return request.header(std::move(key), std::move(value));
+
+	req->trailer(std::move(key), std::move(value));
 }
 
 void stream::on_request_body( data_t d, size_t size )
@@ -82,61 +71,32 @@ void stream::on_request_body( data_t d, size_t size )
    req->body(std::move(d), size);
 }
 
-void stream::on_request_canceled( const errors::error_code &ec)
-{
-	LOGERROR("stream::on_request_canceled");
-	//managed_chain->on_request_canceled( ec );
-}
-
 void stream::on_request_finished()
 {
 	LOGTRACE("stream ", this, " request end detected");
 	//managed_chain->on_request_finished();
     req->finished();
-}
-
-void stream::on_request_ack()
-{
-	// TODO
-	// Request has been accepted - release memory if any
-}
-
-void stream::on_response_continue()
-{
-	// TODO
-	LOGINFO(" called - not doing anything!");
-}
-
-void stream::weight( std::int16_t p ) noexcept
-{
-	weight_ = p;
-	nghttp2_priority_spec prio { id_, weight_, 0 };
-	int rc = nghttp2_submit_priority( session_->next_layer(),  NGHTTP2_FLAG_NONE, id_, &prio );
-	assert( rc == 0 );
-}
-
-void stream::on_error( const int& error )
-{
-	errored = true;
-	if ( closed_ )
-		die();
-	else
-	{
-		LOGTRACE( "Error on stream id ", id_, " error ", error );
-		int rc = nghttp2_submit_rst_stream( session_->next_layer(), NGHTTP2_FLAG_NONE, id_, NGHTTP2_INTERNAL_ERROR );
-		if ( rc != 0 )
-			LOGERROR( "Error on RST STREAM ", id_, " ", nghttp2_strerror( rc ));
-	}
+	req = nullptr; //we don't grant anymore the existence of the request after the on_finished callback has been triggered.
 }
 
 void stream::on_eom()
 {
 	LOGTRACE("on_eom");
 	eof_ = true;
+
 	if ( closed_ )
 		die();
-	else
+	else {
+		if(auto response = res.lock())
+		{
+			s_owner->add_pending_callbacks([response](){
+				response->cleared();
+			}, [response](){
+				response->error(http::connection_error{http::error_code::write_error});
+			});
+		}
 		flush();
+	}
 }
 
 bool stream::body_empty() const noexcept
@@ -309,6 +269,7 @@ void stream::die() noexcept
 	{
 		closed_ = true;
 	}
+
 }
 
 // https://tools.ietf.org/html/rfc7540#section-8.1.2
