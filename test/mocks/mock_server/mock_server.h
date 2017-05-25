@@ -31,7 +31,7 @@ public:
 	using read_feedback = std::function<void(std::string)>;
 	using write_feedback = std::function<void(size_t)>;
 
-	mock_server(boost::asio::io_service &io, uint16_t listening_port=8454);
+	mock_server(boost::asio::io_service &io, uint16_t listening_port=8454U);
 	void start(std::function<void()> on_start_function, bool once = false);
 	void stop();
 	void read(int bytes, read_feedback rf = {});
