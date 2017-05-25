@@ -29,7 +29,11 @@ public:
 
 protected:
 	virtual inverted_handlers_t get_user_handlers() = 0;
-	void cleared() override { if(request_cb) (*request_cb)(std::static_pointer_cast<client_connection>(this->shared_from_this())); }
+	void cleared() override 
+	{ 
+		if(request_cb) 
+			(*request_cb) ( std::static_pointer_cast<client_connection>(this->shared_from_this()) ); 
+	}
 
 private:
 	std::experimental::optional<request_sent_callback> request_cb;

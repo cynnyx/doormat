@@ -1,5 +1,5 @@
 #include <gtest/gtest.h>
-#include <mock_server/mock_server.h>
+#include <mocks/mock_server/mock_server.h>
 #include <nodes/common.h>
 #include "src/network/communicator/communicator.h"
 

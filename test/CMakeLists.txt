@@ -22,8 +22,8 @@ set(DOORMAT_TESTCASES_SOURCES
 	stats_test.cpp
 	testcommon.cpp
 	utils_test.cpp
-	mock_server/mock_server.cpp
-	mocks/mock_connector.cpp
+		mocks/mock_server/mock_server.cpp
+		mocks/mock_connector/mock_connector.cpp
 	network/communicator_test.cpp
 	nodes/common.cpp
 	cloudiapooltest.cpp
@@ -34,7 +34,7 @@ set(DOORMAT_TESTCASES_SOURCES
 	http/server/server_connection_test.cpp
 	http/client/client_connection_test.cpp
 	http_client_test.cpp
-)
+		connector_test.cpp)
 
 add_executable(${DOORMAT_TEST_EXECUTABLE} ${DOORMAT_TESTCASES_SOURCES})
 

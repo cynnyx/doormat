@@ -25,23 +25,11 @@ class connector_interface;
 class http_handler
 {
 	std::weak_ptr<connector_interface> _connector;
-
 	virtual void do_write() = 0;
 	virtual void on_connector_nulled() = 0;
-
 protected:
-
-
-	std::shared_ptr<connector_interface> connector()
-	{
-		return _connector.lock();
-    }
-	std::shared_ptr<const connector_interface> connector() const
-    {
-		return _connector.lock();
-	}
-
-
+	std::shared_ptr<connector_interface> connector();
+	std::shared_ptr<const connector_interface> connector() const;
 public:
 	http_handler() = default;
 	//void close() override;
@@ -53,7 +41,7 @@ public:
 	virtual bool on_read(const char*, unsigned long) = 0;
 	virtual bool on_write(std::string& chunk) = 0;
 	virtual void trigger_timeout_event() =0;
-	virtual std::vector<std::pair<std::function<void()>, std::function<void()>>> write_feedbacks(){ return {}; }
+	virtual std::vector<std::pair<std::function<void()>, std::function<void()>>> write_feedbacks()=0;
 
 	virtual ~http_handler() = default;
 };

@@ -1,5 +1,4 @@
 #include "dns_communicator_factory.h"
-#include "../../io_service_pool.h"
 #include "../../connector.h"
 #include "../../service_locator/service_locator.h"
 #include "../../configuration/configuration_wrapper.h"
@@ -20,7 +19,6 @@ void dns_connector_factory::get_connector(const std::string& address, uint16_t p
 void dns_connector_factory::dns_resolver(const std::string& address, uint16_t port, bool tls,
 	connector_callback_t connector_cb, error_callback_t error_cb)
 {
-	auto&& io = service::locator::service_pool().get_thread_io_service();
 	std::shared_ptr<boost::asio::ip::tcp::resolver> r = std::make_shared<boost::asio::ip::tcp::resolver>(io);
 	if(!port)
 		port = tls ? 443 : 80;
@@ -28,7 +26,7 @@ void dns_connector_factory::dns_resolver(const std::string& address, uint16_t po
 	LOGTRACE("resolving ", address, "with port ", port);
 	boost::asio::ip::tcp::resolver::query q( address,  std::to_string(port) );
 	auto resolve_timer =
-		std::make_shared<boost::asio::deadline_timer>(service::locator::service_pool().get_thread_io_service());
+		std::make_shared<boost::asio::deadline_timer>(io);
 	resolve_timer->expires_from_now(boost::posix_time::milliseconds(resolve_timeout));
 	resolve_timer->async_wait([r, resolve_timer](const boost::system::error_code &ec)
 	{
@@ -53,13 +51,13 @@ void dns_connector_factory::dns_resolver(const std::string& address, uint16_t po
 				static thread_local boost::asio::ssl::context ctx(boost::asio::ssl::context::sslv23);
 				return endpoint_connect(std::move(iterator),
 					std::make_shared<boost::asio::ssl::stream<boost::asio::ip::tcp::socket>>
-						(service::locator::service_pool().get_thread_io_service(), ctx ),
+						(io, ctx ),
 							std::move(connector_cb), std::move(error_cb));
 			}
 			else
 				return endpoint_connect(std::move(iterator),
 					std::make_shared<boost::asio::ip::tcp::socket>
-						(service::locator::service_pool().get_thread_io_service()),
+						(io),
 							std::move(connector_cb), std::move(error_cb));
 		});
 }
@@ -71,7 +69,7 @@ void dns_connector_factory::endpoint_connect(boost::asio::ip::tcp::resolver::ite
 		return error_cb(3);
 	auto&& endpoint = *it;
 	auto connect_timer = 
-		std::make_shared<boost::asio::deadline_timer>(service::locator::service_pool().get_thread_io_service());
+		std::make_shared<boost::asio::deadline_timer>(io);
 	connect_timer->expires_from_now(boost::posix_time::milliseconds(connect_timeout));
 	connect_timer->async_wait([socket, connect_timer](const boost::system::error_code &ec)
 	{
@@ -107,7 +105,7 @@ void dns_connector_factory::endpoint_connect(boost::asio::ip::tcp::resolver::ite
 	stream->set_verify_mode( boost::asio::ssl::verify_none );
 
 	auto connect_timer = 
-		std::make_shared<boost::asio::deadline_timer>(service::locator::service_pool().get_thread_io_service());
+		std::make_shared<boost::asio::deadline_timer>(io);
 	connect_timer->expires_from_now(boost::posix_time::milliseconds(connect_timeout));
 	connect_timer->async_wait([stream, connect_timer](const boost::system::error_code &ec)
 	{

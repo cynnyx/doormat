@@ -31,11 +31,15 @@ public:
 	using local_t_object = typename std::remove_reference<decltype(((local_t*)nullptr)->get_preamble())>::type;
 	using data_t = std::unique_ptr<const char[]>;
 
+	/** \brief shared pointer to handler.
+	 * 	\returns  a shared pointer to the object, with the downcasted interface.
+	 * */
 	std::shared_ptr<handler_http1> get_shared()
 	{
 		return std::static_pointer_cast<handler_http1>(this->shared_from_this());
 	}
 
+	/** \brief posts a connection timeout */
 	void trigger_timeout_event() override
 	{
 		io_service().post([this](){connection_t::timeout(); });
@@ -43,7 +47,8 @@ public:
 
 	handler_http1() = default;
 
-
+	/** \brief returns a pair of handlers to communicate with the server
+	 * \returns a pair containing a remote object and a local object. */
 	std::pair<std::shared_ptr<remote_t>, std::shared_ptr<local_t>> get_user_handlers() override
 	{
 		auto rem = std::make_shared<remote_t>(this->get_shared());
@@ -56,6 +61,8 @@ public:
 		return std::make_pair(rem, loc);
 	}
 
+	/** \brief returns currently used remote object, while it is still in the decoding phase.
+	 * \return a shared pointer to the remote object*/
 	std::shared_ptr<remote_t> get_current() {
 		if(decoding_error) return nullptr;
 		if(!remote_objects.size()) {
@@ -72,6 +79,9 @@ public:
 		return current_remote;
 	}
 
+	/** \brief starts the server.
+	 * \returns true if it starts correctly; false otherwise.
+	 * */
 	bool start() noexcept override
 	{
 		connection_t::init();
@@ -92,6 +102,8 @@ public:
 		return true;
 	}
 
+	/** \brief decoding failure management
+	 * */
 	void decoding_failure()
 	{
 		//failure always gets called after start...
@@ -106,7 +118,8 @@ public:
 			}
 		local_objects.pop_front();
 	}
-
+	/** \brief decoding end management
+	 * */
 	void decoding_end()
 	{
 		auto current_remote = get_current();
@@ -114,7 +127,10 @@ public:
 		io_service().post([current_remote = std::move(current_remote)]() { current_remote->finished(); });
 		remote_objects.pop_front(); //finished, hence we remove the current decoded remote object from the queue.
 	}
-
+	/** \brief trailer decoding management
+	 *	\param k the key of the trailer
+	 *	\param v the value of the trailer
+	 * */
 	void decoded_trailer(std::string&& k, std::string&& v)
 	{
 		auto current_remote = get_current();
@@ -126,6 +142,10 @@ public:
 							});
 	}
 
+	/** \brief body decoding management
+	 *	\param b the decoded body content
+	 *	\param size the size of the content
+	 * */
 	void decoded_body(data_t b, size_t size)
 	{
 		auto current_remote = get_current();
@@ -141,6 +161,10 @@ public:
 		});
 	}
 
+
+	/** \brief changes the persistency state of the handler depending on the content of the messages passing into it.
+	 *
+	 * */
 	void update_persistent()
 	{
 		if(current_decoded_object.protocol_version() == http::proto_version::HTTP10)
@@ -158,6 +182,9 @@ public:
 		current_decoded_object.keepalive(connection_t::persistent);
 	}
 
+	/** \brief management of headers decoding
+	 *
+	 * */
 	void decoded_headers()
 	{
 		auto current_remote = get_current();
@@ -173,6 +200,8 @@ public:
 		current_decoded_object = {};
 	}
 
+	/** \brief starts decoding.
+	 * */
 	void decoding_start(http::http_structured_data **data)
 	{
 		decoding_error = false;
@@ -180,19 +209,30 @@ public:
 		*data = &current_decoded_object;
 		decoder_begin();
 	}
-
+	/** \brief checks whether the handler (according to the protocol and the managed resources) should stop
+	 * \return true if it should stop; false otherwise.
+	 * */
 	bool should_stop() const noexcept override
 	{
 		auto finished = local_objects.empty();
 		return finished && !connection_t::persistent;
 	}
 
+	/** \brief actions carried on when a read has been performed
+	 * \param data the readed data
+	 * \param len the size of the data readed
+	 * \return true in case decoding was successful; false otherwise.
+	 * */
 	bool on_read(const char* data, size_t len) override
 	{
 		auto rv = decoder.decode(data, len);
 		return rv;
 	}
 
+	/** \brief returns data to be written on the connector.
+	 * \param data reference to the array in which the data will be placed.
+	 * \return true in case a write should be really performed.
+	 * */
 	bool on_write(std::string& data) override
 	{
 		if(connector())
@@ -208,7 +248,8 @@ public:
 	}
 
 
-	/** Explicit user-requested close*/
+	/** \brief explicit user-requested close
+	 * */
 	void close() override
 	{
 		user_close = true;
@@ -222,30 +263,39 @@ public:
 
 private:
 
-	/** Event emitted when the decoder starts; default behaviour. See specializations.*/
+	/** \brief event emitted when the decoder starts; default behaviour does nothing. See specializations.*/
 	void decoder_begin(){}
 
+	/** \brief notifies an error to all currently managed objects.
+	 * \param err the error code. */
 	void notify_all(http::error_code err) {
 
 		for(auto current_remote: remote_objects) {
-			current_remote->error(err);
+			if(auto s = connector()) s->io_service().post([current_remote, err](){current_remote->error(err);});
+			else current_remote->error(err);
 		}
 		for(auto &res: local_objects)
 		{
-			if(auto s = res.lock()) s->error(err);
+			if(auto s = res.lock())
+			{
+				if(auto c = connector())	c->io_service().post([s, err](){s->error(err);});
+				else s->error(err);
+			}
 		}
 		remote_objects.clear();
 		local_objects.clear();
 	}
 
 
-	/** Handler to the io_service to post deferred callbacks*/
+	/** \brief handler to the io_service to post deferred callbacks
+	 * \returns a reference to the io_service
+	 * */
 	boost::asio::io_service& io_service()
 	{
 		return connector()->io_service(); //hmmm :D
 	}
 
-	/** Requires a write if a connector is still available. */
+	/** \brief requires a write if a connector is still available. */
 	void do_write() override
 	{
 		auto c = connector();
@@ -253,7 +303,7 @@ private:
 			c->do_write();
 	}
 
-	/** Reaction to connection close*/
+	/** \brief reaction to connection close*/
 	void on_connector_nulled() override
 	{
 		if(user_close) return;
@@ -269,7 +319,8 @@ private:
 		pending_clear_callbacks.clear();
 	}
 
-	/** Method used by responses to notify availability of new content*/
+	/** \brief method used by responses to notify availability of new content
+	 * */
 	void notify_local_content()
 	{
 		while(!local_objects.empty())
@@ -285,21 +336,25 @@ private:
 				else break;
 			} else
 			{
-				http::connection_error err{http::error_code::missing_response};
+				http::connection_error err{http::error_code::missing_stream_element};
 				connection_t::error(err);
-				notify_all(http::error_code::missing_response);
+				notify_all(http::error_code::missing_stream_element);
 				connection_t::deinit();
 			}
 		}
 	}
-	/** propagates the timeout request to the connector. */
+	/** \brief propagates the timeout request to the connector.
+	 * \param ms the timeout interval requested.
+	 * */
 	void set_timeout(std::chrono::milliseconds ms)
 	{
 		auto s = connector();
 		if(s) s->set_timeout(std::move(ms));
 	}
 
-	/** Method used to retrieeve new content from a response */
+	/** \brief retrieve new content from a remote object
+	 * \returns true if the remote object has finished and hence can be removed.
+	 * */
 	bool poll_local(std::shared_ptr<local_t> loc)
 	{
 		auto state = loc->get_state();
@@ -319,7 +374,7 @@ private:
 				break;
 			}
 			case local_t::state::ended:
-				pending_clear_callbacks.emplace_back([loc](){ loc->cleared(); }, [loc](){loc->error(http::error_code::missing_response); });
+				pending_clear_callbacks.emplace_back([loc](){ loc->cleared(); }, [loc](){loc->error(http::error_code::missing_stream_element); });
 				notify_local_end();
 				connection_t::cleared();
 				return true;
@@ -330,14 +385,15 @@ private:
 		return false;
 	}
 
-
+	/** \brief gets callbacks to be executed once the subsequent write has been completed successfully
+	 * \returns vector of pairs of <success, error> callback to be called when write has been successfully performed.*/
 	std::vector<std::pair<std::function<void()>, std::function<void()>>> write_feedbacks() override {
 		auto d = std::move(pending_clear_callbacks);
 		pending_clear_callbacks = {};
 		return d;
 	}
 
-	/** Local Object management methods. They operate on a single local object. */
+	/** \brief Local Object management method for headers*/
 	void notify_local_headers(local_t_object &&loc)
 	{
 		if(loc.has(http::hf_connection))
@@ -348,19 +404,21 @@ private:
 		do_write();
 	}
 
+	/** \brief Local Object management method for body*/
 	void notify_local_body(std::string&& body)
 	{
 		serialization.append(encoder.encode_body(std::move(body)));
 		do_write();
 	}
 
+	/** \brief Local Object management method for trailers*/
 	void notify_local_trailer(std::string&& k, std::string&& v)
 	{
 
 		serialization.append(encoder.encode_trailer(k, v));
 		do_write();
 	}
-
+	/** \brief Local Object management method for end*/
 	void notify_local_end()
 	{
 
@@ -422,7 +480,8 @@ bool handler_http1<http::server_traits>::poll_local(std::shared_ptr<http::server
 				break;
 			}
 			case local_t::state::ended:
-				pending_clear_callbacks.emplace_back([loc](){ loc->cleared(); }, [loc](){loc->error(http::error_code::missing_response); });
+				//todo: avoid hardcoded error in this function; it is just a very, very bad idea.
+				pending_clear_callbacks.emplace_back([loc](){ loc->cleared(); }, [loc](){loc->error(http::error_code::missing_stream_element); });
 				notify_local_end();
 				//delaying this is very important; otherwise the client could send another request while the state is wrong.
 				connection_t::cleared();

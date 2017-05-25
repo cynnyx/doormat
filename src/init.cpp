@@ -260,7 +260,7 @@ int doormat( int argc, char** argv )
 
 		conn->on_error([](auto conn, const http::connection_error& err)
 		{
-			//std::cout << "there was an error in the connection! code is " << int(err.errc())<< std::endl;
+			std::cout << "there was an error in the connection! code is " << int(err.errc())<< std::endl;
 		});
 /*
 		conn->on_timeout(5000, [](auto conn){

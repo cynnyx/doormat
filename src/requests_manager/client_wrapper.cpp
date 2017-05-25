@@ -32,7 +32,7 @@ client_wrapper::client_wrapper (
 	: node_interface(std::move(request_preamble), std::move(request_body), std::move(request_trailer),
 					 std::move(request_canceled), std::move(request_finished),
 					 std::move(hcb), std::move(bcb), std::move(tcb), std::move(eomcb),
-					 std::move(ecb), std::move(rccb), aclogger)
+					 std::move(ecb), std::move(rccb), aclogger), client{service::locator::service_pool().get_thread_io_service()}
 {
 	LOGTRACE("client_wrapper ",this," constructor");
 }

@@ -1,7 +1,7 @@
 #include "../src/http/server/server_connection.h"
 #include "../src/protocol/handler_http1.h"
 #include "../src/http/server/server_traits.h"
-#include "mocks/mock_connector.h"
+#include "mocks/mock_connector/mock_connector.h"
 #include <gtest/gtest.h>
 #include <gmock/gmock.h>
 
@@ -96,7 +96,7 @@ TEST_F(server_connection_test, on_connector_nulled)
 			++req_cb_counter;
 		});
 
-		req->on_finished([&req_cb_counter, &conn, this, resp](auto req) {
+		req->on_finished([&req_cb_counter, this, resp](auto req) {
 			++req_cb_counter;
 			mock_connector = nullptr;
 			resp->headers(http::http_response{});
@@ -121,6 +121,43 @@ TEST_F(server_connection_test, on_connector_nulled)
 	ASSERT_EQ(error_cb_counter, expected_error_cb_counter);
 }
 
+TEST_F(server_connection_test, on_connection_closed)
+{
+	size_t expected_req_cb_counter{2};
+	size_t req_cb_counter{0};
+
+	bool err_cb_called{false};
+
+	std::shared_ptr<http::response> res = nullptr;
+
+	_handler->on_request([&req_cb_counter, this, &err_cb_called, &res](auto conn, auto req, auto resp) {
+		res = resp;
+
+		req->on_headers([&req_cb_counter](auto req) {
+			++req_cb_counter;
+		});
+
+		req->on_finished([&req_cb_counter, this](auto req) {
+			++req_cb_counter;
+			req->get_connection()->close();
+		});
+
+		resp->on_error([&err_cb_called](){
+			err_cb_called = true;
+		});
+	});
+
+	mock_connector->io_service().post([this]() {
+		mock_connector->read("GET / HTTP/1.1\r\n"
+				                     "host:localhost:1443\r\n"
+				                     "date: Tue, 17 May 2016 14:53:09 GMT\r\n"
+				                     "\r\n");
+	});
+
+	mock_connector->io_service().run();
+	ASSERT_EQ(req_cb_counter, expected_req_cb_counter);
+	ASSERT_TRUE(err_cb_called);
+}
 
 TEST_F(server_connection_test, response_continue)
 {
@@ -240,10 +277,10 @@ TEST_F(server_connection_test, http11_non_persistent)
 
 	mock_connector->io_service().post([this]() {
 		mock_connector->read("GET / HTTP/1.1\r\n"
-									 "host:localhost:1443\r\n"
-									 "date: Tue, 17 May 2016 14:53:09 GMT\r\n"
-									 "connection: close\r\n"
-									 "\r\n");
+			"host:localhost:1443\r\n"
+			"date: Tue, 17 May 2016 14:53:09 GMT\r\n"
+			"connection: close\r\n"
+			"\r\n");
 	});
 
 	mock_connector->io_service().run();
@@ -298,22 +335,96 @@ TEST_F(server_connection_test, http11_pipelining)
 		}
 	};
 
-	mock_connector->io_service().post([this]() {
+	mock_connector->io_service().post([this]() 
+	{
 		mock_connector->read("GET / HTTP/1.1\r\n"
-									 "host:localhost:1443\r\n"
-									 "date: Tue, 17 May 2016 14:53:09 GMT\r\n"
-									 "\r\n"
-									 "GET / HTTP/1.1\r\n"
-									 "host:localhost:1443\r\n"
-									 "date: Tue, 17 May 2016 14:53:09 GMT\r\n"
-									 "connection: close\r\n"
-									 "\r\n");
+				"host:localhost:1443\r\n"
+				"date: Tue, 17 May 2016 14:53:09 GMT\r\n"
+				"\r\n"
+				"GET / HTTP/1.1\r\n"
+				"host:localhost:1443\r\n"
+				"date: Tue, 17 May 2016 14:53:09 GMT\r\n"
+				"connection: close\r\n"
+				"\r\n");
 	});
 
 	mock_connector->io_service().run();
 	ASSERT_TRUE(_handler->should_stop());
 	ASSERT_TRUE(terminated);
 	ASSERT_TRUE(response.find("connection: close\r\n") != std::string::npos);
+}
+
+
+TEST_F(server_connection_test, http11_missing_response)
+{
+	_handler->set_persistent(true);
+	int req_counter{0};
+
+	_handler->on_request([&](auto conn, auto req, auto res) {
+		++req_counter;
+		if(req_counter == 2)
+			return;
+
+		req->on_finished([res](auto req) {
+			bool keep_alive = req->preamble().keepalive();
+			http::http_response r;
+			r.protocol(http::proto_version::HTTP11);
+			std::string body{"Ave client, dummy node says hello"};
+			r.status(200);
+			r.keepalive(keep_alive);
+			r.header("content-type", "text/plain");
+			r.header("date", "Tue, 17 May 2016 14:53:09 GMT");
+			r.content_len(body.size());
+			res->headers(std::move(r));
+			res->body(make_data_ptr(body), body.size());
+			res->end();
+		});
+
+		conn->on_error([](auto conn, const http::connection_error &error) {
+			ASSERT_TRUE(conn);
+			ASSERT_EQ(error.errc(), http::error_code::missing_stream_element);
+			conn->close();
+		});
+	});
+
+	// list of chunks that I expect to receive inside the on_write()
+	std::string expected_response =
+			"HTTP/1.1 200 OK\r\n"
+			"connection: keep-alive\r\n"
+			"content-length: 33\r\n"
+			"content-type: text/plain\r\n"
+			"date: Tue, 17 May 2016 14:53:09 GMT\r\n"
+			"\r\n"
+			"Ave client, dummy node says hello";
+
+	bool terminated{false};
+	_write_cb = [this, &terminated, &expected_response](dstring chunk) 
+	{
+		response.append(chunk);
+		if (response == expected_response)
+			terminated = true;
+	};
+
+	mock_connector->io_service().post([this]() 
+	{
+		mock_connector->read("GET / HTTP/1.1\r\n"
+				"host:localhost:1443\r\n"
+				"date: Tue, 17 May 2016 14:53:09 GMT\r\n"
+				"\r\n"
+				"GET / HTTP/1.1\r\n"
+				"host:localhost:1443\r\n"
+				"date: Tue, 17 May 2016 14:53:09 GMT\r\n"
+				"\r\n"
+				"GET / HTTP/1.1\r\n"
+				"host:localhost:1443\r\n"
+				"date: Tue, 17 May 2016 14:53:09 GMT\r\n"
+				"connection: close\r\n"
+				"\r\n");
+	});
+
+	mock_connector->io_service().run();
+	ASSERT_TRUE(terminated);
+	ASSERT_TRUE(response.find("connection: keep-alive\r\n") != std::string::npos);
 }
 
 
@@ -420,7 +531,8 @@ TEST_F(server_connection_test, http10_non_persistent)
 TEST_F(server_connection_test, http10_pipelining)
 {
 	_handler->set_persistent(true);
-	_handler->on_request([&](auto conn, auto req, auto res) {
+	_handler->on_request([&](auto conn, auto req, auto res) 
+	{
 		req->on_finished([res](auto req) {
 			bool keep_alive = req->preamble().keepalive();
 			http::http_response r;
@@ -454,22 +566,25 @@ TEST_F(server_connection_test, http10_pipelining)
 					"Ave client, dummy node says hello";
 
 	bool terminated{false};
-	_write_cb = [this, &terminated, &expected_response](auto chunk) {
+	_write_cb = [this, &terminated, &expected_response](auto chunk) 
+	{
 		response.append(chunk);
-		if (response == expected_response) {
+		if (response == expected_response) 
+		{
 			terminated = true;
 		}
 	};
 
-	mock_connector->io_service().post([this]() {
+	mock_connector->io_service().post([this]() 
+	{
 		mock_connector->read("GET / HTTP/1.0\r\n"
-				                     "date: Tue, 17 May 2016 14:53:09 GMT\r\n"
-				                     "connection: keep-alive\r\n"
-				                     "\r\n"
-				                     "GET / HTTP/1.0\r\n"
-				                     "date: Tue, 17 May 2016 14:53:09 GMT\r\n"
-				                     "connection: close\r\n"
-				                     "\r\n");
+			"date: Tue, 17 May 2016 14:53:09 GMT\r\n"
+			"connection: keep-alive\r\n"
+			"\r\n"
+			"GET / HTTP/1.0\r\n"
+			"date: Tue, 17 May 2016 14:53:09 GMT\r\n"
+			"connection: close\r\n"
+			"\r\n");
 	});
 
 	mock_connector->io_service().run();

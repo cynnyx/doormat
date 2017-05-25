@@ -27,7 +27,8 @@ namespace http
 class server_connection;
 struct server_traits;
 
-class request : public std::enable_shared_from_this<request> {
+class request : public std::enable_shared_from_this<request> 
+{
 	friend class server::handler_http1<server_traits>;
 	friend class http2::stream;
 public:

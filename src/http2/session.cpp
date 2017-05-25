@@ -8,19 +8,13 @@
 #include "../http/server/request.h"
 #include "../http/server/response.h"
 
-namespace
-{
-
-// @todo member
-static constexpr const std::int32_t max_concurrent_streams = 100;
-
-}
-
 namespace http2
 {
+/** Ma l'allocatore? Dio. */
 
-
-session::session(): session_data( nullptr, [] ( nghttp2_session* s ) { if ( s ) nghttp2_session_del ( s ); } )
+session::session(std::uint32_t max_concurrent_streams):
+		session_data{nullptr, [] ( nghttp2_session* s ) { if ( s ) nghttp2_session_del ( s ); }},
+		max_concurrent_streams{max_concurrent_streams}
 {
 	LOGTRACE("Session: ", this );
 	nghttp2_option_new( &options );
@@ -88,7 +82,8 @@ stream* session::create_stream ( std::int32_t id )
 			LOGTRACE("Stream destruction: ", s, " session: ", sess );
 			s->~stream();
 			sess->all.free( static_cast<void*>( s ), sess->all.mem_user_data  );
-		} }; // The pointed object will commit suicide
+		}
+	}; // The pointed object will commit suicide
 
 	stream_data->id( id );
 	//todo: replace.
@@ -127,6 +122,7 @@ void session::go_away()
 		// No mem or invalid data - they look like a bug to me
 //		LOGERROR( "nghttp2_submit_goaway ", nghttp2_strerror( r ) );
 		//todo: avoid throwing
+		//nice ;)
 		THROW( errors::failing_at_failing, r );
 	}
 
@@ -160,7 +156,7 @@ int session::on_header_callback( nghttp2_session *session_,
 	static const char METHOD[] = ":method";
 	static const char AUTHORITY[] = ":authority";
 	static const char SCHEME[] = ":scheme";
-	switch (frame->hd.type)
+	switch (frame->hd.type) //fixme
 	{
 		case NGHTTP2_HEADERS:
 			if (frame->headers.cat != NGHTTP2_HCAT_REQUEST) break;
@@ -171,8 +167,9 @@ int session::on_header_callback( nghttp2_session *session_,
 
 			if ( namelen == sizeof(PATH) - 1 && memcmp(PATH, name, namelen) == 0 )
 			{
+				//fixme.
 				size_t j;
-				for (j = 0; j < valuelen && value[j] != '?'; ++j); // Semicolon intended!
+				for (j = 0; j < valuelen && value[j] != '?'; ++j) ; // Semicolon intended!
 				dstring decoded_path(value, j);
 				stream_data->path( decoded_path);
 
@@ -221,6 +218,22 @@ int session::on_header_callback( nghttp2_session *session_,
 	return 0;
 }
 
+void session::trigger_timeout_event() 
+{
+	/* TODO */
+}
+
+std::shared_ptr<session> session::get_shared()
+{
+	return std::static_pointer_cast<session>(this->shared_from_this());
+}
+
+std::pair<std::shared_ptr<http::request>, std::shared_ptr<http::response>> 
+	session::get_user_handlers()
+{
+	return std::pair<std::shared_ptr<http::request>, std::shared_ptr<http::response>>{}; //fixme
+}
+
 void session::do_write()
 {
 	LOGTRACE("do_write");
@@ -233,9 +246,28 @@ void session::do_write()
 	}
 }
 
+void session::close() 
+{
+	if(auto s = connector()) s->close();
+}
+
+session::~session() 
+{
+	nghttp2_option_del( options );
+}
+
+void session::set_timeout(std::chrono::milliseconds) { /*todo */ }
+
 void session::on_connector_nulled()
-{ //todo: send events
+{ 
+	//todo: send events to all streams involved!
 	LOGTRACE("on_connector_nulled");
+	//send back error to connector.
+	http::server_connection::error(http::error_code::closed_by_client);
+	for(auto &cbs : pending)
+	{
+		cbs.second();
+	}
 // 	s->on_request_canceled(error_code_distruction)
 	// Streams should be destroyed by nghttp2
 
@@ -303,15 +335,14 @@ bool session::should_stop() const noexcept
 }
 
 int session::on_data_chunk_recv_callback(nghttp2_session *session_, uint8_t flags, int32_t stream_id,
-	const uint8_t *data, size_t len, void *user_data )
+	const uint8_t * data, size_t len, void *user_data )
 {
 	session* s_this = static_cast<session*>( user_data );
 	stream* req = static_cast<stream*>( nghttp2_session_get_stream_user_data(session_, stream_id) );
 
 	auto ptr = std::make_unique<char[]>(len);
-	std::copy(data, data + len, ptr.get()); /// @warning : we don't have ownership of this stuff - this should come out of input
+	std::copy(data, data + len, ptr.get()); /// @warning : we don't have ownership.
 	req->on_request_body( std::move(ptr), len );
-
 	/// @note return  NGHTTP2_ERR_PAUSE ; to pause input
 
 	if ( nghttp2_session_want_write( s_this->session_data.get() ) )

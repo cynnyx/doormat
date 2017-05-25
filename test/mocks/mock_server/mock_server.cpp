@@ -1,5 +1,5 @@
 #include "mock_server.h"
-#include "../../src/utils/log_wrapper.h"
+#include "src/utils/log_wrapper.h"
 
 #include <gtest/gtest.h>
 #include <iostream>
@@ -19,10 +19,11 @@ std::unique_ptr<boost::asio::ssl::stream<boost::asio::ip::tcp::socket>> mock_ser
 }
 
 template<bool ssl>
-mock_server<ssl>::mock_server(uint16_t listening_port) :
+mock_server<ssl>::mock_server(boost::asio::io_service &io, uint16_t listening_port) :
 	listening_port{listening_port},
 	stopped{false},
-	ctx{boost::asio::ssl::context::tlsv12}
+	ctx{boost::asio::ssl::context::tlsv12},
+	io{io}
 {
 	if(ssl)
 	{
@@ -41,11 +42,10 @@ mock_server<ssl>::mock_server(uint16_t listening_port) :
 template<>
 void mock_server<false>::start(std::function<void()> on_start_function, bool once)
 {
-	auto&& ios = service::locator::service_pool().get_thread_io_service();
 	auto endpoint = tcp::endpoint{address::from_string("::"), listening_port};
 
-	acceptor = std::make_unique<tcp::acceptor>(ios, endpoint);
-	socket = make_socket(ios);
+	acceptor = std::make_unique<tcp::acceptor>(io, endpoint);
+	socket = make_socket(io);
 	acceptor->async_accept(socket->lowest_layer(), [this, on_start_function, once](const boost::system::error_code &ec)
 	{
 		if(once) acceptor->close();
@@ -60,7 +60,7 @@ void mock_server<false>::start(std::function<void()> on_start_function, bool onc
 template<>
 void mock_server<true>::start(std::function<void()> on_start_function, bool once)
 {
-	auto&& ios = service::locator::service_pool().get_thread_io_service();
+	auto&& ios = io;
 	auto endpoint = tcp::endpoint{address::from_string("::"), listening_port};
 
 	acceptor = std::make_unique<tcp::acceptor>(ios, endpoint);

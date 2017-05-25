@@ -1,16 +1,19 @@
 #ifndef DOORMAT_CONNECTION_ERROR_H
 #define DOORMAT_CONNECTION_ERROR_H
 
+
 namespace http {
 
+
 enum class error_code : int
-{   success = 0,
+{
+	success = 0,
 	decoding = 1,
     closed_by_client = 2,
 	invalid_read = 3,
 	connection_closed = 4,
-	missing_response = 5,
-
+	missing_stream_element = 5,
+	write_error = 6
 };
 
 
