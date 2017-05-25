@@ -6,7 +6,7 @@
 #include "../../../src/protocol/handler_http1.h"
 #include "../../../src/http/client/request.h"
 #include "../../../src/http/client/response.h"
-#include "../../mocks/mock_connector.h"
+#include "mocks/mock_connector/mock_connector.h"
 
 using client_connection_t = server::handler_http1<http::client_traits>;
 

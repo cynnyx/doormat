@@ -1,7 +1,7 @@
 #pragma once
 
-#include "../src/connector.h"
-#include "../src/protocol/http_handler.h"
+#include "src/connector.h"
+#include "src/protocol/http_handler.h"
 #include <memory>
 
 struct MockConnector : server::connector_interface, std::enable_shared_from_this<MockConnector>

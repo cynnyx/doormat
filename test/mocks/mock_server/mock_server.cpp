@@ -1,5 +1,5 @@
 #include "mock_server.h"
-#include "../../src/utils/log_wrapper.h"
+#include "src/utils/log_wrapper.h"
 
 #include <gtest/gtest.h>
 #include <iostream>

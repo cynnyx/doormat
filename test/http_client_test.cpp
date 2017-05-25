@@ -6,7 +6,7 @@
 #include "src/service_locator/service_locator.h"
 #include "src/io_service_pool.h"
 
-#include "mock_server/mock_server.h"
+#include "mocks/mock_server/mock_server.h"
 
 struct http_client_test: public ::testing::Test
 {

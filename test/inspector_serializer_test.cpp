@@ -1,5 +1,5 @@
 #include <gtest/gtest.h>
-#include <mock_server/mock_server.h>
+#include <mocks/mock_server/mock_server.h>
 #include "../src/log/inspector_serializer.h"
 #include "../src/service_locator/service_initializer.h"
 #include "../src/utils/log_wrapper.h"
