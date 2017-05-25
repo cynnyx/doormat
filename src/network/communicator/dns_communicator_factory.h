@@ -11,6 +11,9 @@ namespace network
 class dns_connector_factory : public connector_factory
 {
 public:
+	dns_connector_factory(boost::asio::io_service &io) : io{io}{}
+
+
 	void get_connector(const std::string& address, uint16_t port, bool tls, connector_callback_t, error_callback_t) override;
 	void stop() override { stopping = true; }
 
@@ -25,6 +28,7 @@ private:
 	bool stopping{false};
 	static constexpr int resolve_timeout = 2000;
 	static constexpr int connect_timeout = 1000;
+	boost::asio::io_service &io;
 };
 
 }
