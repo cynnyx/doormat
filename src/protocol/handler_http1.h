@@ -317,6 +317,7 @@ private:
 				else break;
 			} else
 			{
+				std::cout << "bad error: missing stream element" << std::endl; 
 				http::connection_error err{http::error_code::missing_stream_element};
 				connection_t::error(err);
 				notify_all(http::error_code::missing_stream_element);

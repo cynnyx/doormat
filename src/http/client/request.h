@@ -65,7 +65,7 @@ private:
 		if(error_callback)
 			io.post([self = this->shared_from_this()](){self->error_callback();});
 		myself = nullptr;
-		std::cout << "unsetting myself" << std::endl;
+
 	}
 
 	void cleared()
@@ -73,7 +73,7 @@ private:
 		if(write_callback)
 			io.post([self = this->shared_from_this()](){ self->write_callback(self); });
 		myself = nullptr;
-		std::cout << "unsetting" << std::endl;
+
 	}
 
 	state current;

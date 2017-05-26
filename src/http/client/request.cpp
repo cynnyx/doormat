@@ -38,7 +38,7 @@ client_request::client_request(std::function<void(http_request&&)> hcb, std::fun
 void client_request::headers(http_request &&res) { hcb(std::move(res));  }
 void client_request::body(data_t d, size_t s){ bcb(std::move(d), s);  }
 void client_request::trailer(std::string&& k, std::string&& v) { tcb(std::move(k), std::move(v)); }
-void client_request::end() { ccb(); std::cout << "setting myself" << std::endl; myself= this->shared_from_this();  }
+void client_request::end() {  ccb();  myself= this->shared_from_this();  }
 
 void client_request::on_error(error_callback_t ecb) { error_callback = std::move(ecb); }
 void client_request::on_write(write_callback_t wcb) { write_callback = std::move(wcb); }

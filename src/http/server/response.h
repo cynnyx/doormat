@@ -65,6 +65,7 @@ private:
 
     void error(http::connection_error err)
     {
+	    ended = true;
 	    if(error_callback)
 		    io.post([self = this->shared_from_this()](){ self->error_callback();});
 	    myself = nullptr;
@@ -72,6 +73,7 @@ private:
 
 	void cleared()
 	{
+		ended = true;
 		if(write_callback)
 			io.post([self = this->shared_from_this()](){self->write_callback(self);});
 		myself = nullptr;
