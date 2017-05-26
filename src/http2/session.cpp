@@ -100,7 +100,7 @@ stream* session::create_stream ( std::int32_t id )
 	},
 	[stream_data]() {
 		stream_data->on_eom();
-	});
+	},connector()->io_service());
 	user_feedback(req_handler, res_handler);
     stream_data->set_handlers(req_handler, res_handler);
 

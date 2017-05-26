@@ -4,6 +4,8 @@
 #include <experimental/optional>
 #include <functional>
 #include <memory>
+#include <boost/asio/io_service.hpp>
+#include <iostream>
 
 #include "../http_request.h"
 #include "../connection_error.h"
@@ -40,8 +42,8 @@ public:
 		ended
 	};
 
-	client_request(std::function<void()> content_notification);
-	client_request(std::function<void(http_request&&)>, std::function<void(data_t, size_t)>, std::function<void(std::string&&, std::string&&)>, std::function<void()>);
+	client_request(std::function<void()> content_notification, boost::asio::io_service&io);
+	client_request(std::function<void(http_request&&)>, std::function<void(data_t, size_t)>, std::function<void(std::string&&, std::string&&)>, std::function<void()>,boost::asio::io_service&io);
 
 	void headers(http_request &&res);
 	void body(data_t, size_t);
@@ -61,13 +63,17 @@ private:
 	void error(http::connection_error err)
 	{
 		if(error_callback)
-			error_callback();
+			io.post([self = this->shared_from_this()](){self->error_callback();});
+		myself = nullptr;
+		std::cout << "unsetting myself" << std::endl;
 	}
 
 	void cleared()
 	{
 		if(write_callback)
-			write_callback(this->shared_from_this());
+			io.post([self = this->shared_from_this()](){ self->write_callback(self); });
+		myself = nullptr;
+		std::cout << "unsetting" << std::endl;
 	}
 
 	state current;
@@ -86,6 +92,11 @@ private:
 	std::function<void(data_t, size_t)> bcb;
 	std::function<void(std::string&&, std::string&&)> tcb;
 	std::function<void()> ccb;
+
+	std::shared_ptr<client_request> myself{nullptr};
+
+
+	boost::asio::io_service& io;
 
 };
 

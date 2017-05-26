@@ -5,7 +5,7 @@
 namespace http
 {
 
-response::response(std::function<void()> content_notification)
+response::response(std::function<void()> content_notification, boost::asio::io_service&io ) : io{io}
 {
 	hcb = [this, content_notification](http_response&& res){
 		response_headers.emplace(std::move(res));
@@ -31,8 +31,8 @@ response::response(std::function<void()> content_notification)
 }
 
 response::response(std::function<void(http_response&&)> hcb, std::function<void(data_t, size_t)> bcb, std::function<void(std::string&&, std::string&&)> tcb,
-				   std::function<void()> ccb) :
-    hcb{std::move(hcb)}, bcb{std::move(bcb)}, tcb{std::move(tcb)}, ccb{std::move(ccb)}
+				   std::function<void()> ccb, boost::asio::io_service&io ) :
+    hcb{std::move(hcb)}, bcb{std::move(bcb)}, tcb{std::move(tcb)}, ccb{std::move(ccb)}, io{io}
 {}
 
 
@@ -41,8 +41,8 @@ void response::body(data_t d, size_t s){ bcb(std::move(d), s);  }
 void response::trailer(std::string&& k, std::string&& v) { tcb(std::move(k), std::move(v)); }
 void response::end() { myself = this->shared_from_this(); ccb();}
 
-void response::on_error(error_callback_t ecb) { error_callback.emplace(std::move(ecb)); }
-void response::on_write(write_callback_t wcb) { write_callback.emplace(std::move(wcb)); }
+void response::on_error(error_callback_t ecb) { error_callback = std::move(ecb); }
+void response::on_write(write_callback_t wcb) { write_callback = std::move(wcb); }
 
 enum class state {
 	pending,

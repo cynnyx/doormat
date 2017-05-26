@@ -57,7 +57,7 @@ public:
 		auto loc = std::make_shared<local_t>([this, self = this->get_shared()](){
 			notify_local_content();
 
-		});
+		}, conn->io_service());
 		remote_objects.push_back(rem);
 		local_objects.push_back(loc);
 		return std::make_pair(rem, loc);
@@ -115,9 +115,7 @@ public:
 		current_remote->error(http::error_code::decoding);
 		remote_objects.pop_front();
 		if(auto s = local_objects.back().lock())
-			{
-				io_service().post([s]() { s->error(http::error_code::decoding); });
-			}
+			 s->error(http::error_code::decoding);
 		local_objects.pop_front();
 	}
 	/** \brief decoding end management
@@ -262,8 +260,7 @@ private:
 		{
 			if(auto s = res.lock())
 			{
-				if(auto c = connector())	c->io_service().post([s, err](){s->error(err);});
-				else s->error(err);
+				s->error(err);
 			}
 		}
 		remote_objects.clear();

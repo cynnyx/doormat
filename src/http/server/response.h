@@ -6,6 +6,7 @@
 #include <functional>
 #include <memory>
 #include <string>
+#include <boost/asio/io_service.hpp>
 
 #include "../http_response.h"
 #include "../connection_error.h"
@@ -43,8 +44,8 @@ public:
 		ended
 	};
 
-	response(std::function<void()> content_notification);
-	response(std::function<void(http_response&&)>, std::function<void(data_t, size_t)>, std::function<void(std::string&&, std::string&&)>, std::function<void()>);
+	response(std::function<void()> content_notification, boost::asio::io_service&io);
+	response(std::function<void(http_response&&)>, std::function<void(data_t, size_t)>, std::function<void(std::string&&, std::string&&)>, std::function<void()>, boost::asio::io_service&io);
 
 	void headers(http_response &&res);
 	void body(data_t d, size_t);
@@ -64,21 +65,23 @@ private:
 
     void error(http::connection_error err)
     {
-	    if(error_callback) (*error_callback)();
+	    if(error_callback)
+		    io.post([self = this->shared_from_this()](){ self->error_callback();});
 	    myself = nullptr;
     }
 
 	void cleared()
 	{
-		if(write_callback) (*write_callback)(this->shared_from_this());
+		if(write_callback)
+			io.post([self = this->shared_from_this()](){self->write_callback(self);});
 		myself = nullptr;
 	}
 
 	state current;
 	bool ended{false};
 	bool continue_required{false};
-	std::experimental::optional<error_callback_t> error_callback;
-	std::experimental::optional<write_callback_t> write_callback;
+	error_callback_t error_callback;
+	write_callback_t write_callback;
 	std::experimental::optional<http_response> response_headers;
 	std::string content;
 	std::queue<std::pair<std::string, std::string>> trailers;
@@ -89,6 +92,9 @@ private:
 	std::function<void(std::string&&, std::string&&)> tcb;
 	std::function<void()> ccb;
 	std::function<void()> notify_continue;
+
+
+	boost::asio::io_service& io;
 };
 
 }
