@@ -3,6 +3,7 @@
 
 #include <memory>
 #include <functional>
+#include <boost/asio/io_service.hpp>
 
 #include "../http_request.h"
 #include "../message_error.h"
@@ -32,7 +33,7 @@ class request : public std::enable_shared_from_this<request>
 	friend class server::handler_http1<server_traits>;
 	friend class http2::stream;
 public:
-	request(std::shared_ptr<server_connection>);
+	request(std::shared_ptr<server_connection>, boost::asio::io_service&io);
     //non-copiable object.
     request(const request&) = delete;
     request& operator=(const request&) = delete;
@@ -84,6 +85,9 @@ private:
     http::connection_error conn_error{http::error_code::success};
 
 	http::http_request _preamble;
+
+
+	boost::asio::io_service &io;
 
 };
 

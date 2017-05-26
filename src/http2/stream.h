@@ -35,7 +35,6 @@ class stream final
 	std::size_t trailers_nvlen{0};
 
 	std::shared_ptr<session> s_owner{nullptr};
-	session * const session_{nullptr};
 	http::http_structured_data::headers_map prepared_headers;
 	http::http_request request{};
 	
@@ -59,7 +58,6 @@ public:
 
 	using data_t = std::unique_ptr<const char[]>;
 
-//	stream( std::function<void(stream*, session*)> des );
 	stream(std::shared_ptr<server::http_handler> s, std::function<void(stream*, session*)> des, std::int16_t prio = 0 );
 	stream( const stream& ) = delete;
 	stream& operator=( const stream& ) = delete;
@@ -96,6 +94,8 @@ public:
 	void flush() noexcept;
 	void die() noexcept;
 	~stream();
+
+	void notify_error(http::error_code ec);
 };
 
 }

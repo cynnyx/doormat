@@ -3,6 +3,7 @@
 
 #include <memory>
 #include <functional>
+#include <boost/asio/io_service.hpp>
 
 #include "../http_response.h"
 #include "../message_error.h"
@@ -30,7 +31,7 @@ class client_response : public std::enable_shared_from_this<client_response> {
 	friend class server::handler_http1<client_traits>;
 	friend class http2::stream;
 public:
-	client_response(std::shared_ptr<client_connection>);
+	client_response(std::shared_ptr<client_connection>, boost::asio::io_service &io);
 	//non-copiable object.
 	client_response(const client_response&) = delete;
 	client_response& operator=(const client_response&) = delete;
@@ -87,6 +88,7 @@ private:
 
 	bool response_ended{false};
 
+	boost::asio::io_service &io;
 };
 
 

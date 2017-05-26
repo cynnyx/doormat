@@ -4,7 +4,7 @@
 namespace http {
 
 /** Ctor */
-client_response::client_response(std::shared_ptr<client_connection> conn) : connection_keepalive{std::move(conn)}
+client_response::client_response(std::shared_ptr<client_connection> conn, boost::asio::io_service &io) : connection_keepalive{std::move(conn)}, io{io}
 {}
 
 /** Events registration. */
@@ -44,34 +44,43 @@ void client_response::headers(http::http_response &&res)
 {
 	_preamble = std::move(res);
 	if(headers_callback)
-		headers_callback(this->shared_from_this());
+		io.post(std::bind(headers_callback, this->shared_from_this()));
 }
 
 void client_response::body(data_t d, size_t s)
 {
 	if(body_callback)
-		body_callback(this->shared_from_this(), std::move(d), s);
+		io.post([self = this->shared_from_this(), _d = d.release(), s](){
+			self->body_callback(self, data_t{_d}, s);
+		});
+
 }
 
 void client_response::trailer(std::string&& k, std::string&& v)
 {
 	if(trailer_callback)
-		trailer_callback(this->shared_from_this(), std::string(k), std::string(v));
+		io.post([self = this->shared_from_this(), k = std::move(k), v = std::move(v)](){
+			self->trailer_callback(self, std::string(k), std::string(v));
+		});
 }
 
 void client_response::finished()
 {
 	if(response_ended) return;
 	if(finished_callback)
-		finished_callback(this->shared_from_this());
-	response_ended = true;
+		io.post([self = this->shared_from_this()]()
+		        {
+			        self->finished_callback(self);
+			        self->response_ended = true;
+		        });
+
 }
 
 void client_response::response_continue()
 {
 	if(response_ended) return;
 	if(continue_callback)
-		continue_callback(this->shared_from_this());
+		io.post(std::bind(continue_callback, this->shared_from_this()));
 }
 
 void client_response::error(http::connection_error err)
@@ -79,8 +88,11 @@ void client_response::error(http::connection_error err)
 	if(response_ended) return;
 	conn_error = std::move(err);
 	if(error_callback)
-		error_callback(this->shared_from_this(), conn_error);
-	response_ended = true;
+		io.post([self = this->shared_from_this()](){
+			self->error_callback(self, self->conn_error);
+			self->response_ended = true;
+		});
+
 }
 
 std::shared_ptr<client_connection> client_response::get_connection()
