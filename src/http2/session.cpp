@@ -87,7 +87,7 @@ stream* session::create_stream ( std::int32_t id )
 
 	stream_data->id( id );
 	//todo: replace.
-	auto req_handler = std::make_shared<http::request>(this->get_shared());
+	auto req_handler = std::make_shared<http::request>(this->get_shared(), connector()->io_service());
 	auto res_handler = std::make_shared<http::response>([stream_data](http::http_response&& res)
 	{
 		stream_data->on_header(std::move(res));

@@ -431,10 +431,6 @@ TEST(client_connection, http11_persistent)
 	boost::asio::io_service io;
 	boost::asio::io_service::work *w = new boost::asio::io_service::work(io);
 	auto tested_object = std::make_shared<client_connection_t>();
-	auto r1 = make_dumb_request();
-	auto handlers = tested_object->get_user_handlers();
-	auto &req = handlers.second;
-	auto &res = handlers.first;
 	MockConnector::wcb write_callback;
 	auto mock = std::make_shared<MockConnector>(io, write_callback);
 	int req_chunks_rcvd{0};
@@ -448,11 +444,18 @@ TEST(client_connection, http11_persistent)
 		}
 	};
 	mock->handler(tested_object);
+	auto r1 = make_dumb_request();
+	auto handlers = tested_object->get_user_handlers();
+	auto &req = handlers.second;
+	auto &res = handlers.first;
 
-	req->headers(std::move(r1));
-	req->end();
+	io.post([r1, req]() mutable {
+		req->headers(std::move(r1));
+		req->end();
+	});
+
 	int res_rcvd{0};
-	res->on_headers([&res_rcvd](auto r){
+	res->on_headers([&res_rcvd](auto r) {
 		ASSERT_EQ(res_rcvd, 0);
 		++res_rcvd;
 	});
@@ -475,9 +478,6 @@ TEST(client_connection, http11_not_persistent_request)
 	auto tested_object = std::make_shared<client_connection_t>();
 	auto r1 = make_dumb_request();
 	r1.header("connection", "close");
-	auto handlers = tested_object->get_user_handlers();
-	auto &req = handlers.second;
-	auto &res = handlers.first;
 	MockConnector::wcb write_callback;
 	auto mock = std::make_shared<MockConnector>(io, write_callback);
 	int req_chunks_rcvd{0};
@@ -491,9 +491,14 @@ TEST(client_connection, http11_not_persistent_request)
 		}
 	};
 	mock->handler(tested_object);
+	auto handlers = tested_object->get_user_handlers();
+	auto &req = handlers.second;
+	auto &res = handlers.first;
+	io.post([req, r1]() mutable {
+		req->headers(std::move(r1));
+		req->end();
+	});
 
-	req->headers(std::move(r1));
-	req->end();
 	int res_rcvd{0};
 	res->on_headers([&res_rcvd](auto r){
 		ASSERT_EQ(res_rcvd, 0);
@@ -518,9 +523,6 @@ TEST(client_connection, http11_not_persistent_response)
 	boost::asio::io_service::work *w = new boost::asio::io_service::work(io);
 	auto tested_object = std::make_shared<client_connection_t>();
 	auto r1 = make_dumb_request();
-	auto handlers = tested_object->get_user_handlers();
-	auto &req = handlers.second;
-	auto &res = handlers.first;
 	MockConnector::wcb write_callback;
 	auto mock = std::make_shared<MockConnector>(io, write_callback);
 	int req_chunks_rcvd{0};
@@ -535,9 +537,14 @@ TEST(client_connection, http11_not_persistent_response)
 		}
 	};
 	mock->handler(tested_object);
+	auto handlers = tested_object->get_user_handlers();
+	auto &req = handlers.second;
+	auto &res = handlers.first;
+	io.post([req, r1]() mutable {
+		req->headers(std::move(r1));
+		req->end();
+	});
 
-	req->headers(std::move(r1));
-	req->end();
 	int res_rcvd{0};
 	res->on_headers([&res_rcvd](auto r){
 		ASSERT_EQ(res_rcvd, 0);
@@ -562,9 +569,7 @@ TEST(client_connection, http10_not_persistent_request)
 	auto tested_object = std::make_shared<client_connection_t>();
 	auto r1 = make_dumb_request();
 	r1.protocol(http::proto_version::HTTP10);
-	auto handlers = tested_object->get_user_handlers();
-	auto &req = handlers.second;
-	auto &res = handlers.first;
+
 	MockConnector::wcb write_callback;
 	auto mock = std::make_shared<MockConnector>(io, write_callback);
 	int req_chunks_rcvd{0};
@@ -578,9 +583,15 @@ TEST(client_connection, http10_not_persistent_request)
 		}
 	};
 	mock->handler(tested_object);
+	auto handlers = tested_object->get_user_handlers();
+	auto &req = handlers.second;
+	auto &res = handlers.first;
+	io.post([req, r1]() mutable
+	{
+		req->headers(std::move(r1));
+		req->end();
+	});
 
-	req->headers(std::move(r1));
-	req->end();
 	int res_rcvd{0};
 	res->on_headers([&res_rcvd](auto r){
 		ASSERT_EQ(res_rcvd, 0);
@@ -606,9 +617,6 @@ TEST(client_connection, http10_not_persistent_response)
 	auto r1 = make_dumb_request();
 	r1.protocol(http::proto_version::HTTP10);
 	r1.header("connection", "keep-alive");
-	auto handlers = tested_object->get_user_handlers();
-	auto &req = handlers.second;
-	auto &res = handlers.first;
 	MockConnector::wcb write_callback;
 	auto mock = std::make_shared<MockConnector>(io, write_callback);
 	int req_chunks_rcvd{0};
@@ -622,9 +630,14 @@ TEST(client_connection, http10_not_persistent_response)
 		}
 	};
 	mock->handler(tested_object);
+	auto handlers = tested_object->get_user_handlers();
+	auto &req = handlers.second;
+	auto &res = handlers.first;
+	io.post([req, r1]() mutable {
+		req->headers(std::move(r1));
+		req->end();
+	});
 
-	req->headers(std::move(r1));
-	req->end();
 	int res_rcvd{0};
 	res->on_headers([&res_rcvd](auto r){
 		ASSERT_EQ(res_rcvd, 0);
@@ -650,9 +663,7 @@ TEST(client_connection, http10_persistent)
 	auto r1 = make_dumb_request();
 	r1.protocol(http::proto_version::HTTP10);
 	r1.header("connection", "keep-alive");
-	auto handlers = tested_object->get_user_handlers();
-	auto &req = handlers.second;
-	auto &res = handlers.first;
+
 	MockConnector::wcb write_callback;
 	auto mock = std::make_shared<MockConnector>(io, write_callback);
 	int req_chunks_rcvd{0};
@@ -667,9 +678,15 @@ TEST(client_connection, http10_persistent)
 		}
 	};
 	mock->handler(tested_object);
+	auto handlers = tested_object->get_user_handlers();
+	auto &req = handlers.second;
+	auto &res = handlers.first;
+	io.post([req, r1]() mutable {
+		req->headers(std::move(r1));
+		req->end();
+	});
 
-	req->headers(std::move(r1));
-	req->end();
+
 	int res_rcvd{0};
 	res->on_headers([&res_rcvd](auto r){
 		ASSERT_EQ(res_rcvd, 0);

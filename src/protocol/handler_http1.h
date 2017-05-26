@@ -51,7 +51,9 @@ public:
 	 * \returns a pair containing a remote object and a local object. */
 	std::pair<std::shared_ptr<remote_t>, std::shared_ptr<local_t>> get_user_handlers() override
 	{
-		auto rem = std::make_shared<remote_t>(this->get_shared());
+		auto conn = connector();
+		if(!conn) return {};
+		auto rem = std::make_shared<remote_t>(this->get_shared(), conn->io_service());
 		auto loc = std::make_shared<local_t>([this, self = this->get_shared()](){
 			notify_local_content();
 
@@ -110,7 +112,7 @@ public:
 		auto current_remote = get_current();
 		if(!current_remote) return;
 
-		io_service().post([s = std::move(current_remote)]() { s->error(http::error_code::decoding); }); //fix
+		current_remote->error(http::error_code::decoding);
 		remote_objects.pop_front();
 		if(auto s = local_objects.back().lock())
 			{
@@ -124,7 +126,7 @@ public:
 	{
 		auto current_remote = get_current();
 		if(!current_remote) return;
-		io_service().post([current_remote = std::move(current_remote)]() { current_remote->finished(); });
+		current_remote->finished();
 		remote_objects.pop_front(); //finished, hence we remove the current decoded remote object from the queue.
 	}
 	/** \brief trailer decoding management
@@ -136,10 +138,7 @@ public:
 		auto current_remote = get_current();
 		if(!current_remote) return;
 		if(managing_continue) return;
-		io_service().post([s = current_remote, k = ::std::move(k), v = ::std::move(v)]() mutable
-							{
-								s->trailer(std::move(k), std::move(v));
-							});
+		current_remote->trailer(std::move(k), std::move(v));
 	}
 
 	/** \brief body decoding management
@@ -150,15 +149,7 @@ public:
 	{
 		auto current_remote = get_current();
 		if(!current_remote) return;
-
-		io_service().post([s = current_remote, ptr = b.release(), size]() mutable
-		{
-			// TODO: this is an ugly mess...
-			auto data = std::make_unique<char[]>(size);
-			std::copy(ptr, ptr + size, data.get());
-			delete[] ptr;
-			s->body(std::move(data), size);
-		});
+		current_remote->body(std::move(b), size);
 	}
 
 
@@ -190,13 +181,7 @@ public:
 		auto current_remote = get_current();
 		if(!current_remote) return;
 		update_persistent();
-		io_service().post(
-				[s = current_remote, current_decoded_object = ::std::move(current_decoded_object)]() mutable
-					{
-						s->headers(::std::move(current_decoded_object));
-					}
-			);
-
+		current_remote->headers(::std::move(current_decoded_object));
 		current_decoded_object = {};
 	}
 
@@ -271,8 +256,7 @@ private:
 	void notify_all(http::error_code err) {
 
 		for(auto current_remote: remote_objects) {
-			if(auto s = connector()) s->io_service().post([current_remote, err](){current_remote->error(err);});
-			else current_remote->error(err);
+			current_remote->error(err);
 		}
 		for(auto &res: local_objects)
 		{
@@ -513,12 +497,7 @@ void handler_http1<http::client_traits>::decoded_headers()
 	update_persistent();
 	managing_continue = current_decoded_object.status_code() == 100;
 	if(!managing_continue)
-		io_service().post(
-			[s = current_remote, current_decoded_object = ::std::move(current_decoded_object)]() mutable
-			{
-				s->headers(::std::move(current_decoded_object));
-			}
-		);
+		current_remote->headers(::std::move(current_decoded_object));
 	current_decoded_object = {};
 }
 
@@ -530,12 +509,11 @@ void handler_http1<http::client_traits>::decoding_end()
 {
 	auto current_remote = get_current();
 	if(!current_remote) return;
-	if(managing_continue) return io_service().post([current_remote = std::move(current_remote)]()
-	    {
-			current_remote->response_continue();
-		});
-	io_service().post([current_remote = std::move(current_remote)]() { current_remote->finished(); });
-	remote_objects.pop_front(); //finished, hence we remove the current decoded remote object from the queue.
+	remote_objects.pop_front();
+	if(managing_continue)
+		return current_remote->response_continue();
+
+	current_remote->finished();
 }
 
 
