@@ -220,7 +220,11 @@ int session::on_header_callback( nghttp2_session *session_,
 
 void session::trigger_timeout_event() 
 {
-	/* TODO */
+	if(auto s = connector())
+	{
+		return s->io_service().post([this](){ http::server_connection::timeout(); });
+	}
+	assert(false);
 }
 
 std::shared_ptr<session> session::get_shared()
@@ -248,6 +252,7 @@ void session::do_write()
 
 void session::close() 
 {
+	user_close = true;
 	if(auto s = connector()) s->close();
 }
 
@@ -256,14 +261,19 @@ session::~session()
 	nghttp2_option_del( options );
 }
 
-void session::set_timeout(std::chrono::milliseconds) { /*todo */ }
+void session::set_timeout(std::chrono::milliseconds ms) {
+	if(auto s = connector())
+	{
+		s->set_timeout(ms);
+	}
+}
 
 void session::on_connector_nulled()
 { 
 	//todo: send events to all streams involved!
 	LOGTRACE("on_connector_nulled");
 	//send back error to connector.
-	auto err = http::error_code::closed_by_client;
+	auto err = (user_close) ? http::error_code::connection_closed : http::error_code::closed_by_client;
 	http::server_connection::error(err);
 	for(auto &cbs : pending)
 	{

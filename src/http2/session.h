@@ -57,6 +57,7 @@ class session : public server::http_handler, public http::server_connection
 	std::vector<std::pair<std::function<void()>, std::function<void()>>> pending;
 	std::list<stream *> listeners;
 	void notify_error(http::error_code ec);
+	bool user_close{false};
 public:
     session(std::uint32_t max_concurrent_streams = default_max_concurrent_streams);
 	virtual std::vector<std::pair<std::function<void()>, std::function<void()>>> write_feedbacks()
