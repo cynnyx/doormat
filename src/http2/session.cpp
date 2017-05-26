@@ -263,11 +263,14 @@ void session::on_connector_nulled()
 	//todo: send events to all streams involved!
 	LOGTRACE("on_connector_nulled");
 	//send back error to connector.
-	http::server_connection::error(http::error_code::closed_by_client);
+	auto err = http::error_code::closed_by_client;
+	http::server_connection::error(err);
 	for(auto &cbs : pending)
 	{
 		cbs.second();
 	}
+	notify_error(err);
+
 // 	s->on_request_canceled(error_code_distruction)
 	// Streams should be destroyed by nghttp2
 
@@ -277,11 +280,16 @@ void session::on_connector_nulled()
 // 		for(auto &s: streams) s->on_request_canceled(error_code_distruction);
 }
 
+void session::notify_error(http::error_code ec)
+{
+	std::for_each(listeners.begin(), listeners.end(), [&ec](auto *s){
+		s->notify_error(ec);
+	});
+}
+
 void session::finished_stream() noexcept
 {
 	--stream_counter;
-	/*if ( stream_counter == 0 && connector() == nullptr )
-		delete this;*/
 }
 
 int session::on_frame_recv_callback(nghttp2_session *session_, const nghttp2_frame *frame, void *user_data )

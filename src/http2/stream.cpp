@@ -44,7 +44,7 @@ stream::stream(std::shared_ptr<server::http_handler> s, std::function<void(strea
 	assert(s_owner);
 	prd.source.ptr =  static_cast<void*> ( this );
 	prd.read_callback = stream::data_source_read_callback;
-
+	s_owner->subscribe(this);
 	//todo: check the following comment:
 	// not all streams are supposed to send data - it would be better to have a lazy creation
 	request.protocol( http::proto_version::HTTP11 );
@@ -85,9 +85,9 @@ void stream::on_eom()
 	LOGTRACE("on_eom");
 	eof_ = true;
 
-	if ( closed_ )
-		die();
-	else {
+	if ( closed_ ) die();
+	else
+	{
 		if(auto response = res.lock())
 		{
 			s_owner->add_pending_callbacks([response](){
@@ -331,8 +331,15 @@ void stream::on_trailer( std::string&& key, std::string&& value )
 	trailers.emplace( http::http_structured_data::header_t{key, value} );
 }
 
+void stream::notify_error(http::error_code ec)
+{
+	if(req) req->error(ec);
+	if(auto response = res.lock()) response->error(ec);
+}
+
 stream::~stream()
 {
+	s_owner->unsubscribe(this);
 	LOGTRACE("Stream ", this, " destroyed");
 	if ( nva ) destroy_headers( &nva );
 	if ( trailers_nva ) destroy_headers( &trailers_nva );

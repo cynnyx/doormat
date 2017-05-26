@@ -55,6 +55,8 @@ class session : public server::http_handler, public http::server_connection
 	std::shared_ptr<session> get_shared();
 	std::uint32_t max_concurrent_streams;
 	std::vector<std::pair<std::function<void()>, std::function<void()>>> pending;
+	std::list<stream *> listeners;
+	void notify_error(http::error_code ec);
 public:
     session(std::uint32_t max_concurrent_streams = default_max_concurrent_streams);
 	virtual std::vector<std::pair<std::function<void()>, std::function<void()>>> write_feedbacks()
@@ -87,7 +89,15 @@ public:
     nghttp2_session* next_layer() noexcept { return session_data.get(); }
     nghttp2_mem* next_layer_allocator() noexcept { return &all; }
 
+	void subscribe(stream *s)
+	{
+		listeners.push_back(s);
+	}
 
+	void unsubscribe(stream *s)
+	{
+		std::remove(listeners.begin(), listeners.end(), s);
+	}
 };
 
 }
