@@ -44,7 +44,7 @@ struct get_helper<true, R>
 class chain_factory
 {
 public:
-	using chain_ptr = std::unique_ptr<node_interface>;
+	using chain_ptr = std::shared_ptr<node_interface>;
 
 	chain_factory(chain_generator_t fallback_logic) noexcept;
 	~chain_factory() noexcept;

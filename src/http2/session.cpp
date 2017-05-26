@@ -422,8 +422,8 @@ bool session::on_read(const char* data, size_t len)
 	{
 		if ( rv == NGHTTP2_ERR_FLOODED || rv == NGHTTP2_ERR_CALLBACK_FAILURE )
 			go_away();
-		else // No mem or bad client magic ( unrecoverable error and bug )
-			THROW( errors::session_recv_failure, rv );
+		else // No mem or bad client magic ( unrecoverable error and upstream error )
+			return false;
 	}
 	assert( static_cast<unsigned int>(rv)== len );
 
