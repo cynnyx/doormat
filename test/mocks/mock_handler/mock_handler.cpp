@@ -27,7 +27,9 @@ bool mock_handler::on_write(std::string& chunk)
 }
 
 void mock_handler::trigger_timeout_event()
-{}
+{
+	timeout_cb();
+}
 
 std::vector<std::pair<std::function<void()>, std::function<void()>>> mock_handler::write_feedbacks()
 {
