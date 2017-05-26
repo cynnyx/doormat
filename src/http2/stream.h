@@ -35,7 +35,6 @@ class stream final
 	std::size_t trailers_nvlen{0};
 
 	std::shared_ptr<session> s_owner{nullptr};
-	session * const session_{nullptr};
 	http::http_structured_data::headers_map prepared_headers;
 	http::http_request request{};
 	
