@@ -258,4 +258,4 @@ add_custom_target(
 )
 ##End of QtCreator
 
-include(CTest)
+enable_testing()
