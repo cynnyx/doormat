@@ -84,6 +84,7 @@ void client_wrapper::perform_request(http::http_request&& preamble)
 			return this->on_response_continue();
 		}
 		finished_response = true;
+		this->on_end_of_message();
 		this->stop(); //we already received our response; hence we can stop the client wrapper.
 	});
 	res->on_error([this](auto res, auto&& error)
