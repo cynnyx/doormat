@@ -54,7 +54,7 @@ client_request::state client_request::get_state() const noexcept
 	return state::pending;
 }
 
-http_request client_request::get_preamble()
+http_request client_request::preamble()
 {
 	auto empty_response = std::move(*request_headers);
 	request_headers = std::experimental::nullopt;

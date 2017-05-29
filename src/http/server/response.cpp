@@ -73,7 +73,7 @@ response::state response::get_state() noexcept
 	return state::pending;
 }
 
-http_response response::get_preamble()
+http_response response::preamble()
 {
 	auto empty_response = std::move(*response_headers);
 	response_headers = std::experimental::nullopt;

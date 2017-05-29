@@ -53,7 +53,7 @@ public:
 	void on_error(error_callback_t ecb);
 	void on_write(write_callback_t wcb);
 
-	http_request get_preamble();
+	http_request preamble();
 
 private:
 	state get_state() const noexcept;

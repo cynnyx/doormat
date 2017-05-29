@@ -56,11 +56,12 @@ public:
 	void on_write(write_callback_t wcb);
 
 	state get_state() noexcept;
-	http_response get_preamble();
-	std::string get_body();
-	std::pair<std::string, std::string> get_trailer();
+	http_response preamble();
+
 
 private:
+	std::string get_body();
+	std::pair<std::string, std::string> get_trailer();
 	std::shared_ptr<response> myself{nullptr};
 
     void error(http::connection_error err)
