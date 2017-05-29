@@ -38,50 +38,47 @@ void request::on_error(error_callback_t ecb)
 void request::headers(http::http_request &&req)
 {
 	_preamble = std::move(req);
-	if(headers_callback)
-		io.post([self = this->shared_from_this()](){
-			self->headers_callback(self);
-		});
-
+	io.post([self = this->shared_from_this()](){
+		if(self->headers_callback) self->headers_callback(self);
+	});
 }
 
 void request::body(data_t d, size_t s)
 {
-	if(body_callback) //the lambda must be copy-able. Hence we use this cheap trick of releasing the ownership of the unique ptr, but just for a while.
-		io.post([self = this->shared_from_this(), _d = d.release(), s = std::move(s)]()
-				{
-					self->body_callback(self, data_t{_d}, s);
-				});
+	 //the lambda must be copy-able. Hence we use this cheap trick of releasing the ownership of the unique ptr, but just for a while.
+	io.post([self = this->shared_from_this(), _d = d.release(), s = std::move(s)]()
+	        {
+		        if(self->body_callback) self->body_callback(self, data_t{_d}, s);
+	        });
 }
 
 void request::trailer(std::string&& k, std::string&& v)
 {
-	if(trailer_callback)
-		io.post([self = this->shared_from_this(), k = std::move(k), v = std::move(v)](){
-			self->trailer_callback(self, std::string(k), std::string(v));
-		});
+	io.post([self = this->shared_from_this(), k = std::move(k), v = std::move(v)]()
+	        {
+				if(self->trailer_callback) self->trailer_callback(self, std::string(k), std::string(v));
+			});
 }
 
 void request::finished()
 {
 	if(request_terminated) return;
-	if(finished_callback)
-		io.post([self = this->shared_from_this()](){
+	io.post([self = this->shared_from_this()](){
+		if(self->finished_callback)
 			self->finished_callback(self);
-			self->request_terminated = true;
-		});
-
+	});
+	request_terminated = true;
 }
 
 void request::error(http::connection_error err)
 {
 	if(request_terminated) return;
 	conn_error = std::move(err);
-	if(error_callback)
-		io.post([self = this->shared_from_this()](){
+	io.post([self = this->shared_from_this()](){
+		if(self->error_callback)
 			self->error_callback(self, self->conn_error);
-			self->request_terminated = true;
-		});
+	});
+	request_terminated = true;
 }
 
 std::shared_ptr<server_connection> request::get_connection()

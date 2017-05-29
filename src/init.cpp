@@ -245,7 +245,7 @@ int doormat( int argc, char** argv )
 
 					r->on_finished([b, connection, &io](auto r)
 					{
-					//	std::cout << "finished" << std::endl;
+						std::cout << "finished!" << std::endl;
 						http::http_response res;
 						res.protocol(http::proto_version::HTTP11);
 						res.status(200);
