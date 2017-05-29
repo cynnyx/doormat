@@ -39,17 +39,17 @@ stream& stream::operator=( stream&& o ) noexcept
 }
 
 stream::stream(std::shared_ptr<server::http_handler> s, std::function<void(stream*, session*)> des, std::int16_t prio ):
-	s_owner{std::static_pointer_cast<session>(s)}, session_{dynamic_cast<session *>(s_owner.get())}, destructor{des}
+	s_owner{std::static_pointer_cast<session>(s)}, destructor{des}
 {
-	assert(session_ != nullptr);
+	assert(s_owner);
 	prd.source.ptr =  static_cast<void*> ( this );
 	prd.read_callback = stream::data_source_read_callback;
-
+	s_owner->subscribe(this);
 	//todo: check the following comment:
 	// not all streams are supposed to send data - it would be better to have a lazy creation
 	request.protocol( http::proto_version::HTTP11 );
 	request.channel( http::proto_version::HTTP20 );
-	request.origin( session_->find_origin() );
+	request.origin(s_owner->find_origin() );
 }
 
 void stream::on_request_header_complete()
@@ -77,6 +77,7 @@ void stream::on_request_finished()
 	//managed_chain->on_request_finished();
     req->finished();
 	req = nullptr; //we don't grant anymore the existence of the request after the on_finished callback has been triggered.
+	//if you want it, keep it.
 }
 
 void stream::on_eom()
@@ -84,9 +85,9 @@ void stream::on_eom()
 	LOGTRACE("on_eom");
 	eof_ = true;
 
-	if ( closed_ )
-		die();
-	else {
+	if ( closed_ ) die();
+	else
+	{
 		if(auto response = res.lock())
 		{
 			s_owner->add_pending_callbacks([response](){
@@ -191,14 +192,14 @@ void stream::flush() noexcept
 	{
 		if ( resume_needed_ )
 		{
-			int r = nghttp2_session_resume_data( session_->next_layer(), id_ );
+			int r = nghttp2_session_resume_data( s_owner->next_layer(), id_ );
 			LOGTRACE("nghttp2_session_resume_data :: ", nghttp2_strerror(r) );
 // 			assert( r == 0);
 			resume_needed_ = false;
 		}
 		else if ( ! headers_sent )
 		{
-			int r = nghttp2_submit_response( session_->next_layer(), id_, nva, nvlen, &prd );
+			int r = nghttp2_submit_response( s_owner->next_layer(), id_, nva, nvlen, &prd );
 			LOGTRACE( "id: ", id_, " nghttp2_submit_response :: ", nghttp2_strerror(r) );
 			assert( r == 0 );
 			headers_sent = true;
@@ -216,7 +217,7 @@ void stream::flush() noexcept
 				nva[i++] = MAKE_NV( it.first, it.second );
 			}
 
-			int r = nghttp2_submit_trailer( session_->next_layer(), id_, trailers_nva, trailers_nvlen );
+			int r = nghttp2_submit_trailer( s_owner->next_layer(), id_, trailers_nva, trailers_nvlen );
 			LOGTRACE( "id: ", id_, " nghttp2_submit_trailer :: ", nghttp2_strerror(r) );
 			// Todo
 		}
@@ -226,12 +227,12 @@ void stream::flush() noexcept
 	else
 	{
 		uint8_t flags = 0;
-		int r = nghttp2_submit_headers(  session_->next_layer(), flags, id_,
+		int r = nghttp2_submit_headers(  s_owner->next_layer(), flags, id_,
 			nullptr, nva, nvlen, static_cast<void*>( this ) );
 		LOGTRACE("nghttp2_submit_headers :: ", r );
 		assert( r == 0 );
 	}
-	session_->do_write();
+	s_owner->do_write();
 }
 
 void stream::on_body( data_t data, size_t size )
@@ -245,13 +246,13 @@ void stream::on_body( data_t data, size_t size )
 void stream::create_headers( nghttp2_nv** a ) noexcept
 {
 	*a = reinterpret_cast<nghttp2_nv*> (
-		static_cast<http2_allocator<std::uint8_t>*>( session_->next_layer_allocator()->mem_user_data )
+		static_cast<http2_allocator<std::uint8_t>*>( s_owner->next_layer_allocator()->mem_user_data )
 			->allocate( sizeof(nghttp2_nv) * nvlen ) );
 }
 
 void stream::destroy_headers( nghttp2_nv** d ) noexcept
 {
-	static_cast<http2_allocator<std::uint8_t>*>( session_->next_layer_allocator()->mem_user_data )
+	static_cast<http2_allocator<std::uint8_t>*>( s_owner->next_layer_allocator()->mem_user_data )
 		->deallocate( reinterpret_cast<uint8_t*>( *d ), 0 );
 	*d = nullptr;
 }
@@ -261,7 +262,7 @@ void stream::die() noexcept
 	if ( eof_ || errored )
 	{
 		if ( destructor )
-			destructor(this, session_);
+			destructor(this, s_owner.get());
 		else
 			LOGERROR("No destructor set up! BUG!");
 	}
@@ -330,8 +331,15 @@ void stream::on_trailer( std::string&& key, std::string&& value )
 	trailers.emplace( http::http_structured_data::header_t{key, value} );
 }
 
+void stream::notify_error(http::error_code ec)
+{
+	if(req) req->error(ec);
+	if(auto response = res.lock()) response->error(ec);
+}
+
 stream::~stream()
 {
+	s_owner->unsubscribe(this);
 	LOGTRACE("Stream ", this, " destroyed");
 	if ( nva ) destroy_headers( &nva );
 	if ( trailers_nva ) destroy_headers( &trailers_nva );

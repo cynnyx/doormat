@@ -6,7 +6,8 @@
 
 #include "../connection.h"
 
-namespace http {
+namespace http 
+{
 
 class request;
 class response;
@@ -14,7 +15,8 @@ class response;
 class server_connection : public connection
 {
 public:
-	using request_callback = std::function<void(std::shared_ptr<server_connection>, std::shared_ptr<http::request>, std::shared_ptr<http::response>)>;
+	using request_callback = std::function<void(std::shared_ptr<server_connection>, 
+		std::shared_ptr<http::request>, std::shared_ptr<http::response>)>;
 
 	/** Register callbacks */
 	void on_request(request_callback rcb);
