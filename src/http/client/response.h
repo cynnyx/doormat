@@ -80,8 +80,6 @@ private:
 	continue_callback_t continue_callback;
 
 	std::shared_ptr<client_connection> connection_keepalive;
-	/** Ptr-to-self: to grant the user that, until finished() or error() event is propagated, the client_response will be alive*/
-
 	http::connection_error conn_error{http::error_code::success};
 
 	http::http_response _preamble;
