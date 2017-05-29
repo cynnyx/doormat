@@ -26,7 +26,7 @@ class stream final
 	bool eof_{false};
 	bool errored{false};
 	bool closed_{false};
-	std::list<dstring> body;
+	std::list<dstring> body{};
 	std::size_t body_index{0};
 	nghttp2_nv* nva{nullptr}; // headers HTTP2
 	std::size_t nvlen{0};
@@ -75,7 +75,7 @@ public:
 	void fragment( const std::string& frag ) { request.fragment( frag ); }
 	void set_handlers(std::shared_ptr<http::request> req_handler, std::shared_ptr<http::response> res_handler);
 
-	std::shared_ptr<http::request> req;
+	std::shared_ptr<http::request> req{nullptr};
 	std::weak_ptr<http::response> res;
 	bool valid() const noexcept { return id_ >= 0; }
 

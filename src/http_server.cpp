@@ -74,8 +74,9 @@ void http_server::stop( ) noexcept
 	if(running)
 	{
 		running = false;
-		if(plain_acceptor) plain_acceptor->close();
-		if(ssl_acceptor) ssl_acceptor->close();
+		boost::system::error_code ec;
+		if(plain_acceptor) plain_acceptor->close(ec);
+		if(ssl_acceptor) ssl_acceptor->close(ec);
 	}
 }
 
@@ -98,7 +99,8 @@ void http_server::start_accept(ssl_context& ssl_ctx, tcp_acceptor& acceptor)
             connection_timer->async_wait([socket, connection_timer](const boost::system::error_code &ec)
             {
                 if(ec) return;
-                socket->shutdown();
+	            boost::system::error_code shutdown_error;
+	            socket->shutdown(shutdown_error);
             });
 			auto handshake_cb = [this, connection_timer, socket](const boost::system::error_code &ec)
 			{

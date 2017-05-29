@@ -92,12 +92,15 @@ public:
 
 	void subscribe(stream *s)
 	{
+		assert(std::find(listeners.begin(), listeners.end(), s) == listeners.end());
 		listeners.push_back(s);
 	}
 
 	void unsubscribe(stream *s)
 	{
-		std::remove(listeners.begin(), listeners.end(), s);
+		std::cout << std::endl;
+
+		listeners.remove(s);
 	}
 };
 
