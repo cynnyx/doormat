@@ -24,7 +24,6 @@ boost::asio::ip::address http_handler::find_origin() const
 	return {};
 }
 
-
 void http_handler::connector(std::shared_ptr<server::connector_interface>  conn )
 {
 	LOGTRACE("http_handler::connector ", conn );

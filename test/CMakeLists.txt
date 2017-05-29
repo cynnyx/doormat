@@ -30,7 +30,7 @@ set(DOORMAT_TESTCASES_SOURCES
 	endpoints/tree_test.cpp
 	endpoints/chain_factory.cpp
 	network/dns_factory_test.cpp
-	nodes/client_wrapper_test.cpp
+	#nodes/client_wrapper_test.cpp
 	http/server/server_connection_test.cpp
 	http/server/http2_test.cpp
 	http/client/client_connection_test.cpp
