@@ -17,7 +17,7 @@ namespace preset
 /// @note if this grow up in parameters let's use a fluent builder!
 void setup( configuration::configuration_wrapper* cw, logging::inspector_log* il = nullptr );
 void teardown();
-void teardown( std::unique_ptr<node_interface>& chain );
+void teardown(std::shared_ptr<node_interface>& chain );
 void init_thread_local();
 void stop_thread_local();
 
@@ -118,7 +118,7 @@ private:
 
 struct test : public ::testing::Test
 {
-	std::unique_ptr<node_interface> ch;
+	std::shared_ptr<node_interface> ch;
 protected:
 	virtual void SetUp() override
 	{

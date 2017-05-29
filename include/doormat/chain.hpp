@@ -4,6 +4,8 @@
 #include "../../src/chain_of_responsibility/chain_of_responsibility.h"
 #include "../../src/endpoints/chain_factory.h"
 
+#include <memory>
+
 namespace doormat {
 
 using ::endpoints::chain_factory;
@@ -11,9 +13,9 @@ template<typename T, typename S, typename... N>
 using chain = ::chain<T, S, N...>;
 
 template<typename T,typename ...Args>
-std::unique_ptr<T> make_unique_chain(logging::access_recorder *aclogger = nullptr)
+std::shared_ptr<T> make_shared_chain(logging::access_recorder *aclogger = nullptr)
 {
-    return ::make_unique_chain<T, Args...>(aclogger);
+	return ::make_shared_chain<T, Args...>(aclogger);
 }
 
 }

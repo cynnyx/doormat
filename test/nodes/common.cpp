@@ -213,7 +213,7 @@ void teardown()
 	service::initializer::set_configuration(nullptr);
 }
 
-void teardown( std::unique_ptr<node_interface>& chain )
+void teardown( std::shared_ptr<node_interface>& chain )
 {
 	chain.reset();
 	teardown();
