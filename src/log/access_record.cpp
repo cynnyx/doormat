@@ -1,6 +1,5 @@
 #include "access_record.h"
 #include "log.h"
-#include "../service_locator/service_locator.h"
 #include "inspector_serializer.h"
 #include "../stats/stats_manager.h"
 #include "../utils/base64.h"
@@ -14,7 +13,18 @@
 namespace logging
 {
 
+access_recorder::access_recorder(access_log& al, inspector_log& il, stats::stats_manager& sm)
+	: access_log_{al}
+	, inspector_log_{il}
+	, stats_manager_{sm}
+{
+
+}
+
 access_recorder::access_recorder( const access_recorder & o )
+	: access_log_{o.access_log_}
+	, inspector_log_{o.inspector_log_}
+	, stats_manager_{o.stats_manager_}
 {
 	method = o.method;
 	urihost = o.urihost;
@@ -85,17 +95,17 @@ void access_recorder::commit() noexcept
 		using namespace std::chrono;
 
 		auto start = clock::now();
-		service::locator::access_log().log( ar_ );
+		access_log_.log( ar_ );
 		committed_ = true;
 
 		auto total = clock::now() - start;
 
 		// add the time spent in the log function to the stats
-		service::locator::stats_manager().enqueue( stats::access_log_time,
+		stats_manager_.enqueue( stats::access_log_time,
 			std::chrono::duration_cast<std::chrono::nanoseconds>( total ).count());
 
-		if ( service::locator::inspector_log().active() )
-			service::locator::inspector_log().log( std::move( *this ));
+		if ( inspector_log_.active() )
+			inspector_log_.log( std::move( *this ));
 		else
 			LOGDEBUG("Inspector log not active in commit");
 	}
@@ -124,7 +134,7 @@ void access_recorder::request( const http::http_request& r )
 	}
 	using namespace http;
 
-// 	if ( service::locator::inspector_log().active() )
+// 	if ( il_.active() )
 // 	{
 // 		method = r.method();
 // 		schema = r.schema();
@@ -209,7 +219,7 @@ void access_recorder::response( const http::http_response& r)
 	if ( ! h.empty() )
 		ar_.x_debug_cyn_ip = h.front();
 
-	if ( service::locator::inspector_log().active() )
+	if ( inspector_log_.active() )
 	{
 		const http::http_structured_data::headers_map& headers = r.headers();
 		for ( const http::http_structured_data::header_t& value : headers )

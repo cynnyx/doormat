@@ -58,7 +58,9 @@ TEST_F(inspector_log_test, creation)
 
 TEST_F(inspector_log_test, usage)
 {
-	access_recorder ar;
+	using service::locator;
+
+	access_recorder ar(locator::access_log(), locator::inspector_log(), locator::stats_manager());
 
 	dstring body("yeeee this is long");
 	http::http_request req;
@@ -92,7 +94,7 @@ TEST_F(inspector_log_test, usage)
 	ar.append_response_body( rbody );
 	ar.append_response_trailer("trailer", "response");
 
-	service::locator::inspector_log().log( std::move( ar ) );
+	locator::inspector_log().log( std::move( ar ) );
 
 	ASSERT_EQ( "{\n    \"request\": {\n        \"body\": \"eWVlZWUgdGhpcyBpcyBsb25n\",\n        \"fragment\": \"\",\n        \"headers\": {\n            \"connection\": \"yes\",\n            \"content-length\": \"18\",\n            \"goodenough...\": \"Fuck\",\n            \"host\": [\n                \"hostname.com\",\n                \"video.cynny.org\"\n            ],\n            \"keep-alive\": \"no\",\n            \"proxy-authenticate\": \"\",\n            \"public\": \"perhaps\",\n            \"referrer\": \"http://www.google.it\",\n            \"transfer-encoding\": \"chunkEd\",\n            \"upgrade\": \"None\"\n        },\n        \"method\": \"GET\",\n        \"port\": \"\",\n        \"protocol\": \"\",\n        \"query\": \"\",\n        \"schema\": \"\",\n        \"trailers\": {\n            \"trailer\": \"Yes\"\n        },\n        \"urihost\": \"cynny.com\"\n    },\n    \"response\": {\n        \"body\": \"U2hvcnQgc3R1ZmY=\",\n        \"headers\": {\n            \"connection\": \"yes\",\n            \"content-length\": \"11\",\n            \"public\": \"Fuck\"\n        },\n        \"status\": 200,\n        \"trailers\": {\n            \"trailer\": \"response\"\n        }\n    }\n}\n", w->output );
 }
