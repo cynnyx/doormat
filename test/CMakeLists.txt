@@ -26,7 +26,6 @@ set(DOORMAT_TESTCASES_SOURCES
 	mocks/mock_connector/mock_connector.cpp
 	network/communicator_test.cpp
 	nodes/common.cpp
-	cloudiapooltest.cpp
 	endpoints/tree_test.cpp
 	endpoints/chain_factory.cpp
 	network/dns_factory_test.cpp

@@ -186,7 +186,6 @@ namespace preset
 /// @note if this grow up in parameters let's use a fluent builder!
 void setup( configuration::configuration_wrapper* cw, logging::inspector_log* il )
 {
-	service::initializer::set_socket_pool_factory( new network::cloudia_pool_factory() );
 	service::initializer::set_configuration(cw);
 	service::initializer::set_service_pool(new server::io_service_pool{ cw->get_thread_number() });
 	service::initializer::set_stats_manager(new stats::stats_manager{ cw->get_thread_number() });
@@ -209,7 +208,6 @@ void teardown()
 	service::initializer::set_inspector_log(nullptr);
 	service::initializer::set_stats_manager(nullptr);
 	service::initializer::set_service_pool(nullptr);
-	service::initializer::set_socket_pool_factory<boost::asio::ip::tcp::socket>(nullptr);
 	service::initializer::set_configuration(nullptr);
 }
 

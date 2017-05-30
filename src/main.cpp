@@ -6,15 +6,12 @@
 #include "init.h"
 #include "utils/log_wrapper.h"
 #include "service_locator/service_initializer.h"
-#include "network/cloudia_pool.h"
 
 int main( int argc, char* argv[] )
 {
 	int rv = EXIT_FAILURE;
 	try
-	{
-		service::initializer::set_socket_pool_factory( new network::cloudia_pool_factory );
-		
+	{		
 		rv = doormat::doormat( argc, argv );
 	}
 	catch ( const boost::program_options::required_option& e )

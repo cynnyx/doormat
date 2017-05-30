@@ -14,7 +14,6 @@
 #include "utils/log_wrapper.h"
 #include "service_locator/service_initializer.h"
 #include "chain_of_responsibility/chain_of_responsibility.h"
-#include "network/cloudia_pool.h"
 
 #include "dummy_node.h"
 // #include "client/client_wrapper.h"
