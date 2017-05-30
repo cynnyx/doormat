@@ -24,7 +24,6 @@ set(DOORMAT_TESTCASES_SOURCES
 	utils_test.cpp
 	mocks/mock_server/mock_server.cpp
 	mocks/mock_connector/mock_connector.cpp
-	network/communicator_test.cpp
 	nodes/common.cpp
 	endpoints/tree_test.cpp
 	endpoints/chain_factory.cpp

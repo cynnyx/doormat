@@ -1,15 +1,14 @@
 #include "dns_communicator_factory.h"
 #include "../../connector.h"
-#include "../../service_locator/service_locator.h"
-#include "../../configuration/configuration_wrapper.h"
 
 #include <chrono>
 
 namespace network 
 {
 
-dns_connector_factory::dns_connector_factory(boost::asio::io_service& io)
+dns_connector_factory::dns_connector_factory(boost::asio::io_service& io, std::chrono::milliseconds connector_timeout)
 	: io{io}
+	, conn_timeout{connector_timeout}
 	, dead{std::make_shared<bool>(false)}
 {}
 
@@ -105,8 +104,7 @@ void dns_connector_factory::endpoint_connect(boost::asio::ip::tcp::resolver::ite
 			}
 
 			auto connector = std::make_shared<server::connector<server::tcp_socket>>(std::move(socket));
-			auto btimeout = service::locator::configuration().get_board_timeout();
-			connector->set_timeout(std::chrono::milliseconds{btimeout});
+			connector->set_timeout(conn_timeout);
 			connector_cb(std::move(connector));
 		});
 }
@@ -155,9 +153,8 @@ void dns_connector_factory::endpoint_connect(boost::asio::ip::tcp::resolver::ite
 						LOGERROR( ec.message() );
 						return;
 					}
-					int64_t btimeout = static_cast<int64_t>( service::locator::configuration().get_board_timeout() );
 					auto connector = std::make_shared<server::connector<server::ssl_socket>>(std::move(stream));
-					connector->set_timeout(std::chrono::milliseconds{btimeout});
+					connector->set_timeout(conn_timeout);
 					connector_cb(std::move(connector));
 				});
 	});

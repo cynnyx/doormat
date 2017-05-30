@@ -221,7 +221,9 @@ void init_thread_local()
 {
 
 	service::locator::stats_manager().register_handler();
-	service::initializer::set_communicator_factory( new network::dns_connector_factory(service::locator::service_pool().get_thread_io_service()) );
+	service::initializer::set_communicator_factory(
+				new network::dns_connector_factory(service::locator::service_pool().get_thread_io_service(),
+												   std::chrono::milliseconds{100}));
 }
 
 void stop_thread_local()

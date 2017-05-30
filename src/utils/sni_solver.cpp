@@ -2,9 +2,6 @@
 #include "utils.h"
 #include "log_wrapper.h"
 
-#include "../service_locator/service_locator.h"
-#include "../configuration/configuration_wrapper.h"
-
 #include <fstream>
 #include <openssl/ssl.h>
 #include <boost/asio.hpp>
