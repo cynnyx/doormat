@@ -5,14 +5,16 @@
 #include <boost/asio.hpp>
 #include <boost/asio/ssl.hpp>
 
+#include <memory>
+
 namespace network
 {
 
 class dns_connector_factory : public connector_factory
 {
 public:
-	dns_connector_factory(boost::asio::io_service &io) : io{io}{}
-
+	dns_connector_factory(boost::asio::io_service &io);
+	~dns_connector_factory();
 
 	void get_connector(const std::string& address, uint16_t port, bool tls, connector_callback_t, error_callback_t) override;
 	void stop() override { stopping = true; }
@@ -29,6 +31,8 @@ private:
 	static constexpr int resolve_timeout = 2000;
 	static constexpr int connect_timeout = 1000;
 	boost::asio::io_service &io;
+	// ugly workaround to ensure in callbacks that we are still alive
+	std::shared_ptr<bool> dead;
 };
 
 }

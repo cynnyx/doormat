@@ -8,6 +8,16 @@
 namespace network 
 {
 
+dns_connector_factory::dns_connector_factory(boost::asio::io_service& io)
+	: io{io}
+	, dead{std::make_shared<bool>(false)}
+{}
+
+dns_connector_factory::~dns_connector_factory()
+{
+	*dead = true;
+}
+
 void dns_connector_factory::get_connector(const std::string& address, uint16_t port, bool tls,
 	connector_callback_t connector_cb, error_callback_t error_cb)
 {
@@ -34,9 +44,12 @@ void dns_connector_factory::dns_resolver(const std::string& address, uint16_t po
 	});
 
 	r->async_resolve(q,
-		[this, r, tls, connector_cb = std::move(connector_cb), error_cb = std::move(error_cb), resolve_timer]
+		[this, r, tls, connector_cb = std::move(connector_cb), error_cb = std::move(error_cb), resolve_timer, dead=dead]
 		(const boost::system::error_code &ec, boost::asio::ip::tcp::resolver::iterator iterator)
 		{
+			if(*dead)
+				return;
+
 			resolve_timer->cancel();
 			if(ec || iterator == boost::asio::ip::tcp::resolver::iterator())
 			{
@@ -78,9 +91,12 @@ void dns_connector_factory::endpoint_connect(boost::asio::ip::tcp::resolver::ite
 	++it;
 	socket->async_connect(endpoint,
 		[this, it = std::move(it), socket, connector_cb = std::move(connector_cb), 
-			error_cb = std::move(error_cb), connect_timer]
+			error_cb = std::move(error_cb), connect_timer, dead=dead]
 		(const boost::system::error_code &ec)
 		{
+			if(*dead)
+				return;
+
 			connect_timer->cancel();
 			if ( ec )
 			{
@@ -117,9 +133,12 @@ void dns_connector_factory::endpoint_connect(boost::asio::ip::tcp::resolver::ite
 	});
 	
 	boost::asio::async_connect( stream->lowest_layer(), it, [ this, stream, connector_cb = std::move(connector_cb), 
-		error_cb = std::move(error_cb), connect_timer=std::move(connect_timer) ]( const boost::system::error_code &ec,
+		error_cb = std::move(error_cb), connect_timer=std::move(connect_timer), dead = dead ]( const boost::system::error_code &ec,
 			boost::asio::ip::tcp::resolver::iterator it )
 	{
+		if(*dead)
+			return;
+
 		if ( ec ) 
 		{
 			LOGERROR(ec.message());
