@@ -46,7 +46,6 @@ set(DOORMAT_COMMON_SOURCES
 	configuration/abstract_configuration_maker.cpp
 	log/inspector_serializer.cpp
 	endpoints/chain_factory.cpp
-	network/cloudia_pool.cpp
 	network/communicator/dns_communicator_factory.cpp
 	requests_manager/error_producer.cpp
 	requests_manager/client_wrapper.cpp

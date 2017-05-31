@@ -14,19 +14,63 @@
 #include <boost/log/sinks/text_file_backend.hpp>
 #include <spdlog/spdlog.h>
 #include <spdlog/sinks/file_sinks.h>
+#include <new>         // placement new
+#include <type_traits> // aligned_storage
+
 
 namespace log_wrapper
 {
 
+namespace details
+{
+
+struct logger_stuff
+{
+	std::shared_ptr<spdlog::logger> logger_;
+	std::shared_ptr<spdlog::logger> console_logger_;
+	std::string log_filename_;
+};
+
+static size_t nifty_counter{};
+static std::aligned_storage_t<sizeof(logger_stuff), alignof(logger_stuff)> raw_storage;
+static logger_stuff& stuff = reinterpret_cast<logger_stuff&>(raw_storage);
+
+logger_nifty_counter::logger_nifty_counter()
+{
+	if(nifty_counter++ == 0)
+		new (&stuff) logger_stuff{};
+}
+
+logger_nifty_counter::~logger_nifty_counter()
+{
+	if(--nifty_counter == 0)
+		(&stuff)->~logger_stuff();
+}
+
+inline std::shared_ptr<spdlog::logger>& _logger()
+{
+	return stuff.logger_;
+}
+
+inline std::shared_ptr<spdlog::logger>& _console_logger()
+{
+	return stuff.console_logger_;
+}
+
+inline std::string& _log_filename()
+{
+	return stuff.log_filename_;
+}
+
+} // namespace details
 
 void init(bool verbose, const std::string& level, const std::string& folder)
 {
-
 	namespace spd = spdlog;
 	spdlog::set_async_mode(32768, spdlog::async_overflow_policy::block_retry);
-	details::log_filename = folder+"doormat_server_0.log";
-	details::_logger = spdlog::basic_logger_mt("_logger", folder+"doormat_server_0.log");
-	details::_console_logger = spdlog::stderr_logger_mt("_console");
+	details::_log_filename() = folder+"doormat_server_0.log";
+	details::_logger() = spdlog::basic_logger_mt("_logger", folder+"doormat_server_0.log");
+	details::_console_logger() = spdlog::stderr_logger_mt("_console");
 	spd::level::level_enum lvl = spd::level::off;
 	if(level == "trace")
 	{
@@ -45,65 +89,64 @@ void init(bool verbose, const std::string& level, const std::string& folder)
 		lvl = spd::level::critical;
 	}
 	//logging::add_common_attributes();
-	details::_logger->set_level(lvl);
+	details::_logger()->set_level(lvl);
 	if(verbose)
-		details::_console_logger->set_level(spd::level::trace);
+		details::_console_logger()->set_level(spd::level::trace);
 	else
-		details::_console_logger->set_level(lvl);
+		details::_console_logger()->set_level(lvl);
 	/** Add log format to spdlog.*/
 	//Set log format
 
 	spdlog::set_pattern("%Y-%m-%d_%H:%M:%S.%f\t[%l]\t[%t] %v");
-	details::_logger->flush_on(spd::level::critical);
-	details::_console_logger->flush_on(spd::level::critical);
+	details::_logger()->flush_on(spd::level::critical);
+	details::_console_logger()->flush_on(spd::level::critical);
 
 #ifdef NDEBUG
-	details::_console_logger->info("Doormat ", VERSION);
+	details::_console_logger()->info("Doormat ", VERSION);
 #else
-	details::_console_logger->info("Doormat ", VERSION, " Debug");
+	details::_console_logger()->info("Doormat ", VERSION, " Debug");
 #endif
 
 }
 
 void rotate()
 {
-	if(!details::_logger) return;
+	if(!details::_logger()) return;
 
-	details::_logger->flush();
-	details::_logger =spdlog::basic_logger_mt("_logger", details::log_filename);
+	details::_logger()->flush();
+	details::_logger() =spdlog::basic_logger_mt("_logger", details::_log_filename());
 }
 
 
 	void log_trace(const std::string&s){
-		details::_logger->trace(s);
-		details::_console_logger->trace(s);
+		details::_logger()->trace(s);
+		details::_console_logger()->trace(s);
 	}
 
 	void log_debug(const std::string&s)
 	{
-		details::_logger->debug(s);
-		details::_console_logger->debug(s);
+		details::_logger()->debug(s);
+		details::_console_logger()->debug(s);
 	}
 	void log_info(const std::string&s)
 	{
-		details::_logger->info(s);
-		details::_console_logger->info(s);
+		details::_logger()->info(s);
+		details::_console_logger()->info(s);
 	}
 	void log_warn(const std::string& s)
 	{
-		details::_logger->warn(s);
-		details::_console_logger->warn(s);
+		details::_logger()->warn(s);
+		details::_console_logger()->warn(s);
 	}
 	void log_error(const std::string&s)
 	{
-		details::_logger->error(s);
-		details::_console_logger->error(s);
+		details::_logger()->error(s);
+		details::_console_logger()->error(s);
 	}
 	void log_fatal(const std::string&s)
 	{
-		details::_logger->critical(s);
-		details::_console_logger->critical(s);
+		details::_logger()->critical(s);
+		details::_console_logger()->critical(s);
 	}
-
 }
 

@@ -4,7 +4,6 @@
 #include "../chain_of_responsibility/node_interface.h"
 #include "../errors/error_codes.h"
 #include "../log/access_record.h"
-#include "../network/cloudia_pool.h"
 #include "../http_client.h"
 #include "../network/communicator/dns_communicator_factory.h"
 
@@ -78,7 +77,6 @@ private:
 	std::string tmp_body;
 
 	uint8_t waiting_count{0};
-	std::unique_ptr<network::socket_factory<boost::asio::ip::tcp::socket>> factory;
 };
 
 

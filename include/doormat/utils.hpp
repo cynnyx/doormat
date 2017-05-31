@@ -20,7 +20,5 @@
 namespace doormat {
     using ::signals_handlers::set;
     using ::signals_handlers::block_all;
-    using ::signals_handlers::unblock_all;
-    using ::dstring;
-    using ::dstring_factory;
+	using ::signals_handlers::unblock_all;
 }

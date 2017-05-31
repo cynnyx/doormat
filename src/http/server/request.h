@@ -59,7 +59,6 @@ public:
 	/** Connection retrieve method*/
 	std::shared_ptr<http::server_connection> get_connection();
 
-    ~request() = default;
 private:
 
     /** External handlers allowing to trigger events to be communicated to the user */
@@ -71,8 +70,8 @@ private:
 
 	bool ended() { return request_terminated;  }
 
-
 	bool request_terminated{false};
+
 	/* User registered events */
 	headers_callback_t headers_callback;
 	body_callback_t body_callback;
@@ -81,14 +80,10 @@ private:
 	finished_callback_t finished_callback;
 
 	std::shared_ptr<server_connection> connection_keepalive;
-    /** Ptr-to-self: to grant the user that, until finished() or error() event is propagated, the request will be alive*/
     http::connection_error conn_error{http::error_code::success};
-
 	http::http_request _preamble;
 
-
 	boost::asio::io_service &io;
-
 };
 
 

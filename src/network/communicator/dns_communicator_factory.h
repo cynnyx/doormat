@@ -2,8 +2,12 @@
 #define DOORMAT_DNS_CONNECTOR_FACTORY_H
 
 #include "communicator_factory.h"
+
 #include <boost/asio.hpp>
 #include <boost/asio/ssl.hpp>
+
+#include <memory>
+#include <chrono>
 
 namespace network
 {
@@ -11,8 +15,8 @@ namespace network
 class dns_connector_factory : public connector_factory
 {
 public:
-	dns_connector_factory(boost::asio::io_service &io) : io{io}{}
-
+	dns_connector_factory(boost::asio::io_service &io, std::chrono::milliseconds connector_timeout);
+	~dns_connector_factory();
 
 	void get_connector(const std::string& address, uint16_t port, bool tls, connector_callback_t, error_callback_t) override;
 	void stop() override { stopping = true; }
@@ -26,9 +30,14 @@ private:
 		std::shared_ptr<boost::asio::ssl::stream<boost::asio::ip::tcp::socket>>, 
 		connector_callback_t, error_callback_t);
 	bool stopping{false};
+	boost::asio::io_service &io;
+	std::chrono::milliseconds conn_timeout;
+	// ugly workaround to ensure in callbacks that we are still alive
+	std::shared_ptr<bool> dead;
+
+
 	static constexpr int resolve_timeout = 2000;
 	static constexpr int connect_timeout = 1000;
-	boost::asio::io_service &io;
 };
 
 }

@@ -14,7 +14,6 @@
 #include "utils/log_wrapper.h"
 #include "service_locator/service_initializer.h"
 #include "chain_of_responsibility/chain_of_responsibility.h"
-#include "network/cloudia_pool.h"
 
 #include "dummy_node.h"
 // #include "client/client_wrapper.h"
@@ -224,14 +223,14 @@ int doormat( int argc, char** argv )
 
 	doormat_srv->on_client_connect([&io](auto conn)
 	{
-		std::cout << "new connection!" << std::endl;
+		//std::cout << "new connection!" << std::endl;
 		conn->on_request([&io](std::shared_ptr<http::server_connection> connection, 
 			std::shared_ptr<http::request> r, std::shared_ptr<http::response> b)
 				{
-					std::cout << "received request!" << std::endl;
+					//std::cout << "received request!" << std::endl;
 					r->on_headers([connection, &io](auto r)
 					{
-						std::cout << "received headers" << std::endl;
+						//std::cout << "received headers" << std::endl;
 						auto d = r->preamble().serialize();
 						//std::cout << std::string(d) << std::endl;
 						r->clear_preamble();
@@ -239,13 +238,13 @@ int doormat( int argc, char** argv )
 
 					r->on_body([](auto r, auto&& body, size_t s)
 					{
-						std::cout << "received body" << std::endl;
+					//	std::cout << "received body" << std::endl;
 						//std::cout << std::string{body.get(), s} << std::endl;
 					});
 
 					r->on_finished([b, connection, &io](auto r)
 					{
-						std::cout << "finished" << std::endl;
+						std::cout << "finished!" << std::endl;
 						http::http_response res;
 						res.protocol(http::proto_version::HTTP11);
 						res.status(200);
@@ -260,7 +259,7 @@ int doormat( int argc, char** argv )
 
 		conn->on_error([](auto conn, const http::connection_error& err)
 		{
-			std::cout << "there was an error in the connection! code is " << int(err.errc())<< std::endl;
+			//std::cout << "there was an error in the connection! code is " << int(err.errc())<< std::endl;
 		});
 /*
 		conn->on_timeout(5000, [](auto conn){

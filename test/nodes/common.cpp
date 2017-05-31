@@ -186,7 +186,6 @@ namespace preset
 /// @note if this grow up in parameters let's use a fluent builder!
 void setup( configuration::configuration_wrapper* cw, logging::inspector_log* il )
 {
-	service::initializer::set_socket_pool_factory( new network::cloudia_pool_factory() );
 	service::initializer::set_configuration(cw);
 	service::initializer::set_service_pool(new server::io_service_pool{ cw->get_thread_number() });
 	service::initializer::set_stats_manager(new stats::stats_manager{ cw->get_thread_number() });
@@ -209,11 +208,10 @@ void teardown()
 	service::initializer::set_inspector_log(nullptr);
 	service::initializer::set_stats_manager(nullptr);
 	service::initializer::set_service_pool(nullptr);
-	service::initializer::set_socket_pool_factory<boost::asio::ip::tcp::socket>(nullptr);
 	service::initializer::set_configuration(nullptr);
 }
 
-void teardown( std::unique_ptr<node_interface>& chain )
+void teardown( std::shared_ptr<node_interface>& chain )
 {
 	chain.reset();
 	teardown();
@@ -223,7 +221,9 @@ void init_thread_local()
 {
 
 	service::locator::stats_manager().register_handler();
-	service::initializer::set_communicator_factory( new network::dns_connector_factory(service::locator::service_pool().get_thread_io_service()) );
+	service::initializer::set_communicator_factory(
+				new network::dns_connector_factory(service::locator::service_pool().get_thread_io_service(),
+												   std::chrono::milliseconds{100}));
 }
 
 void stop_thread_local()

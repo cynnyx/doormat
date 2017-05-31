@@ -76,6 +76,8 @@ void stream::on_request_finished()
 	LOGTRACE("stream ", this, " request end detected");
 	//managed_chain->on_request_finished();
     req->finished();
+	// something is wrong here!
+	//std::cout << "setting req "<< this << " to nullptr [1]" << std::endl;
 	req = nullptr; //we don't grant anymore the existence of the request after the on_finished callback has been triggered.
 	//if you want it, keep it.
 }
@@ -259,12 +261,13 @@ void stream::destroy_headers( nghttp2_nv** d ) noexcept
 
 void stream::die() noexcept
 {
+	//std::cout << "calling die " << this << std::endl;
 	if ( eof_ || errored )
 	{
 		if ( destructor )
 			destructor(this, s_owner.get());
-		else
-			LOGERROR("No destructor set up! BUG!");
+		//else
+	//		LOGERROR("No destructor set up! BUG!");
 	}
 	else
 	{
@@ -339,10 +342,12 @@ void stream::notify_error(http::error_code ec)
 
 stream::~stream()
 {
+	//std::cout << "destroying stream: " << this << std::endl;
 	s_owner->unsubscribe(this);
 	LOGTRACE("Stream ", this, " destroyed");
 	if ( nva ) destroy_headers( &nva );
 	if ( trailers_nva ) destroy_headers( &trailers_nva );
+	//destructor(this, s_owner.get());
 }
 
 void stream::uri_host( const std::string &p ) noexcept

@@ -55,7 +55,86 @@ TEST(connector_test, timeout) {
 }
 
 
-TEST(connector_test, write_success) {
+TEST(connector_test, write_before_timer_expires) {
+	boost::asio::io_service io_service;
+
+	mock_server<> server{io_service};
+	server.start([]{});
+
+	boost::asio::ip::tcp::endpoint endpoint{boost::asio::ip::address::from_string("127.0.0.1"), 8454U};
+	auto socket = std::make_shared<boost::asio::ip::tcp::socket>(io_service);
+	std::shared_ptr<server::connector<server::tcp_socket>> connector{nullptr};
+
+	bool timeout_called{false};
+	bool success_cb_called{false};
+	bool error_cb_called{false};
+
+	auto timeout_cb = [&](){
+		if(!connector)
+		{
+			FAIL() << "Connector should not be null when the timeout callback is executed.";
+		}
+
+		if(timeout_called)
+		{
+			FAIL() << "Timeout has already been called";
+		}
+
+		timeout_called = true;
+		connector->stop();
+		server.stop();
+	};
+
+	auto success_cb = [&](){
+		if(!connector)
+		{
+			FAIL() << "Connector should not be null";
+		}
+
+		success_cb_called = true;
+		connector->stop();
+		server.stop();
+	};
+
+	auto error_cb = [&](){
+		if(!connector)
+		{
+			FAIL() << "Connector should not be null";
+		}
+
+		error_cb_called = true;
+		connector->stop();
+		server.stop();
+	};
+
+	mock_handler::success_or_error_collbacks cbs{};
+	cbs.push_back(std::make_pair(success_cb, error_cb));
+	auto _handler = std::make_shared<mock_handler>(timeout_cb, cbs);
+
+	socket->async_connect(endpoint, [socket, &connector, &_handler](auto error) {
+		if(error)
+		{
+			FAIL() << "Error while connect";
+			return;
+		}
+
+		connector = std::make_shared<server::connector<server::tcp_socket>>(std::move(socket));
+		connector->handler(_handler);
+		_handler->connector(connector);
+		connector->set_timeout(std::chrono::milliseconds{100});
+		connector->start();
+		connector->do_write();
+	});
+
+	io_service.run();
+	ASSERT_EQ(connector.use_count(), 1U);
+	ASSERT_TRUE(success_cb_called);
+	ASSERT_FALSE(error_cb_called);
+	ASSERT_FALSE(timeout_called);
+	ASSERT_TRUE(server.is_stopped());
+}
+
+TEST(connector_test, write) {
 	boost::asio::io_service io_service;
 
 	mock_server<> server{io_service};
@@ -71,7 +150,7 @@ TEST(connector_test, write_success) {
 	auto success_cb = [&](){
 		if(!connector)
 		{
-			FAIL() << "Connector should not be null when the timeout callback is executed.";
+			FAIL() << "Connector should not be null";
 		}
 
 		success_cb_called = true;
@@ -82,7 +161,7 @@ TEST(connector_test, write_success) {
 	auto error_cb = [&](){
 		if(!connector)
 		{
-			FAIL() << "Connector should not be null when the timeout callback is executed.";
+			FAIL() << "Connector should not be null";
 		}
 
 		error_cb_called = true;
@@ -92,7 +171,7 @@ TEST(connector_test, write_success) {
 
 	mock_handler::success_or_error_collbacks cbs{};
 	cbs.push_back(std::make_pair(success_cb, error_cb));
-	auto _handler = std::make_shared<mock_handler>([](){}, cbs);
+	auto _handler = std::make_shared<mock_handler>([](){},cbs);
 
 	socket->async_connect(endpoint, [socket, &connector, &_handler](auto error) {
 		if(error)
@@ -114,4 +193,3 @@ TEST(connector_test, write_success) {
 	ASSERT_FALSE(error_cb_called);
 	ASSERT_TRUE(server.is_stopped());
 }
-

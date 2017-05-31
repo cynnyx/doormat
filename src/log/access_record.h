@@ -8,10 +8,16 @@
 #include <chrono>
 #include <string>
 
+namespace stats
+{
+class stats_manager;
+}
+
 namespace logging
 {
 
 class inspector_log;
+class access_log;
 
 struct access_record
 {
@@ -37,6 +43,9 @@ class access_recorder final
 	friend class inspector_log;
 	using clock = access_record::clock;
 	
+	access_log& access_log_;
+	inspector_log& inspector_log_;
+	stats::stats_manager& stats_manager_;
 	access_record ar_;
 	std::string method;
 	std::string urihost;
@@ -61,7 +70,7 @@ class access_recorder final
 	bool cancelled_{false};
 	bool continued_{false};
 public:
-	access_recorder() = default;
+	access_recorder(access_log& al, inspector_log& il, stats::stats_manager& sm);
 	access_recorder(const access_recorder&);
 	access_recorder(access_recorder&&) = default;
 

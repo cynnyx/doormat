@@ -56,12 +56,12 @@ public:
 	void on_write(write_callback_t wcb);
 
 	state get_state() noexcept;
-	http_response get_preamble();
-	std::string get_body();
-	std::pair<std::string, std::string> get_trailer();
+	http_response preamble();
+
 
 private:
-	std::shared_ptr<response> myself{nullptr};
+	std::string get_body();
+	std::pair<std::string, std::string> get_trailer();
 
     void error(http::connection_error err)
     {
@@ -95,6 +95,8 @@ private:
 	std::function<void()> ccb;
 	std::function<void()> notify_continue;
 
+	/** Ptr-to-self: to grant the user that, until finished() or error() event is propagated, the client_response will be alive*/
+	std::shared_ptr<response> myself{nullptr};
 
 	boost::asio::io_service& io;
 };

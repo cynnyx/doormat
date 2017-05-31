@@ -482,9 +482,9 @@ struct chain<T,impl::integer_sequence<std::size_t, I...>, N...>: public T
 };
 
 template<typename T,typename ...Args>
-static std::unique_ptr<T> make_unique_chain(logging::access_recorder *aclogger = nullptr)
+static std::shared_ptr<T> make_shared_chain(logging::access_recorder *aclogger = nullptr)
 {
-	return std::unique_ptr<T>{new chain<T,decltype(impl::make_index_sequence<sizeof...(Args)>()), Args...>(aclogger)};
+	return std::shared_ptr<T>{new chain<T,decltype(impl::make_index_sequence<sizeof...(Args)>()), Args...>(aclogger)};
 }
 
 #endif //DOOR_MAT_CHAIN_OF_RESPONSIBILITY_H

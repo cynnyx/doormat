@@ -30,7 +30,7 @@ TEST(cor_propagation, request_propagation)
 		void on_request_body(data_t data, size_t len) { ++count; base::on_request_body(std::move(data), len); }
 	};
 
-	auto c = make_unique_chain<node_interface,n2, n1, n2, n1,n2, n1, n2, n1>();
+	auto c = make_shared_chain<node_interface,n2, n1, n2, n1,n2, n1, n2, n1>();
 	c->initialize_callbacks([](http::http_response &&) {}, [](auto&&, auto&&) {}, [](auto&&, auto&&) {}, []() {},
 							[](const errors::error_code &) {}, []() {});
 
@@ -82,7 +82,7 @@ TEST(cor_propagation, request_propagation_and_on_body)
 		}
 	};
 
-	auto c = make_unique_chain<node_interface,n1, n2, n3>();
+	auto c = make_shared_chain<node_interface,n1, n2, n3>();
 	c->initialize_callbacks([](http::http_response &&) {}, [](auto&&, auto&&) { ++count; }, [](auto&&, auto&&) {},
 							[]() {},
 							[](const errors::error_code &ec) {}, []() {});
@@ -122,7 +122,7 @@ TEST(cor_propagation, multiple_body_propagation)
 		}
 	};
 
-	auto c = make_unique_chain<node_interface,n1, n2, n3>();
+	auto c = make_shared_chain<node_interface,n1, n2, n3>();
 	c->initialize_callbacks([](http::http_response &&) {}, [](auto&&, auto&&) { ++count; }, [](auto&&, auto&&) {},
 							[]() {},
 							[](const errors::error_code &ec) {}, []() {});
@@ -172,7 +172,7 @@ TEST(cor_propagation, request_propagation_on_header)
 		}
 	};
 
-	auto c = make_unique_chain<node_interface,n1, n2, n3>();
+	auto c = make_shared_chain<node_interface,n1, n2, n3>();
 	c->initialize_callbacks([](http::http_response &&) { ++count; }, [](auto&&, auto&&) {}, [](auto&&, auto&&) {},
 							[]() {},
 							[](const errors::error_code &ec) {}, []() {});
@@ -213,7 +213,7 @@ TEST(cor_propagation, end_of_message)
 		}
 	};
 
-	auto c = make_unique_chain<node_interface,n1, n2, n3>();
+	auto c = make_shared_chain<node_interface,n1, n2, n3>();
 	c->initialize_callbacks([](http::http_response &&) {}, [](auto&&, auto&&) { ++count; }, [](auto&&, auto&&) {},
 							[]() { ++count; },
 							[](const errors::error_code &ec) {}, []() {});
@@ -252,7 +252,7 @@ TEST(cor_propagation, error)
 		}
 	};
 
-	auto c = make_unique_chain<node_interface,n1, n2, n3>();
+	auto c = make_shared_chain<node_interface,n1, n2, n3>();
 	c->initialize_callbacks([](http::http_response &&) { count = 0; }, [](auto&&, auto&&) { count = 0; },
 							[](auto&&, auto&&) {}, []() { count = 0; },
 							[](const errors::error_code &ec) { ++count; }, []() {});
@@ -303,7 +303,7 @@ TEST(cor_propagation, trailer_propagation)
 		}
 	};
 
-	auto c = make_unique_chain<node_interface,n1, n2, n3>();
+	auto c = make_shared_chain<node_interface,n1, n2, n3>();
 	c->initialize_callbacks([](http::http_response &&) {}, [](auto&&, auto&&) {}, [](auto&&, auto&&) { ++count; },
 							[]() {},
 							[](const errors::error_code &ec) {}, []() {});
@@ -351,7 +351,7 @@ TEST(cor_propagation, middle_error)
 
 	};
 
-	auto c = make_unique_chain<node_interface,n1, n2, n3, n3, n3, n3>();
+	auto c = make_shared_chain<node_interface,n1, n2, n3, n3, n3, n3>();
 	c->initialize_callbacks([](http::http_response &&) { count = 0; }, [](auto&&, auto&&) { count = 0; },
 							[](auto&&, auto&&) {}, []() { count = 0; },
 							[](const errors::error_code &ec) { ++count; }, []() {});
@@ -410,7 +410,7 @@ TEST(cor_propagation, asynchronous_fw)
 		}
 	};
 
-	auto c = make_unique_chain<node_interface,n1, n2, n3>();
+	auto c = make_shared_chain<node_interface,n1, n2, n3>();
 	c->initialize_callbacks([](http::http_response &&) {}, [](auto&&, auto&&) {}, [](auto&&, auto&&) {}, []() {},
 							[](const errors::error_code &ec) {}, []() {});
 
@@ -487,7 +487,7 @@ TEST(cor_propagation, asynchronous_bw)
 		}
 	};
 
-	auto c = make_unique_chain<node_interface,n1, n2, n3>();
+	auto c = make_shared_chain<node_interface,n1, n2, n3>();
 	c->initialize_callbacks([](http::http_response &&) {}, [](auto&&, auto&&) {}, [](auto&&, auto&&) {}, []() {},
 							[](const errors::error_code &ec) {}, []() {});
 

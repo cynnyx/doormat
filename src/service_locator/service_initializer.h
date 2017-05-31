@@ -3,7 +3,6 @@
 #include "service_locator.h"
 #include "../configuration/configuration_wrapper.h"
 #include "../configuration/configuration_parser.h"
-#include "../network/cloudia_pool.h"
 #include "../io_service_pool.h"
 #include "../log/log.h"
 #include "../log/inspector_serializer.h"
@@ -92,12 +91,6 @@ public:
 	static void set_chain_factory( endpoints::chain_factory* cf )
 	{
 		locator::chfac.reset( cf );
-	}
-
-	template<class T = boost::asio::ip::tcp::socket>
-	static void set_socket_pool_factory(network::abstract_factory_of_socket_factory<T>* afosf)
-	{
-			locator::template _socket_pool_factory<T>.reset( afosf );
 	}
 
 	static void set_communicator_factory(network::connector_factory *f) {

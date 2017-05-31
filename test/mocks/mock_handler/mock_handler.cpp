@@ -1,7 +1,9 @@
 #include "mock_handler.h"
 
-mock_handler::mock_handler(const std::function<void()>& timeout_cb, const success_or_error_collbacks& cbs)
-		: timeout_cb{timeout_cb}, cbs{cbs}
+mock_handler::mock_handler(const std::function<void()>& timeout_cb,
+                           const success_or_error_collbacks& cbs)
+		: timeout_cb{timeout_cb},
+		  cbs{cbs}
 {};
 
 void mock_handler::do_write()
@@ -27,8 +29,11 @@ bool mock_handler::on_read(const char*, unsigned long)
 
 bool mock_handler::on_write(std::string& chunk)
 {
-	chunk.append("writing in handler");
-	return true;
+	if(connector()) {
+		chunk.append("filling chunk");
+		return true;
+	}
+	return false;
 }
 
 void mock_handler::trigger_timeout_event()
@@ -36,7 +41,9 @@ void mock_handler::trigger_timeout_event()
 	timeout_cb();
 }
 
-std::vector<std::pair<std::function<void()>, std::function<void()>>> mock_handler::write_feedbacks()
+mock_handler::success_or_error_collbacks mock_handler::write_feedbacks()
 {
-	return cbs;
+	auto res = std::move(cbs);
+	cbs = {};
+	return res;
 }

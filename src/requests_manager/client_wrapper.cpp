@@ -32,7 +32,9 @@ client_wrapper::client_wrapper (
 	: node_interface(std::move(request_preamble), std::move(request_body), std::move(request_trailer),
 					 std::move(request_canceled), std::move(request_finished),
 					 std::move(hcb), std::move(bcb), std::move(tcb), std::move(eomcb),
-					 std::move(ecb), std::move(rccb), aclogger), client{service::locator::service_pool().get_thread_io_service()}
+					 std::move(ecb), std::move(rccb), aclogger)
+	, client{service::locator::service_pool().get_thread_io_service(),
+			 std::chrono::milliseconds{service::locator::configuration().get_board_timeout()}}
 {
 	LOGTRACE("client_wrapper ",this," constructor");
 }
@@ -84,6 +86,7 @@ void client_wrapper::perform_request(http::http_request&& preamble)
 			return this->on_response_continue();
 		}
 		finished_response = true;
+		this->on_end_of_message();
 		this->stop(); //we already received our response; hence we can stop the client wrapper.
 	});
 	res->on_error([this](auto res, auto&& error)

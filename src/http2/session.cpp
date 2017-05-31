@@ -77,7 +77,7 @@ stream* session::create_stream ( std::int32_t id )
 {
 	stream* stream_data = static_cast<stream*>( all.malloc( sizeof(stream), all.mem_user_data ) );
 	LOGTRACE(" Create stream: ", id, " address: ", stream_data );
-	new ( stream_data ) stream{ this->get_shared(), [] ( stream* s, session* sess )
+	new ( stream_data ) stream{ this->get_shared(), [stream_data] ( stream* s, session* sess )
 		{
 			LOGTRACE("Stream destruction: ", s, " session: ", sess );
 			s->~stream();

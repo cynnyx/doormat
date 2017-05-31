@@ -5,7 +5,6 @@
 #include "configuration.hpp"
 #include "http.hpp"
 #include "io_service_pool.hpp"
-#include "network.hpp"
 #include "node_interface.hpp"
 #include "server.hpp"
 #include "service.hpp"

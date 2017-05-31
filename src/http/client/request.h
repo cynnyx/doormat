@@ -53,7 +53,7 @@ public:
 	void on_error(error_callback_t ecb);
 	void on_write(write_callback_t wcb);
 
-	http_request get_preamble();
+	http_request preamble();
 
 private:
 	state get_state() const noexcept;
@@ -93,11 +93,10 @@ private:
 	std::function<void(std::string&&, std::string&&)> tcb;
 	std::function<void()> ccb;
 
+	/** Ptr-to-self: to grant the user that, until finished() or error() event is propagated, the client_response will be alive*/
 	std::shared_ptr<client_request> myself{nullptr};
 
-
 	boost::asio::io_service& io;
-
 };
 
 }

@@ -20,9 +20,6 @@ namespace log_wrapper
 
 namespace details
 {
-	static std::shared_ptr<spdlog::logger> _logger{nullptr};
-	static std::shared_ptr<spdlog::logger> _console_logger{nullptr};
-	static std::string log_filename;
 	static constexpr const char* const past_last_slash(const char* const str, const char* const last_slash)
 	{
 		return *str == '\0' ? last_slash : *str == '/'  ? past_last_slash(str + 1, str + 1) : past_last_slash(str + 1, last_slash);
@@ -32,6 +29,16 @@ namespace details
 	{
 		return past_last_slash(str, str);
 	}
+
+	// The nifty counter prevents the static initialization order fiasco
+	// https://en.wikibooks.org/wiki/More_C++_Idioms/Nifty_Counter
+	struct logger_nifty_counter
+	{
+		logger_nifty_counter();
+		~logger_nifty_counter();
+	};
+
+	static logger_nifty_counter logger_schwarz_counter;
 }
 
 /** \brief Sets up the logging system. Its behaviour will be different depending on whether it is in release mode or not.

@@ -25,7 +25,8 @@ struct http_client_test: public ::testing::Test
 
 using http_client = client::http_client<network::dns_connector_factory>;
 
-auto port = 8454U;
+const auto port = 8454U;
+const auto timeout = std::chrono::milliseconds{100};
 
 
 TEST_F(http_client_test, connect_ipv4_clear)
@@ -34,7 +35,7 @@ TEST_F(http_client_test, connect_ipv4_clear)
 	server.start([]{});
 
 	bool succeeded{false};
-	http_client client{io};
+	http_client client{io, timeout};
 	client.connect([&server, &succeeded](auto connection) {
 		               SUCCEED();
 		               succeeded = true;
@@ -56,7 +57,7 @@ TEST_F(http_client_test, connect_ipv4_ssl)
 	server.start([]{});
 
 	bool succeeded{false};
-	http_client client{io};
+	http_client client{io, timeout};
 	client.connect([&server, &succeeded](auto connection)
 	{
 		succeeded = true;
@@ -79,7 +80,7 @@ TEST_F(http_client_test, connect_ipv6_clear)
 	server.start([]{});
 
 	bool succeeded{false};
-	http_client client{io};
+	http_client client{io, timeout};
 	client.connect([&server, &succeeded](auto connection)
 	{
 		succeeded = true;
@@ -102,7 +103,7 @@ TEST_F(http_client_test, connect_ipv6_ssl)
 	server.start([]{});
 
 	bool succeeded{false};
-	http_client client{io};
+	http_client client{io, timeout};
 	client.connect([&server, &succeeded](auto connection)
 	{
 		succeeded = true;
@@ -125,7 +126,7 @@ TEST_F(http_client_test, fail_connect)
 	server.start([]{});
 
 	bool called {false};
-	http_client client{io};
+	http_client client{io, timeout};
 	client.connect([](auto connection)
 	{
 		FAIL();

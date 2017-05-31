@@ -28,7 +28,7 @@ public:
 	using connection_t = typename handler_traits::connection_t;
 	using remote_t = typename handler_traits::remote_t;
 	using local_t = typename handler_traits::local_t;
-	using local_t_object = typename std::remove_reference<decltype(((local_t*)nullptr)->get_preamble())>::type;
+	using local_t_object = typename std::remove_reference<decltype(((local_t*)nullptr)->preamble())>::type;
 	using data_t = std::unique_ptr<const char[]>;
 
 	/** \brief shared pointer to handler.
@@ -344,7 +344,7 @@ private:
 		{
 			switch(state) {
 			case local_t::state::headers_received:
-				notify_local_headers(loc->get_preamble());
+				notify_local_headers(loc->preamble());
 				break;
 			case local_t::state::body_received:
 				notify_local_body(loc->get_body());
@@ -450,7 +450,7 @@ bool handler_http1<http::server_traits>::poll_local(std::shared_ptr<http::server
 	{
 		switch(state) {
 			case local_t::state::headers_received:
-				notify_local_headers(loc->get_preamble());
+				notify_local_headers(loc->preamble());
 				break;
 			case local_t::state::body_received:
 				notify_local_body(loc->get_body());
