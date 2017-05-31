@@ -13,6 +13,11 @@
 #include "../http/http_request.h"
 #include "../protocol/http_handler.h"
 
+namespace http
+{
+class http_response;
+}
+
 namespace http2
 {
 	

@@ -2,9 +2,7 @@
 #include "utils/log_wrapper.h"
 #include "http/server/server_connection.h"
 #include "http/client/client_connection.h"
-#include "service_locator/service_locator.h"
 #include <boost/lexical_cast.hpp>
-#include "./configuration/configuration_wrapper.h"
 
 using namespace std;
 using namespace boost::asio;

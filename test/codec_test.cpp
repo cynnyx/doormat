@@ -144,7 +144,9 @@ void test_request_encoding(http_request *in_, const dstring& in_data)
 	EXPECT_TRUE(out_msg.protocol() == in_msg.protocol());
 	EXPECT_TRUE(out_msg.content_len() == in_msg.content_len());
 	if(in_msg.date().size())
+	{
 		EXPECT_TRUE(out_msg.date() == in_msg.date());
+	}
 
 	//REQ
 	EXPECT_TRUE(out_msg.method() == in_msg.method());
@@ -191,7 +193,9 @@ void test_response_encoding(http_response *in_, const dstring& in_data)
 	EXPECT_TRUE(out_msg.protocol() == in_msg.protocol());
 	EXPECT_TRUE(out_msg.content_len() == in_msg.content_len());
 	if(in_msg.date().size())
+	{
 		EXPECT_TRUE(out_msg.date() == in_msg.date());
+	}
 
 	EXPECT_TRUE(out_msg.status_code() == in_msg.status_code());
 	EXPECT_TRUE(out_msg.status_message() == in_msg.status_message());

@@ -4,6 +4,7 @@
 #include <memory>
 #include <cstdint>
 #include <string>
+#include <functional>
 
 namespace http {
 class http_request;

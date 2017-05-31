@@ -89,7 +89,8 @@ set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3 -g")
 
 if (ENABLE_SAN)
     message("-- Address sanitizer enabled")
-    set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fsanitize=address -fno-omit-frame-pointer")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address -fno-omit-frame-pointer")
+    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -fsanitize=address -static-libasan")
 endif (ENABLE_SAN)
 
 set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--no-undefined")
@@ -119,7 +120,7 @@ find_package(Boost 1.54 COMPONENTS system thread log program_options regex files
 find_package(OpenSSL 1.0.2 REQUIRED)
 find_package(Threads REQUIRED)
 find_package(NgHTTP2 REQUIRED)
-find_package(Cynnypp REQUIRED)
+#find_package(Cynnypp REQUIRED)
 find_package(CityHash REQUIRED)
 find_package(GoogleTest REQUIRED)
 find_package(GoogleMock REQUIRED)
@@ -191,18 +192,10 @@ install(FILES ${DOORMAT_CONFIG_FILES}
         PERMISSIONS OWNER_WRITE GROUP_WRITE WORLD_READ GROUP_READ OWNER_READ
         COMPONENT executable)
 
-if (ENABLE_SAN)
-    install(FILES "utils/doormat.init.asan"
-            DESTINATION "${BASE_DIR}/bin/"
-            RENAME "doormat.init"
-            PERMISSIONS OWNER_WRITE WORLD_EXECUTE WORLD_READ GROUP_READ OWNER_READ GROUP_EXECUTE OWNER_EXECUTE
-            COMPONENT executable)
-else ()
-    install(FILES "utils/doormat.init"
-            DESTINATION "${BASE_DIR}/bin/"
-            PERMISSIONS OWNER_WRITE WORLD_EXECUTE WORLD_READ GROUP_READ OWNER_READ GROUP_EXECUTE OWNER_EXECUTE
-            COMPONENT executable)
-endif (ENABLE_SAN)
+install(FILES "utils/doormat.init"
+        DESTINATION "${BASE_DIR}/bin/"
+        PERMISSIONS OWNER_WRITE WORLD_EXECUTE WORLD_READ GROUP_READ OWNER_READ GROUP_EXECUTE OWNER_EXECUTE
+        COMPONENT executable)
 
 #
 # CPACK stuff

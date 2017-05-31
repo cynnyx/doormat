@@ -2,24 +2,11 @@
 
 #include "src/http_client.h"
 #include "src/network/communicator/dns_communicator_factory.h"
-#include "src/service_locator/service_initializer.h"
-#include "src/service_locator/service_locator.h"
-#include "src/io_service_pool.h"
 
 #include "mocks/mock_server/mock_server.h"
 
 struct http_client_test: public ::testing::Test
 {
-	class mockconf: public configuration::configuration_wrapper
-	{
-		uint64_t get_board_timeout() const noexcept override { return 3000; }
-	};
-	virtual void SetUp()
-	{
-		service::initializer::set_configuration( new mockconf() );
-	}
-
-
 	boost::asio::io_service io;
 };
 

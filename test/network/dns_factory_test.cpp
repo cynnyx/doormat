@@ -1,7 +1,4 @@
 #include <gtest/gtest.h>
-#include "../src/service_locator/service_initializer.h"
-#include "../src/service_locator/service_locator.h"
-#include "../src/io_service_pool.h"
 #include "src/network/communicator/dns_communicator_factory.h"
 #include "mocks/mock_server/mock_server.h"
 #include "testcommon.h"

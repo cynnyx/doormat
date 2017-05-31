@@ -4,8 +4,6 @@
 #include "../../deps/nghttp2/build/include/nghttp2/nghttp2.h"
 #include "../utils/doormat_types.h"
 #include "../connector.h"
-#include "../log/access_record.h"
-#include "../chain_of_responsibility/error_code.h"
 #include "../protocol/http_handler.h"
 #include "../http/server/server_connection.h"
 

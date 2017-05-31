@@ -3,7 +3,6 @@
 #include <memory>
 #include "../http/http_codec.h"
 #include "../http/http_structured_data.h"
-#include "../log/access_record.h"
 #include "../utils/log_wrapper.h"
 #include "../http/server/request.h"
 #include "../http/server/response.h"

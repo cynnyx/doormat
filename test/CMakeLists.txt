@@ -8,27 +8,16 @@ set(DOORMAT_TESTCASES_SOURCES
 	main.cpp
 	base64_test.cpp
 	codec_test.cpp
-	configuration_parser_test.cpp
-	cor_test.cpp
 	sni_solver_test.cpp
 	dstring_factory_test.cpp
 	dstring_test.cpp
 	error_test.cpp
-	header_conf_test.cpp
-	inspector_serializer_test.cpp
-	ipv4matcher_test.cpp
-	log_test.cpp
 	reusable_buffer_test.cpp
-	stats_test.cpp
 	testcommon.cpp
 	utils_test.cpp
 	mocks/mock_server/mock_server.cpp
 	mocks/mock_connector/mock_connector.cpp
-	nodes/common.cpp
-	endpoints/tree_test.cpp
-	endpoints/chain_factory.cpp
 	network/dns_factory_test.cpp
-	#nodes/client_wrapper_test.cpp
 	http/server/server_connection_test.cpp
 	http/server/http2_test.cpp
 	http/client/client_connection_test.cpp
@@ -47,7 +36,6 @@ target_include_directories(
 	PRIVATE ${OPENSSL_INCLUDE_DIR}
 	PRIVATE ${GOOGLETEST_INCLUDE_DIR}
 	PRIVATE ${GMOCK_INCLUDE_DIRS}
-	PRIVATE ${CYNNYPP_INCLUDE_DIRS}
 	PRIVATE ${CITYHASH_INCLUDE_DIRS}
 	PRIVATE ${ZLIB_INCLUDE_DIRS}
 	PRIVATE ${SPDLOG_INCLUDE_DIR}
@@ -56,7 +44,7 @@ target_include_directories(
 
 target_link_libraries(
 	${DOORMAT_TEST_EXECUTABLE}
-	PRIVATE ${DOORMAT_COMMON_ARCHIVE_LIB}
+        PRIVATE ${DOORMAT_COMMON_SHARED_LIB}
 	PRIVATE ${CMAKE_THREAD_LIBS_INIT}
 	PRIVATE ${GOOGLETEST_LIBRARY}
 	PRIVATE ${GOOGLETEST_MAIN_LIBRARY}
@@ -65,7 +53,6 @@ target_link_libraries(
 	PRIVATE ${NGHTTP2_LIBRARY}
 	PRIVATE ${NGHTTP2_ASIO_LIBRARY}
 	PRIVATE ${OPENSSL_LIBRARIES}
-	PRIVATE ${CYNNYPP_LIBRARIES}
 	PRIVATE ${CITYHASH_LIBRARIES}
 	PRIVATE ${ZLIB_LIBRARIES}
 )

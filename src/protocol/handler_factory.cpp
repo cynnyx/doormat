@@ -1,5 +1,4 @@
 #include "handler_factory.h"
-#include "../configuration/configuration_wrapper.h"
 
 #include <string>
 
@@ -43,7 +42,6 @@ using alpn_cb = int (*)
 alpn_cb alpn_select_cb = [](ssl_st *ctx, const unsigned char** out, unsigned char* outlen,
 const unsigned char* in, unsigned int inlen, void *data)
 {
-	//string local_alpn_protos[5] = (service_locator::configuration().http2_is_disabled()) ?  alpn_protos_legacy : alpn_protos_default;
 	for( auto& proto : alpn_protos_default )
 		if(SSL_select_next_proto((unsigned char**)out, outlen, (const unsigned char*)proto.c_str(), proto.size()-1, in, inlen) == OPENSSL_NPN_NEGOTIATED)
 			return SSL_TLSEXT_ERR_OK;

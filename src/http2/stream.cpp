@@ -4,8 +4,6 @@
 #include "../utils/utils.h"
 #include "../http/http_structured_data.h"
 #include "../http/http_commons.h"
-#include "../endpoints/chain_factory.h"
-#include "../chain_of_responsibility/callback_initializer.h"
 #include "../http/server/request.h"
 #include "../http/server/response.h"
 #include "../protocol/http_handler.h"

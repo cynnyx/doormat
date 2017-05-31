@@ -1,7 +1,3 @@
-#include "../configuration/configuration_wrapper.h"
-#include "../dummy_node.h"
-#include "../http2/session.h"
-#include "handler_http1.h"
 #include "handler_factory.h"
 #include "http_handler.h"
 
