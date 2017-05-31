@@ -1,11 +1,11 @@
 #ifndef CLIENT_DOORMAT__H
 #define CLIENT_DOORMAT__H
 
-#include "../../src/requests_manager/client_wrapper.h"
+#include "src/http_client.h"
 
 namespace doormat 
 {
-    using ::nodes::client_wrapper;
+	using ::client::http_client;
 }
 
 #endif
