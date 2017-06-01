@@ -7,6 +7,11 @@
 
 #include "http/http_commons.h"
 #include "http/client/client_traits.h"
+#include "network/communicator/communicator_factory.h"
+#include "protocol/handler_http1.h"
+#include "http2/stream.h"
+#include "http/client/client_connection.h"
+#include "http/client/response.h"
 
 namespace http {
 class client_connection;
@@ -25,41 +30,98 @@ namespace client
 
 namespace detail
 {
-struct handler_factory
+struct handler_from_connector_factory
 {
 	using connect_callback_t = std::function<void(std::shared_ptr<http::client_connection>)>;
 
-	handler_factory(http::proto_version v, connect_callback_t cb) noexcept;
+	handler_from_connector_factory(http::proto_version v, connect_callback_t cb) noexcept;
 	void operator()(std::shared_ptr<server::connector_interface>);
 private:
 	http::proto_version v_;
 	connect_callback_t cb_;
 };
 
+template<typename connector_factory_t>
+class handler_factory
+{
+	using connect_callback_t = std::function<void(std::shared_ptr<http::client_connection>)>;
+	using error_callback_t = std::function<void(int)>; //fixme;
+	connector_factory_t factory;
+
+public:
+	template<typename... construction_args_t>
+	handler_factory(construction_args_t&&...args) : factory{std::forward<construction_args_t>(args)...}
+	{}
+
+	template<typename... connector_args_t>
+	void get_connection(connect_callback_t ccb, error_callback_t ecb, http::proto_version v, connector_args_t&&... args)
+	{
+		factory.get_connector(std::forward<connector_args_t>(args)..., [v, ccb = std::move(ccb)](std::shared_ptr<server::connector_interface> conn){
+			if(v == http::proto_version::HTTP20)
+			{
+				assert(false && "currently http20 is not supported on the client side!");
+			} else
+			{
+				auto h = std::make_shared<server::handler_http1<http::client_traits>>();
+				h->connector(conn);
+				conn->handler(h);
+				conn->start(true);
+				ccb(std::move(h));
+			}
+		}, ecb);
+	}
+
+};
+
+
 }
 
-template<typename connector_factory_t, typename handler_factory_t = detail::handler_factory>
-class http_client
+template<typename factory, typename Enable = void>
+class http_client;
+
+/** Specialization for connector factory*/
+template<typename connector_factory_t>
+class http_client<connector_factory_t, std::enable_if_t<std::is_base_of<network::connector_factory, connector_factory_t>::value>>
 {
 	connector_factory_t connector_factory_;
 
 public:
-	using connect_callback_t = detail::handler_factory::connect_callback_t;
+	using connect_callback_t = detail::handler_from_connector_factory::connect_callback_t;
 	using error_callback_t = std::function<void(int)>; // TODO: int? come on... :D
 
 	template<typename... Args>
 	http_client(Args&&... args)
-		: connector_factory_{std::forward<Args>(args)...}
+	: connector_factory_{std::forward<Args>(args)...}
 	{}
 
 	template<typename... connector_args_t>
 	void connect(connect_callback_t ccb, error_callback_t ecb, http::proto_version v, connector_args_t&&... args)
 	{
-		connector_factory_.get_connector(std::forward<connector_args_t>(args)..., handler_factory_t(v, std::move(ccb)),
-		[ecb](const auto& error)
-		{
-			ecb(error);
-		});
+		connector_factory_.get_connector(std::forward<connector_args_t>(args)..., detail::handler_from_connector_factory(v, std::move(ccb)),
+		                                 [ecb](const auto& error)
+		                                 {
+			                                 ecb(error);
+		                                 });
+	}
+};
+
+/** Specialization for handler factory!*/
+template<typename handler_factory_t>
+class http_client<handler_factory_t, std::enable_if_t<!std::is_base_of<network::connector_factory, handler_factory_t>::value>>
+{
+	handler_factory_t  factory;
+public:
+	using connect_callback_t = detail::handler_from_connector_factory::connect_callback_t;
+	using error_callback_t = std::function<void(int)>; //fixme
+
+	template<typename... Args>
+	http_client(Args&&... args) : factory{std::forward<Args>(args)...}
+	{}
+
+	template<typename... handler_args_t>
+	void connect(connect_callback_t ccb, error_callback_t ecb, handler_args_t&&... args)
+	{
+		factory.get_connection(ccb, ecb, std::forward<handler_args_t>(args)...);
 	}
 };
 
