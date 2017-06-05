@@ -425,6 +425,7 @@ bool session::on_write(std::string& ch )
 
 	if ( consumed >= 0 )
 	{
+		LOGTRACE("Writing to buffer ", consumed, " bytes!");
 		std::string tdata{data, data + static_cast<size_t>(consumed)};
 		ch = std::move( tdata );
 	}
