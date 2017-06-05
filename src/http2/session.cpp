@@ -73,7 +73,7 @@ void session::send_connection_header()
 	do_write();
 }
 
-stream* session::create_stream ( std::int32_t id )
+http2::stream* session::create_stream( std::int32_t id )
 {
 	stream* stream_data = static_cast<stream*>( all.malloc( sizeof(stream), all.mem_user_data ) );
 	LOGTRACE(" Create stream: ", id, " address: ", stream_data );

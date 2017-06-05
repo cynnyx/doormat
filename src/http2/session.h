@@ -58,7 +58,7 @@ class session : public server::http_handler, public http::server_connection
 	bool user_close{false};
 public:
     session(std::uint32_t max_concurrent_streams = default_max_concurrent_streams);
-	virtual std::vector<std::pair<std::function<void()>, std::function<void()>>> write_feedbacks()
+	virtual std::vector<std::pair<std::function<void()>, std::function<void()>>> write_feedbacks() override
 	{
 		auto all_pending = std::move(pending);
 		pending = {};

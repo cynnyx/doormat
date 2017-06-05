@@ -327,7 +327,7 @@ private:
 	/** \brief propagates the timeout request to the connector.
 	 * \param ms the timeout interval requested.
 	 * */
-	void set_timeout(std::chrono::milliseconds ms)
+	void set_timeout(std::chrono::milliseconds ms) override
 	{
 		auto s = connector();
 		if(s) s->set_timeout(std::move(ms));
