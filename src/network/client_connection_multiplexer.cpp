@@ -135,7 +135,10 @@ void client_connection_handler::on_error(std::function<void(std::shared_ptr<http
 	ecb = std::move(error_callback);
 }
 
-std::pair<std::shared_ptr<http::client_request>, std::shared_ptr<http::client_response>> client_connection_multiplexer::create_transaction() { return connection->create_transaction(); };
+std::pair<std::shared_ptr<http::client_request>, std::shared_ptr<http::client_response>> client_connection_multiplexer::create_transaction()
+{
+	return connection->create_transaction();
+};
 
 std::pair<std::shared_ptr<http::client_request>, std::shared_ptr<http::client_response>> client_connection_handler::create_transaction()
 {

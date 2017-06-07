@@ -7,7 +7,7 @@
 #include "../../../src/http/client/response.h"
 #include "../../../src/network/client_connection_multiplexer.h"
 #include "../../../src/network/communicator/dns_communicator_factory.h"
-
+#include "../testcommon.h"
 #include "../mocks/mock_server/mock_server.h"
 
 using http_client = client::http_client<network::dns_connector_factory>;
@@ -127,3 +127,155 @@ TEST(multiplexer, multiple_timeout)
 	ASSERT_EQ(timeouts, 3U);
 	ASSERT_TRUE(error_received);
 }
+
+
+TEST(multiplexer, single_req_res)
+{
+	boost::asio::io_service io;
+
+	mock_server<> server{io};
+	std::string readed{};
+	auto expected_req = make_request(http::proto_version::HTTP11, http_method::HTTP_GET, "prova.com", "/ciao");
+	std::function<void(std::string)> read_callback;
+	read_callback = [&readed, &server, &read_callback, expected_req = std::move(expected_req)](std::string bytes){
+		readed += bytes;
+		if(expected_req.serialize() == readed)
+		{
+			static const std::string expected_response = "HTTP/1.1 200 OK\r\n"
+					"connection: keep-alive\r\n"
+					"content-length: 33\r\n"
+					"content-type: text/plain\r\n"
+					"date: Tue, 17 May 2016 14:53:09 GMT\r\n"
+					"\r\n"
+					"Ave client, dummy node says hello";
+			server.write(expected_response);
+			readed = "";
+		}
+		server.read(1, read_callback);
+
+	};
+	server.start([&read_callback, &server]{
+		server.read(1, read_callback);
+	});
+
+
+	http_client client{io, timeout};
+	std::shared_ptr<network::client_connection_multiplexer> multi{nullptr};
+	bool headers_rcvd{false};
+	bool body_rcvd{false};
+	bool finished_rcvd{false};
+	client.connect([&server, &headers_rcvd, &body_rcvd, &finished_rcvd, &multi](auto connection)
+	               {
+		               multi = std::make_shared<network::client_connection_multiplexer>(std::move(connection));
+		               multi->init();
+		               auto handler = multi->get_handler();
+		               auto transaction = handler->create_transaction();
+		               auto &request = transaction.first;
+		               auto &response = transaction.second;
+		               response->on_headers([handler, &headers_rcvd](auto resp){
+							headers_rcvd = true;
+		               });
+		               response->on_body([handler, &headers_rcvd, &body_rcvd](auto resp, auto b, auto s){
+			               ASSERT_TRUE(headers_rcvd);
+			               body_rcvd = true;
+		               });
+		               response->on_finished([handler, &server, &headers_rcvd, &body_rcvd, &finished_rcvd](auto resp){
+			               ASSERT_TRUE(headers_rcvd);
+			               ASSERT_TRUE(body_rcvd);
+			               finished_rcvd = true;
+			               resp->get_connection()->close();
+			               server.stop();
+		               });
+		               request->headers(make_request(http::proto_version::HTTP11, http_method::HTTP_GET, "prova.com", "/ciao"));
+		               request->end();
+	               },
+	               [](auto error) {
+		               FAIL();
+	               }, http::proto_version::HTTP11, "127.0.0.1", port, false);
+
+	io.run();
+	ASSERT_TRUE(headers_rcvd);
+	ASSERT_TRUE(body_rcvd);
+	ASSERT_TRUE(finished_rcvd);
+}
+
+
+TEST(multiplexer, multiple_req_res)
+{
+	boost::asio::io_service io;
+
+	mock_server<> server{io};
+	std::string readed{};
+	size_t request_count{0};
+	auto expected_req = make_request(http::proto_version::HTTP11, http_method::HTTP_GET, "prova.com", "/ciao");
+	std::function<void(std::string)> read_callback;
+	read_callback = [&readed, &server, &read_callback, expected_req = std::move(expected_req), &request_count](std::string bytes){
+		readed += bytes;
+		if(expected_req.serialize() == readed)
+		{
+			const std::string expected_response = "HTTP/1.1 200 OK\r\n"
+					"connection: keep-alive\r\n"
+					"content-length: 33\r\n"
+					"content-type: text/plain\r\n"
+					"date: Tue, 17 May 2016 14:53:09 GMT\r\n"
+					"request-count: "+ std::to_string(request_count) + "\r\n"
+					"\r\n"
+					"Ave client, dummy node says hello";
+			++request_count;
+			server.write(expected_response);
+			readed = "";
+		}
+		server.read(1, read_callback);
+
+	};
+	server.start([&read_callback, &server]{
+		server.read(1, read_callback);
+	});
+
+
+	http_client client{io, timeout};
+	std::shared_ptr<network::client_connection_multiplexer> multi{nullptr};
+	size_t headers_rcvd{0};
+	size_t body_rcvd{0};
+	size_t finished_rcvd{0};
+	client.connect([&server, &headers_rcvd, &body_rcvd, &finished_rcvd, &multi](auto connection)
+	               {
+		               multi = std::make_shared<network::client_connection_multiplexer>(std::move(connection));
+		               multi->init();
+		               for(int i = 0; i < 10; ++i)
+		               {
+			               auto handler = multi->get_handler();
+			               auto transaction = handler->create_transaction();
+			               auto &request = transaction.first;
+			               auto &response = transaction.second;
+			               response->on_headers([handler, &headers_rcvd, i](auto resp){
+				               ASSERT_EQ(headers_rcvd, i);
+				               ASSERT_TRUE(resp->preamble().has("request-count"));
+				               ASSERT_EQ(resp->preamble().header("request-count"), std::to_string(i));
+				               headers_rcvd++;
+			               });
+			               response->on_body([handler, &headers_rcvd, &body_rcvd, i](auto resp, auto b, auto s){
+				               ASSERT_EQ(body_rcvd, i);
+				               body_rcvd++;
+			               });
+			               response->on_finished([handler, &server, &headers_rcvd, &body_rcvd, &finished_rcvd, i](auto resp){
+				               ASSERT_EQ(finished_rcvd, i);
+				               finished_rcvd++;
+				               if(i != 9) return;
+				               resp->get_connection()->close();
+				               server.stop();
+			               });
+			               request->headers(make_request(http::proto_version::HTTP11, http_method::HTTP_GET, "prova.com", "/ciao"));
+			               request->end();
+		               }
+	               },
+	               [](auto error) {
+		               FAIL();
+	               }, http::proto_version::HTTP11, "127.0.0.1", port, false);
+
+	io.run();
+	ASSERT_EQ(headers_rcvd, 10);
+	ASSERT_EQ(body_rcvd, 10);
+	ASSERT_EQ(finished_rcvd, 10);
+}
+
