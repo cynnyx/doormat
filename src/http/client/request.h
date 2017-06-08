@@ -76,6 +76,8 @@ private:
 
 	}
 
+
+
 	state current;
 	bool ended{false};
 

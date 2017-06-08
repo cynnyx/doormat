@@ -251,7 +251,6 @@ private:
 	/** \brief notifies an error to all currently managed objects.
 	 * \param err the error code. */
 	void notify_all(http::error_code err) {
-
 		for(auto current_remote: remote_objects) {
 			current_remote->error(err);
 		}
@@ -316,7 +315,6 @@ private:
 				else break;
 			} else
 			{
-				std::cout << "bad error: missing stream element" << std::endl; 
 				http::connection_error err{http::error_code::missing_stream_element};
 				connection_t::error(err);
 				notify_all(http::error_code::missing_stream_element);

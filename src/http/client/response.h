@@ -4,6 +4,9 @@
 #include <memory>
 #include <functional>
 #include <boost/asio/io_service.hpp>
+#include <iostream>
+
+
 
 #include "../http_response.h"
 #include "../message_error.h"

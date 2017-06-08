@@ -216,25 +216,33 @@ public:
 	{
 		if (_writing || _stopped)
 			return;
-
 		_out = {};
 		if ( !_handler->on_write(_out) )
 		{
-			//LOGDEBUG(this," error on_write - write failed");
+			auto cbs = _handler->write_feedbacks();
+			for(auto &cb: cbs)
+			{
+				io_service().post(cb.first);
+			}
 			return;
 		}
 
 		if( _out.empty() && _handler->should_stop() )
 		{
-			//LOGDEBUG(this," nothing left to write, stopping");
+			auto cbs = _handler->write_feedbacks();
+			for(auto &cb: cbs)
+			{
+				io_service().post(cb.first);
+			}
 			stop();
 			return;
 		}
-
 		renew_ttl();
 
 		if( _out.empty() )
+		{
 			return;
+		}
 
 		//LOGTRACE(this," triggered a write of ", _out.size(), " bytes");
 		_writing = true;
