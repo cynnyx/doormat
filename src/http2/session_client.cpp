@@ -63,8 +63,12 @@ bool session_client::start() noexcept
 void session_client::send_connection_header()
 {
 	LOGTRACE("send_connection_header");
-	constexpr const int ivlen = 1;
-	nghttp2_settings_entry iv[ivlen] = { {NGHTTP2_SETTINGS_MAX_CONCURRENT_STREAMS, max_concurrent_streams} };
+	constexpr const int ivlen = 2;
+	// all these settings pairs are copied by nghttp2_submit_settings, so a temporary will be fine
+	nghttp2_settings_entry iv[ivlen] = {
+		{NGHTTP2_SETTINGS_MAX_CONCURRENT_STREAMS, max_concurrent_streams},
+		{NGHTTP2_SETTINGS_ENABLE_PUSH, 0}
+	};
 
 	int r = nghttp2_submit_settings( session_data.get(), NGHTTP2_FLAG_NONE, iv, ivlen );
 
