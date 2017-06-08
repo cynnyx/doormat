@@ -13,7 +13,7 @@ static std::unique_ptr<char[]> make_data_ptr(const std::string& s)
 {
 	auto ptr = std::make_unique<char[]>(s.size());
 	std::copy(s.begin(), s.end(), ptr.get());
-	return std::move(ptr);
+	return ptr;
 }
 
 class server_connection_test : public ::testing::Test
