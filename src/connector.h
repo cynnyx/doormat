@@ -111,7 +111,7 @@ public:
 		//LOGTRACE(this," destructor end");
 	}
 
-	void set_timeout(std::chrono::milliseconds ms)
+	void set_timeout(std::chrono::milliseconds ms) override
 	{
 		_ttl = boost::posix_time::milliseconds{ms.count()};
 		renew_ttl();
@@ -277,7 +277,8 @@ public:
 	}
 
 
-    boost::asio::io_service& io_service() {
+	boost::asio::io_service& io_service() override
+	{
         return _socket->get_io_service();
     }
 };

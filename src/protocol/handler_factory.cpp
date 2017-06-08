@@ -30,11 +30,6 @@ const static unsigned char npn_protos[]
 	8,'h','t','t','p','/','1','.','1',
 	8,'h','t','t','p','/','1','.','0'
 };
-const static unsigned char npn_protos_legacy[]
-{
-	8,'h','t','t','p','/','1','.','1',
-	8,'h','t','t','p','/','1','.','0'
-};
 
 using alpn_cb = int (*)
 (ssl_st*, const unsigned char**, unsigned char*, const unsigned char*, unsigned int, void*);
