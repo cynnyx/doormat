@@ -5,9 +5,9 @@
 #include <memory>
 #include <list>
 #include <chrono>
-#include "../http/connection.h"
-#include "../http/client/response.h"
-#include "../http/client/request.h"
+#include "../connection.h"
+#include "response.h"
+#include "request.h"
 
 namespace http
 {
@@ -16,7 +16,7 @@ class connection_error;
 }
 
 
-namespace network{
+namespace http{
 
 class client_connection_multiplexer;
 

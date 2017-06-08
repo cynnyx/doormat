@@ -5,7 +5,7 @@
 #include "../../../src/protocol/handler_http1.h"
 #include "../../../src/http/client/request.h"
 #include "../../../src/http/client/response.h"
-#include "../../../src/network/client_connection_multiplexer.h"
+#include "../../../src/http/client/client_connection_multiplexer.h"
 #include "../../../src/network/communicator/dns_communicator_factory.h"
 #include "../testcommon.h"
 #include "../mocks/mock_server/mock_server.h"
@@ -23,10 +23,10 @@ TEST(multiplexer, single_timeout)
 
 	bool succeeded{false};
 	http_client client{io, timeout};
-	std::shared_ptr<network::client_connection_multiplexer> multi{nullptr};
+	std::shared_ptr<http::client_connection_multiplexer> multi{nullptr};
 	client.connect([&server, &succeeded, &multi](auto connection)
 		{
-			multi = std::make_shared<network::client_connection_multiplexer>(std::move(connection));
+			multi = std::make_shared<http::client_connection_multiplexer>(std::move(connection));
 			multi->init();
 			auto handler = multi->get_handler();
 			handler->on_timeout(std::chrono::milliseconds{500U}, [handler, &server, &succeeded, &multi](auto conn){
@@ -60,10 +60,10 @@ TEST(multiplexer, multiple_errors)
 	});
 	size_t errors{0};
 	http_client client{io, timeout};
-	std::shared_ptr<network::client_connection_multiplexer> multi{nullptr};
+	std::shared_ptr<http::client_connection_multiplexer> multi{nullptr};
 	client.connect([&server, &errors, &multi](auto connection)
 	               {
-		               multi = std::make_shared<network::client_connection_multiplexer>(std::move(connection));
+		               multi = std::make_shared<http::client_connection_multiplexer>(std::move(connection));
 		               multi->init();
 		               auto handler = multi->get_handler();
 		               handler->on_error([&errors, handler](auto conn, auto &err)
@@ -95,10 +95,10 @@ TEST(multiplexer, multiple_timeout)
 	size_t timeouts{0};
 	bool error_received{false};
 	http_client client{io, timeout};
-	std::shared_ptr<network::client_connection_multiplexer> multi{nullptr};
+	std::shared_ptr<http::client_connection_multiplexer> multi{nullptr};
 	client.connect([&server, &timeouts, &multi, &error_received](auto connection)
 	               {
-		               multi = std::make_shared<network::client_connection_multiplexer>(std::move(connection));
+		               multi = std::make_shared<http::client_connection_multiplexer>(std::move(connection));
 		               multi->init();
 		               auto handler = multi->get_handler();
 		               handler->on_timeout(std::chrono::milliseconds{500U}, [handler, &timeouts, &multi](auto conn){
@@ -160,13 +160,13 @@ TEST(multiplexer, single_req_res)
 
 
 	http_client client{io, timeout};
-	std::shared_ptr<network::client_connection_multiplexer> multi{nullptr};
+	std::shared_ptr<http::client_connection_multiplexer> multi{nullptr};
 	bool headers_rcvd{false};
 	bool body_rcvd{false};
 	bool finished_rcvd{false};
 	client.connect([&server, &headers_rcvd, &body_rcvd, &finished_rcvd, &multi](auto connection)
 	               {
-		               multi = std::make_shared<network::client_connection_multiplexer>(std::move(connection));
+		               multi = std::make_shared<http::client_connection_multiplexer>(std::move(connection));
 		               multi->init();
 		               auto handler = multi->get_handler();
 		               auto transaction = handler->create_transaction();
@@ -234,13 +234,13 @@ TEST(multiplexer, multiple_req_res)
 
 
 	http_client client{io, timeout};
-	std::shared_ptr<network::client_connection_multiplexer> multi{nullptr};
+	std::shared_ptr<http::client_connection_multiplexer> multi{nullptr};
 	size_t headers_rcvd{0};
 	size_t body_rcvd{0};
 	size_t finished_rcvd{0};
 	client.connect([&server, &headers_rcvd, &body_rcvd, &finished_rcvd, &multi](auto connection)
 	               {
-		               multi = std::make_shared<network::client_connection_multiplexer>(std::move(connection));
+		               multi = std::make_shared<http::client_connection_multiplexer>(std::move(connection));
 		               multi->init();
 		               for(int i = 0; i < 10; ++i)
 		               {

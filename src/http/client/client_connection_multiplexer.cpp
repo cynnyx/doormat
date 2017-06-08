@@ -2,9 +2,9 @@
 #include <cassert>
 #include <numeric>
 #include <algorithm>
-#include "../http/client/client_connection.h"
+#include "client_connection.h"
 
-namespace network
+namespace http
 {
 
 std::shared_ptr<client_connection_handler> client_connection_multiplexer::get_handler()
@@ -67,7 +67,7 @@ void client_connection_multiplexer::timeout()
 	++tick_count;
 	std::for_each(handlers_list.begin(), handlers_list.end(), [this](auto weak){
 		if(auto s = weak.lock()) {
-			if(tick_count % s->periodicity == 0) {
+			if(s->periodicity && tick_count % s->periodicity == 0) {
 				s->timeout(this->shared_from_this());
 			}
 		}
