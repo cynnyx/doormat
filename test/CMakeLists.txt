@@ -24,7 +24,8 @@ set(DOORMAT_TESTCASES_SOURCES
 	http_client_test.cpp
 	connector_test.cpp 
 	mocks/mock_handler/mock_handler.cpp
-	mocks/mock_handler/mock_handler.h)
+	mocks/mock_handler/mock_handler.h
+	network/multiplexer_test.cpp)
 
 add_executable(${DOORMAT_TEST_EXECUTABLE} ${DOORMAT_TESTCASES_SOURCES})
 

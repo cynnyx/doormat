@@ -38,6 +38,7 @@ set(DOORMAT_COMMON_SOURCES
 	http/client/request.cpp
 	http/client/response.cpp
 	protocol/http_handler.cpp
+        http/client/client_connection_multiplexer.cpp
 )
 
 

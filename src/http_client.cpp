@@ -1,9 +1,6 @@
 #include "http_client.h"
 
-#include "protocol/handler_http1.h"
-#include "http2/stream.h"
-#include "http/client/client_connection.h"
-#include "http/client/response.h"
+
 
 namespace client
 {
@@ -13,12 +10,12 @@ namespace detail
 using connector_ptr = std::shared_ptr<server::connector_interface>;
 
 
-handler_factory::handler_factory(http::proto_version v, connect_callback_t cb) noexcept
+handler_from_connector_factory::handler_from_connector_factory(http::proto_version v, connect_callback_t cb) noexcept
 	: v_{v}
 	, cb_{std::move(cb)}
 {}
 
-void handler_factory::operator()(connector_ptr c)
+void handler_from_connector_factory::operator()(connector_ptr c)
 {
 	if(v_ == http::proto_version::HTTP20)
 	{
@@ -35,6 +32,7 @@ void handler_factory::operator()(connector_ptr c)
 		c->handler(h);
 		c->start(true);
 		cb_(std::move(h));
+
 	}
 }
 
