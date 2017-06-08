@@ -39,7 +39,7 @@ protected:
 	void error(http::connection_error);
 	void timeout() { if(timeout_cb) (*timeout_cb)(this->shared_from_this()); }
 	inline void init(){ myself = this->shared_from_this(); }
-	inline void deinit(){ myself = nullptr; }
+	inline void deinit() { myself = nullptr; }
 	virtual void cleared() {}
 private:
 	http::connection_error current{error_code::success};

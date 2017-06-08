@@ -31,8 +31,8 @@ struct client_connection_handler
 
 	std::pair<std::shared_ptr<http::client_request>, std::shared_ptr<http::client_response>> create_transaction();
 private:
-	void timeout(std::shared_ptr<http::connection> conn){ if(tcb) tcb(conn); }
-	void error(std::shared_ptr<http::connection> conn, const http::connection_error &err) { if(ecb) ecb(conn, err); }
+	void timeout(std::shared_ptr<http::connection> conn);
+	void error(std::shared_ptr<http::connection> conn, const http::connection_error &err);
 
 	std::function<void(std::shared_ptr<http::connection>,  const http::connection_error &)> ecb;
 
@@ -70,7 +70,6 @@ public:
 	std::shared_ptr<client_connection_handler> get_handler();
 	void update_timeout(std::chrono::milliseconds ms);
 	void timeout();
-	~client_connection_multiplexer() = default;
 };
 
 } //namespace network

@@ -30,12 +30,14 @@ TEST(multiplexer, single_timeout)
 			multi->init();
 			auto handler = multi->get_handler();
 			handler->on_timeout(std::chrono::milliseconds{500U}, [handler, &server, &succeeded, &multi](auto conn){
-
+				std::cout << "is this std::function invalid?" << std::endl;
 				SUCCEED();
 				succeeded = true;
-				handler->on_timeout(std::chrono::milliseconds{500U}, [](auto conn){});
-				server.stop();
 				conn->close();
+				handler->on_timeout(std::chrono::milliseconds{500U}, [&server](auto conn){
+					//server.stop();
+				});
+
 			});
 		},
 		[](auto error) {
@@ -135,19 +137,22 @@ TEST(multiplexer, single_req_res)
 
 	mock_server<> server{io};
 	std::string readed{};
+	size_t request_count{0};
 	auto expected_req = make_request(http::proto_version::HTTP11, http_method::HTTP_GET, "prova.com", "/ciao");
 	std::function<void(std::string)> read_callback;
-	read_callback = [&readed, &server, &read_callback, expected_req = std::move(expected_req)](std::string bytes){
+	read_callback = [&readed, &server, &read_callback, expected_req = std::move(expected_req), &request_count](std::string bytes){
 		readed += bytes;
 		if(expected_req.serialize() == readed)
 		{
-			static const std::string expected_response = "HTTP/1.1 200 OK\r\n"
-					"connection: keep-alive\r\n"
-					"content-length: 33\r\n"
-					"content-type: text/plain\r\n"
-					"date: Tue, 17 May 2016 14:53:09 GMT\r\n"
-					"\r\n"
-					"Ave client, dummy node says hello";
+			const std::string expected_response = "HTTP/1.1 200 OK\r\n"
+					                                      "connection: keep-alive\r\n"
+					                                      "content-length: 33\r\n"
+					                                      "content-type: text/plain\r\n"
+					                                      "date: Tue, 17 May 2016 14:53:09 GMT\r\n"
+					                                      "request-count: "+ std::to_string(request_count) + "\r\n"
+					                                      "\r\n"
+					                                      "Ave client, dummy node says hello";
+			++request_count;
 			server.write(expected_response);
 			readed = "";
 		}
@@ -161,42 +166,55 @@ TEST(multiplexer, single_req_res)
 
 	http_client client{io, timeout};
 	std::shared_ptr<http::client_connection_multiplexer> multi{nullptr};
-	bool headers_rcvd{false};
-	bool body_rcvd{false};
-	bool finished_rcvd{false};
+	size_t headers_rcvd{0};
+	size_t body_rcvd{0};
+	size_t finished_rcvd{0};
 	client.connect([&server, &headers_rcvd, &body_rcvd, &finished_rcvd, &multi](auto connection)
 	               {
-		               multi = std::make_shared<http::client_connection_multiplexer>(std::move(connection));
+		               std::cout << "c: " << connection.use_count() << std::endl;
+		               multi = std::make_shared<http::client_connection_multiplexer>(connection);
 		               multi->init();
-		               auto handler = multi->get_handler();
-		               auto transaction = handler->create_transaction();
-		               auto &request = transaction.first;
-		               auto &response = transaction.second;
-		               response->on_headers([handler, &headers_rcvd](auto resp){
-							headers_rcvd = true;
-		               });
-		               response->on_body([handler, &headers_rcvd, &body_rcvd](auto resp, auto b, auto s){
-			               ASSERT_TRUE(headers_rcvd);
-			               body_rcvd = true;
-		               });
-		               response->on_finished([handler, &server, &headers_rcvd, &body_rcvd, &finished_rcvd](auto resp){
-			               ASSERT_TRUE(headers_rcvd);
-			               ASSERT_TRUE(body_rcvd);
-			               finished_rcvd = true;
-			               resp->get_connection()->close();
-			               server.stop();
-		               });
-		               request->headers(make_request(http::proto_version::HTTP11, http_method::HTTP_GET, "prova.com", "/ciao"));
-		               request->end();
+		               std::cout << "c: " << connection.use_count() << std::endl;
+		               for(size_t i = 0; i < 1U; ++i)
+		               {
+			               auto handler = multi->get_handler();
+			               std::cout << "connection use count?" << connection.use_count() << std::endl;
+			               auto transaction = handler->create_transaction();
+
+			               auto &request = transaction.first;
+			               auto &response = transaction.second;
+			               response->on_headers([handler, &headers_rcvd, i](auto resp){
+				               ASSERT_EQ(headers_rcvd, i);
+				               ASSERT_TRUE(resp->preamble().has("request-count"));
+				               ASSERT_EQ(resp->preamble().header("request-count"), std::to_string(i));
+				               headers_rcvd++;
+			               });
+			               response->on_body([handler, &headers_rcvd, &body_rcvd, i](auto resp, auto b, auto s){
+				               ASSERT_EQ(body_rcvd, i);
+				               body_rcvd++;
+			               });
+			               response->on_finished([handler, &server, &headers_rcvd, &body_rcvd, &finished_rcvd, i, &multi, connection](auto resp){
+				               std::cout << "connection use count is" << connection.use_count() << std::endl;
+				               ASSERT_EQ(finished_rcvd, i);
+				               finished_rcvd++;
+				               resp->get_connection()->close();
+				               server.stop();
+				               multi = nullptr;
+			               });
+
+			               request->headers(make_request(http::proto_version::HTTP11, http_method::HTTP_GET, "prova.com", "/ciao"));
+			               request->end();
+		               }
 	               },
 	               [](auto error) {
 		               FAIL();
 	               }, http::proto_version::HTTP11, "127.0.0.1", port, false);
 
 	io.run();
-	ASSERT_TRUE(headers_rcvd);
-	ASSERT_TRUE(body_rcvd);
-	ASSERT_TRUE(finished_rcvd);
+	std::cout << "multi is " << multi << std::endl;
+	ASSERT_EQ(headers_rcvd, 1U);
+	ASSERT_EQ(body_rcvd, 1U);
+	ASSERT_EQ(finished_rcvd, 1U);
 }
 
 

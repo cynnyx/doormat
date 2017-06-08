@@ -65,13 +65,15 @@ void client_connection_multiplexer::timeout()
 {
 	//there was a timeout.
 	++tick_count;
-	std::for_each(handlers_list.begin(), handlers_list.end(), [this](auto weak){
+	for(auto &weak : handlers_list)
+	{
 		if(auto s = weak.lock()) {
 			if(s->periodicity && tick_count % s->periodicity == 0) {
-				s->timeout(this->shared_from_this());
+				auto conn = this->shared_from_this();
+				s->timeout(conn);
 			}
 		}
-	});
+	}
 	clear_expired();
 }
 
@@ -145,6 +147,15 @@ std::pair<std::shared_ptr<http::client_request>, std::shared_ptr<http::client_re
 	return multip->create_transaction();
 }
 
-
+void client_connection_handler::timeout(std::shared_ptr<http::connection> conn)
+{
+	if(tcb)
+		tcb(conn);
+}
+void client_connection_handler::error(std::shared_ptr<http::connection> conn, const http::connection_error &err)
+{
+	if(ecb)
+		ecb(conn, err);
+}
 
 }

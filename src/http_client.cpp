@@ -32,6 +32,7 @@ void handler_from_connector_factory::operator()(connector_ptr c)
 		c->handler(h);
 		c->start(true);
 		cb_(std::move(h));
+
 	}
 }
 
