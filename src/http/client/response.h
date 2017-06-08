@@ -10,7 +10,7 @@
 
 namespace http2
 {
-class stream;
+class stream_client;
 }
 
 
@@ -29,7 +29,7 @@ struct client_traits;
 
 class client_response : public std::enable_shared_from_this<client_response> {
 	friend class server::handler_http1<client_traits>;
-	friend class http2::stream;
+	friend class http2::stream_client;
 public:
 	client_response(std::shared_ptr<client_connection>, boost::asio::io_service &io);
 	//non-copiable object.

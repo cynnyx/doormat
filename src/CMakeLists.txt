@@ -27,7 +27,9 @@ set(DOORMAT_COMMON_SOURCES
 	utils/log_wrapper.cpp
 	errors/internal_error.cpp
 	http2/session.cpp
-	http2/stream.cpp
+        http2/stream.cpp
+        http2/session_client.cpp
+        http2/stream_client.cpp
         http2/http2alloc.cpp
         network/communicator/dns_communicator_factory.cpp
 	http/connection.cpp

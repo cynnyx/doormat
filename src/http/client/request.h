@@ -19,7 +19,7 @@ class connection;
 }
 
 namespace http2 {
-class stream;
+class stream_client;
 }
 
 namespace http
@@ -28,7 +28,7 @@ class client_request : public std::enable_shared_from_this<client_request>
 {
 	template<typename>
 	friend class server::handler_http1;
-	friend class http2::stream;
+	friend class http2::stream_client;
 public:
 	using error_callback_t = std::function<void()>;
 	using write_callback_t = std::function<void(std::shared_ptr<client_request>)>;
