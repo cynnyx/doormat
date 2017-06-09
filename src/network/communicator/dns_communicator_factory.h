@@ -29,6 +29,9 @@ private:
 	void endpoint_connect(boost::asio::ip::tcp::resolver::iterator,
 		std::shared_ptr<boost::asio::ssl::stream<boost::asio::ip::tcp::socket>>, 
 		connector_callback_t, error_callback_t);
+
+	static boost::asio::ssl::context init_ssl_ctx();
+
 	bool stopping{false};
 	boost::asio::io_service &io;
 	std::chrono::milliseconds conn_timeout;
@@ -36,6 +39,7 @@ private:
 	std::shared_ptr<bool> dead;
 
 
+	static thread_local boost::asio::ssl::context ctx;
 	static constexpr int resolve_timeout = 2000;
 	static constexpr int connect_timeout = 1000;
 };

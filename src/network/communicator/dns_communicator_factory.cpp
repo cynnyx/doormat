@@ -59,8 +59,6 @@ void dns_connector_factory::dns_resolver(const std::string& address, uint16_t po
 			LOGTRACE( "tls is: ", tls );
 			if ( tls )
 			{
-				// FIXME we need to initialize it somewhere else! Locator?
-				static thread_local boost::asio::ssl::context ctx(boost::asio::ssl::context::sslv23);
 				return endpoint_connect(std::move(iterator),
 					std::make_shared<boost::asio::ssl::stream<boost::asio::ip::tcp::socket>>
 						(io, ctx ),
@@ -159,5 +157,69 @@ void dns_connector_factory::endpoint_connect(boost::asio::ip::tcp::resolver::ite
 				});
 	});
 }
+
+namespace
+{
+static const std::string NGHTTP2_H2_ALPN = "\x2h2";
+static const std::string NGHTTP2_H2_14_ALPN = "\x5h2-14";
+static const std::string NGHTTP2_H2_16_ALPN = "\x5h2-16";
+
+bool select_proto(const unsigned char **out, unsigned char *outlen,
+				  const unsigned char *in, unsigned int inlen,
+				  const std::string &key) {
+  for (auto p = in, end = in + inlen; p + key.size() <= end; p += *p + 1) {
+	if (std::equal(std::begin(key), std::end(key), p)) {
+	  *out = p + 1;
+	  *outlen = *p;
+	  return true;
+	}
+  }
+  return false;
+}
+
+bool select_h2(const unsigned char **out, unsigned char *outlen,
+			   const unsigned char *in, unsigned int inlen) {
+  return select_proto(out, outlen, in, inlen, NGHTTP2_H2_ALPN) ||
+		 select_proto(out, outlen, in, inlen, NGHTTP2_H2_16_ALPN) ||
+		 select_proto(out, outlen, in, inlen, NGHTTP2_H2_14_ALPN);
+}
+
+int client_select_next_proto_cb(SSL *ssl, unsigned char **out,
+								unsigned char *outlen, const unsigned char *in,
+								unsigned int inlen, void *arg) {
+  if (!select_h2(const_cast<const unsigned char **>(out), outlen, in,
+					   inlen)) {
+	return SSL_TLSEXT_ERR_NOACK;
+  }
+  return SSL_TLSEXT_ERR_OK;
+}
+
+std::vector<unsigned char> get_default_alpn() {
+
+  auto res = std::vector<unsigned char>(NGHTTP2_H2_ALPN.size() +
+										NGHTTP2_H2_16_ALPN.size() +
+										NGHTTP2_H2_14_ALPN.size());
+  auto p = std::begin(res);
+
+  p = std::copy_n(std::begin(NGHTTP2_H2_ALPN), NGHTTP2_H2_ALPN.size(), p);
+  p = std::copy_n(std::begin(NGHTTP2_H2_16_ALPN), NGHTTP2_H2_16_ALPN.size(), p);
+  p = std::copy_n(std::begin(NGHTTP2_H2_14_ALPN), NGHTTP2_H2_14_ALPN.size(), p);
+
+  return res;
+}
+
+} // unnamed namespace
+
+boost::asio::ssl::context dns_connector_factory::init_ssl_ctx()
+{
+	boost::asio::ssl::context ctx{boost::asio::ssl::context::sslv23};
+	auto ctx_h = ctx.native_handle();
+	SSL_CTX_set_next_proto_select_cb(ctx_h, client_select_next_proto_cb, nullptr);
+	auto proto_list = get_default_alpn();
+	SSL_CTX_set_alpn_protos(ctx_h, proto_list.data(), proto_list.size());
+	return ctx;
+}
+
+thread_local boost::asio::ssl::context dns_connector_factory::ctx{dns_connector_factory::init_ssl_ctx()};
 
 }
