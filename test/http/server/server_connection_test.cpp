@@ -219,7 +219,7 @@ TEST_F(server_connection_test, http11_persistent)
 			"Ave client, dummy node says hello";
 
 	bool terminated{false};
-	_write_cb = [this, &expected_response, &terminated](dstring chunk) {
+	_write_cb = [this, &expected_response, &terminated](std::string chunk) {
 		response.append(chunk);
 		if (response == expected_response) {
 			terminated = true;
@@ -268,7 +268,7 @@ TEST_F(server_connection_test, http11_non_persistent)
 			"Ave client, dummy node says hello";
 
 	bool terminated{false};
-	_write_cb = [this, &terminated, &expected_response](dstring chunk) {
+	_write_cb = [this, &terminated, &expected_response](std::string chunk) {
 		response.append(chunk);
 		if (response == expected_response) {
 			terminated = true;
@@ -328,7 +328,7 @@ TEST_F(server_connection_test, http11_pipelining)
 					"Ave client, dummy node says hello";
 
 	bool terminated{false};
-	_write_cb = [this, &terminated, &expected_response](dstring chunk) {
+	_write_cb = [this, &terminated, &expected_response](std::string chunk) {
 		response.append(chunk);
 		if (response == expected_response) {
 			terminated = true;
@@ -398,7 +398,7 @@ TEST_F(server_connection_test, http11_missing_response)
 			"Ave client, dummy node says hello";
 
 	bool terminated{false};
-	_write_cb = [this, &terminated, &expected_response](dstring chunk) 
+	_write_cb = [this, &terminated, &expected_response](std::string chunk)
 	{
 		response.append(chunk);
 		if (response == expected_response)
@@ -457,7 +457,7 @@ TEST_F(server_connection_test, http10_persistent)
 			"Ave client, dummy node says hello";
 
 	bool terminated{false};
-	_write_cb = [this, &terminated, &expected_response](dstring chunk) {
+	_write_cb = [this, &terminated, &expected_response](std::string chunk) {
 		response.append(chunk);
 		if (response == expected_response) {
 			terminated = true;
@@ -507,7 +507,7 @@ TEST_F(server_connection_test, http10_non_persistent)
 			"Ave client, dummy node says hello";
 
 	bool terminated{false};
-	_write_cb = [this, &terminated, &expected_response](dstring chunk) {
+	_write_cb = [this, &terminated, &expected_response](std::string chunk) {
 		response.append(chunk);
 		if (response == expected_response) {
 			terminated = true;

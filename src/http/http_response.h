@@ -9,7 +9,7 @@ namespace http
 class http_response : public http_structured_data
 {
 	uint16_t _status_code;
-	dstring _status_message;
+	std::string _status_message;
 public:
 	http_response(): http_structured_data(typeid(http_response)){}
 	http_response(const http_response&) = default;
@@ -24,7 +24,7 @@ public:
 	void status(uint16_t val) noexcept;
 	void status(uint16_t code, const std::string& msg) noexcept;
 	uint16_t status_code() const noexcept{return _status_code;}
-	std::string status_message() const noexcept{return _status_message;}
+	const std::string& status_message() const noexcept{return _status_message;}
 	std::string serialize() const noexcept;
 };
 

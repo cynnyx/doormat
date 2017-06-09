@@ -31,7 +31,7 @@ class stream final
 	bool eof_{false};
 	bool errored{false};
 	bool closed_{false};
-	std::list<dstring> body{};
+	std::list<std::string> body{};
 	std::size_t body_index{0};
 	nghttp2_nv* nva{nullptr}; // headers HTTP2
 	std::size_t nvlen{0};

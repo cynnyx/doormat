@@ -115,7 +115,7 @@ std::size_t stream_client::body_length() const noexcept
 {
 	std::size_t r{0};
 	bool first{true};
-	for ( const dstring& chunk : body )
+	for ( const auto& chunk : body )
 	{
 		r += chunk.size();
 		if ( first )

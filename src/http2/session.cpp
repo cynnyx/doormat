@@ -170,19 +170,19 @@ int session::on_header_callback( nghttp2_session *session_,
 				//fixme.
 				size_t j;
 				for (j = 0; j < valuelen && value[j] != '?'; ++j) ; // Semicolon intended!
-				dstring decoded_path(value, j);
+				std::string decoded_path{value, value + j};
 				stream_data->path( decoded_path);
 
 				size_t k = j;
 				for (; j < valuelen && value[j] != '#'; ++j);
-				dstring decoded_query(value + k, j - k);
+				std::string decoded_query{value + k, value + j};
 				if ( ! decoded_query.empty() )
 				{
 					LOGTRACE("Session: ", s_this, " query: ", decoded_query );
 					stream_data->query( decoded_query );
 				}
 
-				dstring decoded_fragment(value + k,valuelen - k);
+				std::string decoded_fragment(value + k,value + valuelen);
 				if ( ! decoded_fragment.empty() )
 				{
 					LOGTRACE("Session: ", s_this, " fragment: ", decoded_fragment );
@@ -191,23 +191,23 @@ int session::on_header_callback( nghttp2_session *session_,
 			}
 			else if ( namelen == sizeof(SCHEME) - 1 && memcmp(SCHEME, name, namelen ) == 0 )
 			{
-				dstring scheme { reinterpret_cast<const char*> ( value ), valuelen };
+				std::string scheme { value, value + valuelen };
 				stream_data->scheme( scheme );
 			}
 			else if ( namelen == sizeof(METHOD) - 1 && memcmp(METHOD, name, namelen) == 0 )
 			{
-				dstring method{reinterpret_cast<const char*> ( value ), valuelen };
+				std::string method{ value, value + valuelen };
 				stream_data->method( method );
 			}
 			else if ( namelen == sizeof(AUTHORITY) - 1 && memcmp(AUTHORITY, name, namelen ) == 0 )
 			{
-				dstring uri_host{reinterpret_cast<const char*> ( value ), valuelen};
+				std::string uri_host{value, value + valuelen};
 				stream_data->uri_host( uri_host );
 			}
 			else // Normal headers
 			{
-				dstring key{ reinterpret_cast<const char*>( name ), namelen};
-				dstring val{ reinterpret_cast<const char*> ( value ), valuelen};
+				std::string key{ name, name + namelen };
+				std::string val{ value, value + valuelen };
 				stream_data->add_header( key, val );
 			}
 			break;

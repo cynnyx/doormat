@@ -8,9 +8,7 @@ set(DOORMAT_TESTCASES_SOURCES
 	main.cpp
 	base64_test.cpp
 	codec_test.cpp
-	sni_solver_test.cpp
-	dstring_factory_test.cpp
-	dstring_test.cpp
+        sni_solver_test.cpp
 	error_test.cpp
 	reusable_buffer_test.cpp
 	testcommon.cpp

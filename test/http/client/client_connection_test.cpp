@@ -47,7 +47,7 @@ TEST(client_connection, send_request)
 	std::string received_data{};
 	std::string expected_request = get_expected(preamble, body);
 
-	MockConnector::wcb write_callback = [&](dstring d){
+	MockConnector::wcb write_callback = [&](std::string d){
 		received_data.append(std::string(d));
 	};
     auto mock = std::make_shared<MockConnector>(io, write_callback);
@@ -72,7 +72,7 @@ TEST(client_connection, request_sent_event)
 	auto tested_object = std::make_shared<client_connection_t>();
 	bool called;
 	http::http_request preamble = make_dumb_request();
-	MockConnector::wcb write_callback = [](dstring d){};
+	MockConnector::wcb write_callback = [](std::string d){};
     auto mock = std::make_shared<MockConnector>(io, write_callback);
 	mock->handler(tested_object);
 	auto user_handlers = tested_object->get_user_handlers();
@@ -93,7 +93,7 @@ TEST(client_connection, read_before_write_failure)
 {
     boost::asio::io_service io;
 	auto tested_object = std::make_shared<client_connection_t>();
-	MockConnector::wcb write_callback = [](dstring){};
+	MockConnector::wcb write_callback = [](std::string){};
 	auto mock = std::make_shared<MockConnector>(io, write_callback);
 	bool called;
 	tested_object->on_error([&called, &mock](auto conn, const http::connection_error &ec){
@@ -134,7 +134,7 @@ TEST(client_connection, pingpong)
     auto mock = std::make_shared<MockConnector>(io, write_callback);
 	bool finished_request{false};
 	int  response_events{0};
-	write_callback = [&, mock](dstring d)
+	write_callback = [&, mock](std::string d)
 		{
 			received_data.append(std::string(d));
 			if(received_data == expected_request && !finished_request)
@@ -352,9 +352,9 @@ TEST(client_connection, pipeline)
 	auto mock = std::make_shared<MockConnector>(io, write_callback);
 	mock->handler(tested_object);
 	int rcvd_rqs = 0;
-	write_callback = [&](dstring d)
+	write_callback = [&](std::string d)
 	{
-		if(!d.is_valid()) return;
+		if(d.empty()) return;
 		rcvd += std::string(d);
 		if (rcvd == first_req_serialization)
 		{

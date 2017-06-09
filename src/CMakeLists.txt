@@ -18,9 +18,7 @@ set(DOORMAT_COMMON_SOURCES
 	http_parser/http_parser.c
 	http_server.cpp
 	http_client.cpp
-	protocol/handler_factory.cpp
-        utils/dstring.cpp
-	utils/dstring_factory.cpp
+        protocol/handler_factory.cpp
 	utils/sni_solver.cpp
 	utils/utils.cpp
 	utils/base64.cpp

@@ -53,7 +53,7 @@ namespace http
 
 	std::string http_response::serialize() const noexcept
 	{
-		dstring msg;
+		std::string msg;
 		msg.append(protocol())
 			.append(http::space)
 			.append(std::to_string(_status_code))

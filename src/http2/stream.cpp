@@ -114,7 +114,7 @@ std::size_t stream::body_length() const noexcept
 {
 	std::size_t r{0};
 	bool first{true};
-	for ( const dstring& chunk : body )
+	for ( const std::string& chunk : body )
 	{
 		r += chunk.size();
 		if ( first )
@@ -173,7 +173,7 @@ ssize_t stream::data_source_read_callback ( nghttp2_session *session_, std::int3
 	std::size_t len = first.size() - s_this->body_index;
 	ssize_t r = std::min( len, length );
 	s_this->body_index += r;
-	std::memcpy( buf, first.cdata(), r );
+	std::memcpy( buf, first.data(), r );
 
 	if ( s_this->body_index == first.size() )
 	{
@@ -294,7 +294,7 @@ void stream::on_header(  http::http_response && resp )
 	}
 
 	status = resp.status_code();
-	http::http_structured_data::header_t _status{ ":status", dstring::to_string( status ) };
+	http::http_structured_data::header_t _status{ ":status", std::to_string( status ) };
 	prepared_headers.emplace( _status );
 
 	for ( auto&& it : resp.headers() )

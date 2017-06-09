@@ -18,20 +18,20 @@ namespace
 using namespace std;
 using namespace http;
 
-static const dstring schema{"http"};
-static const dstring urihost{"localhost"};
-static const dstring port{"2001"};
-static const dstring path{"/static"};
-static const dstring hostname{"localhost:2001"};
-static const dstring date{"Tue, 17 May 2016 14:53:09 GMT"};
-static const dstring cyndate{"1470328824"};
-static const dstring transferencoding{"tranfer-encoding"};
-static const dstring tranfertype{"whatever"};
-static const dstring customheader{"custom-Head"};
-static const dstring customval0{"123"};
-static const dstring customval1{"212312"};
-static const dstring customval2{"33"};
-static const dstring query("abra=cadabra&topolino=minnie");
+static const std::string schema{"http"};
+static const std::string urihost{"localhost"};
+static const std::string port{"2001"};
+static const std::string path{"/static"};
+static const std::string hostname{"localhost:2001"};
+static const std::string date{"Tue, 17 May 2016 14:53:09 GMT"};
+static const std::string cyndate{"1470328824"};
+static const std::string transferencoding{"tranfer-encoding"};
+static const std::string tranfertype{"whatever"};
+static const std::string customheader{"custom-Head"};
+static const std::string customval0{"123"};
+static const std::string customval1{"212312"};
+static const std::string customval2{"33"};
+static const std::string query("abra=cadabra&topolino=minnie");
 
 http_codec codec;
 
@@ -57,9 +57,9 @@ http_request generate_preamble(http_method m)
 }
 
 template<class T>
-void test_decoding(T& msg, dstring in)
+void test_decoding(T& msg, std::string in)
 {
-	dstring out;
+	std::string out;
 	auto scb = [&msg](http::http_structured_data** data)
 	{
 		*data = &msg;
@@ -70,16 +70,16 @@ void test_decoding(T& msg, dstring in)
 		out.append(codec.encode_header(msg));
 	};
 
-	auto bcb = [&out](dstring&& c)
+	auto bcb = [&out](std::string&& c)
 	{
-		ASSERT_TRUE(c.is_valid());
+		EXPECT_FALSE(c.empty());
 		out.append(codec.encode_body(c));
 	};
 
-	auto tcb = [&out](dstring&& k, dstring&& v)
+	auto tcb = [&out](std::string&& k, std::string&& v)
 	{
-		ASSERT_TRUE(k.is_valid());
-		ASSERT_TRUE(v.is_valid());
+		EXPECT_FALSE(k.empty());
+		EXPECT_FALSE(v.empty());
 		out.append(codec.encode_trailer(k,v));
 	};
 
@@ -94,23 +94,23 @@ void test_decoding(T& msg, dstring in)
 	};
 
 	codec.register_callback(scb,hcb,bcb,tcb,ccb,fcb);
-	codec.decode(in.cdata(), in.size());
+	codec.decode(in.data(), in.size());
 	EXPECT_EQ(std::string(in), std::string(out));
 }
 
-void test_request_decoding(dstring in)
+void test_request_decoding(std::string in)
 {
 	http_request msg;
 	test_decoding(msg, in);
 }
 
-void test_response_decoding(dstring in)
+void test_response_decoding(std::string in)
 {
 	http_response msg;
 	test_decoding(msg, in);
 }
 
-void test_request_encoding(http_request *in_, const dstring& in_data)
+void test_request_encoding(http_request *in_, const std::string& in_data)
 {
 	http_request &in_msg = *in_;
 	http_request out_msg{true};
@@ -118,15 +118,15 @@ void test_request_encoding(http_request *in_, const dstring& in_data)
 
 	auto scb = [&out_msg](http::http_structured_data** data){*data = &out_msg;};
 	auto hcb = [](){};
-	auto bcb = [&out](dstring&& c)
+	auto bcb = [&out](std::string&& c)
 	{
-		ASSERT_TRUE(c.is_valid());
+		ASSERT_FALSE(c.empty());
 		out.append(c);
 	};
-	auto tcb = [&out_msg](dstring&& k, dstring&& v)
+	auto tcb = [&out_msg](std::string&& k, std::string&& v)
 	{
-		ASSERT_TRUE(k.is_valid());
-		ASSERT_TRUE(v.is_valid());
+		ASSERT_FALSE(k.empty());
+		ASSERT_FALSE(v.empty());
 		out_msg.header(k,v);
 	};
 	auto ccb = [](){};
@@ -159,7 +159,7 @@ void test_request_encoding(http_request *in_, const dstring& in_data)
 	EXPECT_EQ(std::string(in_data), out);
 }
 
-void test_response_encoding(http_response *in_, const dstring& in_data)
+void test_response_encoding(http_response *in_, const std::string& in_data)
 {
 	http_response &in_msg = *in_;
 	http_response out_msg;
@@ -167,15 +167,15 @@ void test_response_encoding(http_response *in_, const dstring& in_data)
 	std::string out;
 	auto scb = [&out_msg](http::http_structured_data** data){*data = &out_msg;};
 	auto hcb = [](){};
-	auto bcb = [&out](dstring&& c)
+	auto bcb = [&out](std::string&& c)
 	{
-		ASSERT_TRUE(c.is_valid());
+		ASSERT_TRUE(!c.empty());
 		out.append(c);
 	};
-	auto tcb = [&out_msg](dstring&& k, dstring&& v)
+	auto tcb = [&out_msg](std::string&& k, std::string&& v)
 	{
-		ASSERT_TRUE(k.is_valid());
-		ASSERT_TRUE(v.is_valid());
+		ASSERT_TRUE(!k.empty());
+		ASSERT_TRUE(!v.empty());
 		out_msg.header(k,v);
 	};
 	auto ccb = [](){};
@@ -202,7 +202,7 @@ void test_response_encoding(http_response *in_, const dstring& in_data)
 	EXPECT_EQ(std::string(in_data), out);
 }
 
-void test_encoding(http_structured_data& in_msg, const dstring& in_data)
+void test_encoding(http_structured_data& in_msg, const std::string& in_data)
 {
 	if(in_msg.type() == typeid(http_request))
 		test_request_encoding(static_cast<http_request*>(&in_msg), in_data);
@@ -271,7 +271,7 @@ TEST( codec, decode_chunked_res )
 
 TEST( codec, decode_splitted_trailer )
 {
-	dstring res = "HTTP/1.1 200 OK\r\n"
+	std::string res = "HTTP/1.1 200 OK\r\n"
 		"connection: keep-alive\r\n"
 		"trailer: Date\r\n"
 		"transfer-encoding: Chunked\r\n"
@@ -281,9 +281,9 @@ TEST( codec, decode_splitted_trailer )
 		"1e\r\n2nd (last one has to be empty)\r\n"
 		"0\r\n";
 
-	dstring t1 = "da";
-	dstring t2 = "te: Tue, 17 ";
-	dstring t3 = "May 2016 14:53:09 GMT\r\n"
+	std::string t1 = "da";
+	std::string t2 = "te: Tue, 17 ";
+	std::string t3 = "May 2016 14:53:09 GMT\r\n"
 		"\r\n";
 
 	http_response msg;
@@ -291,8 +291,8 @@ TEST( codec, decode_splitted_trailer )
 
 	auto scb = [&msg](http::http_structured_data** data){*data=&msg;};
 	auto hcb = [](){};
-	auto bcb = [](dstring&&){};
-	auto tcb = [](dstring&& k , dstring&& v)
+	auto bcb = [](std::string&&){};
+	auto tcb = [](std::string&& k , std::string&& v)
 	{
 		ASSERT_EQ(std::string(k),"date");
 		ASSERT_EQ(std::string(v),"Tue, 17 May 2016 14:53:09 GMT");
@@ -309,21 +309,21 @@ TEST( codec, decode_splitted_trailer )
 	};
 
 	codec.register_callback(scb,hcb,bcb,tcb,ccb,fcb);
-	codec.decode( res.cdata(), res.size() );
-	codec.decode( t1.cdata(), t1.size() );
-	codec.decode( t2.cdata(), t2.size() );
-	codec.decode( t3.cdata(), t3.size() );
+	codec.decode( res.data(), res.size() );
+	codec.decode( t1.data(), t1.size() );
+	codec.decode( t2.data(), t2.size() );
+	codec.decode( t3.data(), t3.size() );
 }
 
 TEST( codec, encode_req_header )
 {
 	auto message = generate_preamble(HTTP_HEAD);
-	test_encoding(message,dstring{});
+	test_encoding(message,std::string{});
 }
 
 TEST( codec, encode_res_header )
 {
-	dstring chunks;
+	std::string chunks;
 	http_response message;
 	message.protocol(proto_version::HTTP11);
 	message.status(200);
@@ -334,7 +334,7 @@ TEST( codec, encode_res_header )
 TEST(codec, encode_full_req)
 {
 	auto message = generate_preamble(HTTP_PUT);
-	dstring body{"Nel mezzo del cammin di nostra vita mi trovai per un pacchetto oscuro, che l'HTTP s'era smarrito."};
+	std::string body{"Nel mezzo del cammin di nostra vita mi trovai per un pacchetto oscuro, che l'HTTP s'era smarrito."};
 	message.content_len(body.size());
 	test_encoding(message, body);
 }
@@ -345,14 +345,14 @@ TEST( codec, encode_full_res )
 	message.protocol(proto_version::HTTP11);
 	message.status(200);
 	message.date(date);
-	dstring body{"Nel mezzo del cammin di nostra vita mi trovai per un pacchetto oscuro, che l'HTTP s'era smarrito."};
+	std::string body{"Nel mezzo del cammin di nostra vita mi trovai per un pacchetto oscuro, che l'HTTP s'era smarrito."};
 	message.content_len(body.size());
 	test_encoding(message,body);
 }
 
 TEST(codec, encode_chunked_req)
 {
-	dstring chunks;
+	std::string chunks;
 	auto message = generate_preamble(HTTP_POST);
 	message.chunked(true);
 	string c0(16,'a');
@@ -364,7 +364,7 @@ TEST(codec, encode_chunked_req)
 
 TEST( codec, encode_chunked_res )
 {
-	dstring chunks;
+	std::string chunks;
 	http_response message;
 	message.protocol(proto_version::HTTP11);
 	message.status(200);
@@ -384,8 +384,8 @@ TEST( codec, keepalive )
 
 	auto scb = [&msg](http::http_structured_data** data){*data=&msg;};
 	auto hcb = [](){};
-	auto bcb = [](dstring&&){};
-	auto tcb = [](dstring&&, dstring&&){};
+	auto bcb = [](std::string&&){};
+	auto tcb = [](std::string&&, std::string&&){};
 	auto ccb = [&eom](){eom=true;};
 	auto fcb = [](int,bool&){FAIL();};
 	codec.register_callback(scb,hcb,bcb,tcb,ccb,fcb);
@@ -431,7 +431,7 @@ TEST( codec, chunked_with_empty_body ) // see DRM-280
 
 	http_codec encoder;
 	http_response response;
-	dstring out;
+	std::string out;
 	auto codec_scb = [&response](http::http_structured_data** data)
 	{
 		*data = &response;
@@ -442,12 +442,12 @@ TEST( codec, chunked_with_empty_body ) // see DRM-280
 		out.append(encoder.encode_header(response));
 	};
 
-	auto codec_bcb = [&encoder](dstring&&)
+	auto codec_bcb = [&encoder](std::string&&)
 	{
 
 	};
 
-	auto codec_tcb = [&encoder](dstring&&, dstring&&)
+	auto codec_tcb = [&encoder](std::string&&, std::string&&)
 	{
 
 	};
@@ -494,12 +494,12 @@ TEST( codec, ignore_unexpected_content_len )
 		++cb_count;
 	};
 
-	auto codec_bcb = [](dstring&&)
+	auto codec_bcb = [](std::string&&)
 	{
 		FAIL();
 	};
 
-	auto codec_tcb = [](dstring&&, dstring&&)
+	auto codec_tcb = [](std::string&&, std::string&&)
 	{
 		FAIL();
 	};
@@ -547,12 +547,12 @@ TEST( codec, too_long_uri )
 		FAIL();
 	};
 
-	auto codec_bcb = [](dstring&&)
+	auto codec_bcb = [](std::string&&)
 	{
 		FAIL();
 	};
 
-	auto codec_tcb = [](dstring&&, dstring&&)
+	auto codec_tcb = [](std::string&&, std::string&&)
 	{
 		FAIL();
 	};

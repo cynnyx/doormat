@@ -25,14 +25,14 @@ TEST_F(http_client_test, connect_ipv4_clear)
 	bool succeeded{false};
 	http_client client{io, timeout};
 	client.connect([&server, &succeeded](auto connection) {
-		               SUCCEED();
-		               succeeded = true;
-		               server.stop();
-	               },
-	               [](auto error) {
-		               FAIL();
-	               },
-	               http::proto_version::HTTP11, "127.0.0.1", port, false);
+					   SUCCEED();
+					   succeeded = true;
+					   server.stop();
+				   },
+				   [](auto error) {
+					   FAIL();
+				   },
+				   http::proto_version::HTTP11, "127.0.0.1", port, false);
 
 	io.run();
 	ASSERT_TRUE(succeeded);

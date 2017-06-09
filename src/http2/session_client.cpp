@@ -73,7 +73,6 @@ void session_client::send_connection_header()
 	int r = nghttp2_submit_settings( session_data.get(), NGHTTP2_FLAG_NONE, iv, ivlen );
 
 	// If this happens is a bug - die with fireworks
-
 	if ( r ) THROW( errors::setting_connection_failure, r );
 
 	do_write();
@@ -170,13 +169,13 @@ int session_client::on_header_callback( nghttp2_session *session_,
 
 		if ( namelen == sizeof(AUTHORITY) - 1 && memcmp(AUTHORITY, name, namelen ) == 0 )
 		{
-			dstring uri_host{reinterpret_cast<const char*> ( value ), valuelen};
+			std::string uri_host{value, value + valuelen};
 			stream_data->uri_host( uri_host );
 		}
 		else // Normal headers
 		{
-			dstring key{ reinterpret_cast<const char*>( name ), namelen};
-			dstring val{ reinterpret_cast<const char*> ( value ), valuelen};
+			std::string key{name, name + namelen};
+			std::string val{value, value + valuelen};
 			stream_data->add_header( key, val );
 		}
 		break;

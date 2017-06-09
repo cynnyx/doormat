@@ -7,9 +7,6 @@
 #include <experimental/optional>
 #include "../http/http_commons.h"
 #include "../http/server/server_connection.h"
-#include "../utils/dstring.h"
-
-class dstring;
 
 /**
  * @note This "interface" violates all SOLID paradigm

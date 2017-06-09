@@ -5,8 +5,6 @@
 #include <cassert>
 #include <functional>
 
-#include "../utils/dstring.h"
-
 struct http_parser;
 
 namespace http
@@ -33,8 +31,8 @@ public:
 	};
 
 	using structured_cb = std::function<void(http::http_structured_data**)>;
-	using stream_cb = std::function<void(dstring)>;
-	using trailer_cb = std::function<void(dstring, dstring)>;
+	using stream_cb = std::function<void(std::string)>;
+	using trailer_cb = std::function<void(std::string, std::string)>;
 	using void_cb = std::function<void(void)>;
 	using error_cb = std::function<void(int, bool&)>;
 
@@ -42,7 +40,7 @@ public:
 	~http_codec();
 
 	template<typename T>
-	dstring encode_header(const T& msg)
+	std::string encode_header(const T& msg)
 	{
 		assert(_encoder_state == encoder_state::ZERO);
 		_encoder_state = encoder_state::HEADER;
@@ -50,9 +48,9 @@ public:
 		return msg.serialize();
 	}
 
-	dstring encode_body(const dstring& data);
-	dstring encode_trailer(const dstring& key, const dstring& data);
-	dstring encode_eom();
+	std::string encode_body(const std::string& data);
+	std::string encode_trailer(const std::string& key, const std::string& data);
+	std::string encode_eom();
 
 	//Caller need to register its own cb to get notified
 	void register_callback(const structured_cb& begin, const void_cb& header, const stream_cb& body,

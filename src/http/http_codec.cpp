@@ -17,7 +17,7 @@ http_codec::http_codec()
 http_codec::~http_codec()
 {}
 
-dstring http_codec::encode_body(const dstring& data)
+std::string http_codec::encode_body(const std::string& data)
 {
 	assert(_encoder_state == encoder_state::HEADER||_encoder_state == encoder_state::BODY);
 	_encoder_state = encoder_state::BODY;
@@ -25,7 +25,7 @@ dstring http_codec::encode_body(const dstring& data)
 	if(data.empty())
 		return {};
 
-	dstring msg;
+	std::string msg;
 	if(_chunked)
 		msg.append(from<size_t>(data.size()))
 				.append(http::crlf)
@@ -37,12 +37,12 @@ dstring http_codec::encode_body(const dstring& data)
 	return msg;
 }
 
-dstring http_codec::encode_trailer(const dstring& key, const dstring& data)
+std::string http_codec::encode_trailer(const std::string& key, const std::string& data)
 {
 	assert(_encoder_state == encoder_state::BODY||_encoder_state == encoder_state::TRAILER);
 	_encoder_state = encoder_state::TRAILER;
 
-	dstring msg;
+	std::string msg;
 	msg.append(http::transfer_chunked_termination)
 		.append(key)
 		.append(http::colon_space)
@@ -51,10 +51,10 @@ dstring http_codec::encode_trailer(const dstring& key, const dstring& data)
 	return msg;
 }
 
-dstring http_codec::encode_eom()
+std::string http_codec::encode_eom()
 {
 	assert(_encoder_state != encoder_state::ZERO);
-	dstring msg;
+	std::string msg;
 	if(_chunked)
 	{
 		switch(_encoder_state)

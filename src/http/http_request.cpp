@@ -14,18 +14,18 @@ namespace http
 
 std::string http_request::serialize() const noexcept
 {
-	dstring msg;
+	std::string msg;
 	msg.append(method()).append(http::space);
 
-	if(_path.is_valid())
+	if(!_path.empty())
 		msg.append(_path);
 	else
 		msg.append(http::slash);
 
-	if(_query.is_valid())
+	if(!_query.empty())
 		msg.append(http::questionmark).append(_query);
 
-	if(_fragment.is_valid())
+	if(!_fragment.empty())
 		msg.append(http::hash).append(_fragment);
 
 	msg.append(http::space)
@@ -52,7 +52,7 @@ void http_request::method(const std::string& val) noexcept
 
 std::string http_request::method() const noexcept
 {
-	return dstring{method_mapper[_method]};
+	return method_mapper[_method];
 }
 
 bool http_request::operator==(const http_request&req) const

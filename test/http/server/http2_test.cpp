@@ -41,7 +41,7 @@ public:
 	http2_test() { tx = this; }
 	void SetUp()
 	{
-		_write_cb = [](dstring) {};
+		_write_cb = [](std::string) {};
 		mock_connector = std::make_shared<MockConnector>(io, _write_cb);
 		_handler = std::make_shared<server_connection_t>();
 		mock_connector->handler(_handler);
@@ -325,9 +325,9 @@ TEST_F(http2_test, connection)
 	Connection* cnx =  c.get();
 	cnx->test = this;
 	// pass this as answer to http2 stuff
-	_write_cb = [this, cnx](dstring d)
+	_write_cb = [this, cnx](std::string d)
 	{
-		std::string chunk{ d.cdata(), d.size() };
+		std::string chunk{ d.data(), d.size() };
 		response_raw += chunk;
 		LOGTRACE("Append response ", response_raw.size(), " appended ", d.size(), " bytes ");
 		
@@ -441,8 +441,8 @@ TEST_F(http2_test, randomdata)
 //  	constexpr const std::size_t len_resp = sizeof ( raw_response );
 // 	
 // 	bool done{false};
-// 	dstring actual_res;
-// 	_write_cb = [&]( dstring w )
+// 	std::string actual_res;
+// 	_write_cb = [&]( std::string w )
 // 	{
 // 		actual_res.append( w );
 // 
@@ -480,4 +480,3 @@ TEST_F(http2_test, randomdata)
 // // 	ASSERT_TRUE(_handler->should_stop());
 // }
 // 
-

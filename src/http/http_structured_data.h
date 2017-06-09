@@ -15,8 +15,6 @@
 namespace http
 {
 
-// TODO: this interface needs to be reviewed after dstring death
-
 /** Headers needed, whatever happens:
  * . Connection
  * . Content-Length / Chunked Enconding
@@ -30,7 +28,7 @@ private:
 
 	proto_version _protocol {proto_version::UNSET};
 	proto_version _channel {proto_version::UNSET};
-	std::multimap<dstring, dstring> _headers;
+	std::multimap<std::string, std::string> _headers;
 
 	bool _chunked {false};
 	bool _keepalive {false};
@@ -41,7 +39,7 @@ private:
 	boost::asio::ip::address _origin;
 
 	// These headers must be populated in client wrapper, where the destination is known!
-	std::vector<dstring> destination_headers;
+	std::vector<std::string> destination_headers;
 
 protected:
 	http_structured_data ( std::type_index type );
@@ -67,7 +65,7 @@ public:
 	void remove_header( const std::string& key ) noexcept;
 
 	// I feel lucky, I'd take only the first hit
-	std::string header( const std::string& key ) const noexcept;
+	const std::string& header( const std::string& key ) const noexcept;
 	std::list<std::string> headers( const std::string& key ) const noexcept;
 
 	// HTTP2ng needs this
@@ -87,8 +85,8 @@ public:
 	proto_version channel() const noexcept { return _channel; }
 	boost::asio::ip::address origin() const noexcept { return _origin; }
 	std::string protocol() const noexcept;
-	std::string date() const noexcept { return header( http::hf_date ); }
-	std::string hostname() const noexcept { return header( http::hf_host ); }
+	const std::string& date() const noexcept { return header( http::hf_date ); }
+	const std::string& hostname() const noexcept { return header( http::hf_host ); }
 
 	void chunked ( bool val ) noexcept;
 	void keepalive ( bool val ) noexcept;

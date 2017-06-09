@@ -33,10 +33,10 @@ class http_codec::impl
 	//handled directly by buffer
 	const uint16_t max_uri_len{8192};
 
-	dstring _urline;
-	dstring _status;
-	dstring _key;
-	dstring _value;
+	std::string _urline;
+	std::string _status;
+	std::string _key;
+	std::string _value;
 
 	http_parser _parser;
 	http_parser_settings _parser_settings;
@@ -56,13 +56,13 @@ class http_codec::impl
 
 		_data->header(std::move(_key), std::move(_value));
 		_got_header = false;
-		_key = dstring{true};
+		_key = {};
 		_value = {};
 	}
 
 public:
 	impl() noexcept
-		: _key{true}
+		: _key{}
 	{
 		reset();
 	}
@@ -75,10 +75,10 @@ public:
 		_got_header = false;
 		_headers_completed=false;
 
-		_urline = dstring{};
-		_status = dstring{};
-		_value = dstring{};
-		_key = dstring{true};
+		_urline = std::string{};
+		_status = std::string{};
+		_value = std::string{};
+		_key = {};
 
 		http_parser_init(&_parser, HTTP_BOTH);
 		_parser.data = this;
@@ -236,7 +236,7 @@ public:
 		{
 			_tcb(std::move(_key), std::move(_value));
 			_got_header = false;
-			_key = dstring{true};
+			_key = {};
 			_value = {};
 		}
 
@@ -261,7 +261,7 @@ public:
 	int on_body(const char *at, size_t len) noexcept
 	{
 		if(!_ignore)
-			_bcb(dstring{at,len});
+			_bcb(std::string{at,at + len});
 		return 0;
 	}
 
@@ -285,7 +285,7 @@ public:
 		{
 			_tcb(std::move(_key), std::move(_value));
 			_got_header = false;
-			_key = dstring{true};
+			_key = {};
 			_value = {};
 		}
 

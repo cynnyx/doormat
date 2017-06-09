@@ -88,9 +88,9 @@ public:
 		connection_t::init();
 		auto scb = [this](http::http_structured_data** data) { decoding_start(data); };
 		auto hcb = [this]()	{ decoded_headers(); };
-		auto bcb = [this](dstring chunk)
+		auto bcb = [this](auto&& chunk)
 		{
-			// TODO: we need to remove dstrings from http_codec
+			// TODO: could the codec produce char buffers?
 			auto ptr = std::make_unique<char[]>(chunk.size());
 			std::copy(chunk.cbegin(), chunk.cend(), ptr.get());
 			decoded_body(std::move(ptr), chunk.size());
@@ -419,7 +419,7 @@ private:
 	typename std::remove_reference<decltype(((remote_t*)nullptr)->preamble())>::type current_decoded_object;
 
 	/** Dstring used to serialize the information coming from the local object*/
-	dstring serialization;
+	std::string serialization;
 	/** User close is set to true when an explicit connection close is required by the user, avoiding sending an error*/
 	bool user_close{false};
 	bool decoding_error{false};

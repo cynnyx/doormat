@@ -15,8 +15,6 @@
 #include "../connector.h"
 
 
-
-class dstring;
 struct node_interface;
 
 namespace http

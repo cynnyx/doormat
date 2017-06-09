@@ -7,14 +7,12 @@ static const unsigned char* base_string = reinterpret_cast<const unsigned char*>
 
 TEST(base64, encoding)
 {
-	dstring r = utils::base64_encode( base_string, strlen( reinterpret_cast<const char*>(base_string) ) );
-	std::string cr{ r.cdata(), r.size() };
-	ASSERT_EQ( cr, base64_s );
+	auto r = utils::base64_encode( base_string, strlen( reinterpret_cast<const char*>(base_string) ) );
+	ASSERT_EQ( r, base64_s );
 }
 
 TEST(base64, decoding)
 {
-	dstring r = utils::base64_decode( base64_s );
-	std::string cr{ r.cdata(), r.size() };
-	ASSERT_EQ( cr, reinterpret_cast<const char*> ( base_string ) );
+	auto r = utils::base64_decode( base64_s );
+	ASSERT_EQ( r, reinterpret_cast<const char*> ( base_string ) );
 }

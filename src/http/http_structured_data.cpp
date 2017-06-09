@@ -37,14 +37,14 @@ bool http_structured_data::has_same_headers ( const http::http_structured_data& 
 
 void http_structured_data::header( const std::string& key, const std::string& value_out ) noexcept
 {
-	dstring value{value_out}; // ugly string/dstring proxying
+	std::string value{value_out}; // ugly string/dstring proxying
 	if( key == http::hf_connection )
 	{
 		remove_header(key);
 	}
 	else if( key == http::hf_content_len )
 	{
-		value.to_integer(_content_len);
+		_content_len = std::stoull(value);
 		remove_header(key);
 	}
 	else if( key == http::hf_transfer_encoding && utils::icompare(value,"chunked"))
@@ -57,7 +57,7 @@ void http_structured_data::header( const std::string& key, const std::string& va
 	_headers.insert( std::make_pair( key, value ) );
 }
 
-std::string http_structured_data::header( const std::string& key ) const noexcept
+const std::string& http_structured_data::header( const std::string& key ) const noexcept
 {
 	auto&& element = _headers.find( key );
 	if ( element != _headers.end() )
@@ -146,7 +146,7 @@ void http_structured_data::keepalive(bool val) noexcept
 void http_structured_data::content_len(const size_t& val) noexcept
 {
 	assert(!_chunked || val == 0);
-	header( http::hf_content_len, dstring::to_string(val) );
+	header( http::hf_content_len, std::to_string(val) );
 }
 
 void http_structured_data::protocol ( const proto_version& val ) noexcept
@@ -196,8 +196,8 @@ std::string http_structured_data::protocol() const noexcept
 
 std::string http_structured_data::serialize() const noexcept
 {
-	dstring msg;
-	const dstring* last_key = nullptr;
+	std::string msg;
+	const std::string* last_key = nullptr;
 	bool not_first{false};
 	for(const auto& h : _headers)
 	{
@@ -217,7 +217,7 @@ std::string http_structured_data::serialize() const noexcept
 		}
 
 		//FIXME: exclude invalid chunks from being serialized
-		if(h.second.is_valid())
+		if(!h.second.empty())
 			msg.append(h.second);
 		not_first=true;
 	}

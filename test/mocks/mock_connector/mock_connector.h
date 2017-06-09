@@ -6,7 +6,7 @@
 
 struct MockConnector : server::connector_interface, std::enable_shared_from_this<MockConnector>
 {
-    using wcb = std::function<void(dstring)>;
+	using wcb = std::function<void(std::string)>;
 
     MockConnector(boost::asio::io_service &io, wcb& cb);
 	~MockConnector();

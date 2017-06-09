@@ -19,10 +19,6 @@ namespace http
 class http_request : public http_structured_data
 {
 public:
-
-	// TODO: this interface has to be reviewed after dstring removal;
-	// for instance, every getter return a copy of an std::string
-
 	http_request( bool ssl_ = false, http_method method = HTTP_GET )
 		: http_structured_data(typeid(http_request))
 		, _ssl(ssl_)
@@ -42,7 +38,7 @@ public:
 	std::string method() const noexcept;
 
 	void schema(const std::string& val) noexcept { _schema = val; }
-	std::string schema() const noexcept { return _schema; }
+	const std::string& schema() const noexcept { return _schema; }
 
 	// NOTE: urihost and hostname are independent in our code;
 	// we may want to establish some relation between them
@@ -50,25 +46,25 @@ public:
     template<typename DS>
     void urihost(DS&& val) noexcept
     {
-        static_assert(std::is_convertible<DS, dstring>::value, "Must be dstring-convertible");
+		static_assert(std::is_convertible<DS, std::string>::value, "Must be std::string-convertible");
         _urihost = std::forward<DS>(val);
     }
-	std::string urihost() const noexcept { return _urihost; }
+	const std::string& urihost() const noexcept { return _urihost; }
 
 	void port(const std::string& val) noexcept {_port=val;}
-	std::string port() const noexcept { return _port; }
+	const std::string& port() const noexcept { return _port; }
 
 	void path(const std::string& val) noexcept {_path=val;}
-	std::string path() const noexcept { return _path; }
+	const std::string& path() const noexcept { return _path; }
 
 	void query(const std::string& val) noexcept {_query=val;}
-	std::string query() const noexcept { return _query; }
+	const std::string& query() const noexcept { return _query; }
 
 	void fragment(const std::string& val) noexcept {_fragment=val;}
-	std::string fragment() const noexcept { return _fragment; }
+	const std::string& fragment() const noexcept { return _fragment; }
 
 	void userinfo(const std::string& val) noexcept {_userinfo=val;}
-	std::string userinfo() const noexcept { return _userinfo; }
+	const std::string& userinfo() const noexcept { return _userinfo; }
 
 	void ssl(bool v) noexcept { _ssl = v;}
 	bool ssl() const noexcept { return _ssl;}
@@ -85,13 +81,13 @@ public:
 private:
 	bool _ssl;
 	http_method _method;
-	dstring _schema;
-	dstring _urihost;
-	dstring _port;
-	dstring _path;
-	dstring _query;
-	dstring _fragment;
-	dstring _userinfo;
+	std::string _schema;
+	std::string _urihost;
+	std::string _port;
+	std::string _path;
+	std::string _query;
+	std::string _fragment;
+	std::string _userinfo;
 	std::unordered_map<std::string, std::string> _params;
 };
 
