@@ -44,11 +44,12 @@ private:
 template<typename connector_factory_t>
 class handler_factory
 {
-	using connect_callback_t = std::function<void(std::shared_ptr<http::client_connection>)>;
+
 	using error_callback_t = std::function<void(int)>; //fixme;
 	connector_factory_t factory;
 
 public:
+	using connect_callback_t = std::function<void(std::shared_ptr<http::client_connection>)>;
 	template<typename... construction_args_t>
 	handler_factory(construction_args_t&&...args) : factory{std::forward<construction_args_t>(args)...}
 	{}
@@ -111,7 +112,7 @@ class http_client<handler_factory_t, std::enable_if_t<!std::is_base_of<network::
 {
 	handler_factory_t  factory;
 public:
-	using connect_callback_t = detail::handler_from_connector_factory::connect_callback_t;
+	using connect_callback_t = typename handler_factory_t::connect_callback_t;
 	using error_callback_t = std::function<void(int)>; //fixme
 
 	template<typename... Args>
