@@ -16,11 +16,6 @@ const static string alpn_protos_default[]
 	"\x8http/1.1",
 	"\x8http/1.0"
 };
-const static string alpn_protos_legacy[]
-{\
-	"\x8http/1.1",
-	"\x8http/1.0"
-};
 
 const static unsigned char npn_protos[]
 {
