@@ -190,7 +190,7 @@ void session_client::trigger_timeout_event()
 {
 	if(auto s = connector())
 	{
-			return s->io_service().post([this](){ http::client_connection::timeout(); });
+			return s->io_service().post([sh=shared_from_this(), this](){ http::client_connection::timeout(); });
 	}
 	assert(false);
 }
