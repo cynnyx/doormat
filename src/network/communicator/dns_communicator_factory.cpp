@@ -213,8 +213,10 @@ std::vector<unsigned char> get_default_alpn() {
 boost::asio::ssl::context dns_connector_factory::init_ssl_ctx()
 {
 	boost::asio::ssl::context ctx{boost::asio::ssl::context::sslv23};
+	// enable NPN for http2
 	auto ctx_h = ctx.native_handle();
 	SSL_CTX_set_next_proto_select_cb(ctx_h, client_select_next_proto_cb, nullptr);
+	// enable ALPN for http2
 	auto proto_list = get_default_alpn();
 	SSL_CTX_set_alpn_protos(ctx_h, proto_list.data(), proto_list.size());
 	return ctx;
