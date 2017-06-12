@@ -279,7 +279,7 @@ void stream_client::die() noexcept
 // Transfer Encoding is allowed to appear but it *must* contain only "trailers"
 void stream_client::on_header(http::http_request&& req )
 {
-	pseudo = req;
+	pseudo = req; // copy pseudo-headers value before filtering host header
 	req.filter ( []( const http::http_request::header_t& h ) -> bool
 	{
 		return
