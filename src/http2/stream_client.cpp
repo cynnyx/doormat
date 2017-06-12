@@ -279,11 +279,13 @@ void stream_client::die() noexcept
 // Transfer Encoding is allowed to appear but it *must* contain only "trailers"
 void stream_client::on_header(http::http_request&& req )
 {
+	pseudo = req;
 	req.filter ( []( const http::http_request::header_t& h ) -> bool
 	{
 		return
 			utils::icompare ( h.first, "connection" ) || // Mandatory
 			utils::icompare ( h.first, "Keep-Alive" ) || // SHOULD be removed
+			utils::icompare ( h.first, "host" ) || // Ditto
 			utils::icompare ( h.first, "Upgrade" ) || // Ditto //
 			utils::icompare ( h.first, "Proxy-Connection" /* Ditto */ );
 	});
@@ -312,29 +314,22 @@ void stream_client::on_header(http::http_request&& req )
 	nvlen = prepared_headers.size() + 4;
 	create_headers( &nva );
 
+	static const std::string method = ":method";
+	static const std::string scheme = ":scheme";
+	static const std::string authority = ":authority";
+	static const std::string path = ":path";
+
 	std::size_t i = 0;
+	nva[i++] = MAKE_NV(method, pseudo.method);
+	nva[i++] = MAKE_NV(scheme, pseudo.scheme);
+	nva[i++] = MAKE_NV(authority, pseudo.authority);
+	nva[i++] = MAKE_NV(path, pseudo.path);
 	for ( auto&& it : prepared_headers )
 	{
 		LOGTRACE( "Name:", static_cast<std::string>( it.first ),
 			" Value:", static_cast<std::string>( it.second ), "-"  );
 		nva[i++] = MAKE_NV( it.first, it.second );
 	}
-
-	// TODO: this is an hack!!! drop dstring instead!
-	static const std::string method = ":method";
-	static const std::string scheme = ":scheme";
-	static const std::string authority = ":authority";
-	static const std::string path = ":path";
-
-	static std::string app1 = req.method();
-	static std::string app2 = req.schema();
-	static std::string app3 = req.hostname();
-	static std::string app4 = req.path();
-
-	nva[i++] = MAKE_NV(method, app1);
-	nva[i++] = MAKE_NV(scheme, app2);
-	nva[i++] = MAKE_NV(authority, app3);
-	nva[i++] = MAKE_NV(path, app4);
 
 	flush();
 }

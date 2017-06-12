@@ -8,7 +8,7 @@
 #include <string>
 #include <memory>
 
-#include "../http/http_structured_data.h"
+#include "../http/http_request.h"
 #include "../http/http_response.h"
 #include "../protocol/http_handler.h"
 
@@ -26,6 +26,22 @@ class session_client;
 
 class stream_client final
 {
+	struct req_pseudo_headers
+	{
+		req_pseudo_headers() = default;
+		req_pseudo_headers(const http::http_request& req)
+			: method{req.method()}
+			, scheme{req.schema()}
+			, authority{req.hostname()}
+			, path{req.path()}
+		{}
+
+		std::string method;
+		std::string scheme;
+		std::string authority;
+		std::string path;
+	};
+
 	std::int32_t id_;
 	std::int32_t status;
 	bool headers_sent{false};
@@ -44,7 +60,8 @@ class stream_client final
 
 	std::shared_ptr<session_client> s_owner{nullptr};
 	http::http_structured_data::headers_map prepared_headers;
-	http::http_response response{};
+	req_pseudo_headers pseudo;
+	http::http_response response;
 
 	nghttp2_data_provider prd;
 
