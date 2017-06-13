@@ -93,7 +93,7 @@ public:
 			// TODO: could the codec produce char buffers?
 			auto ptr = std::make_unique<char[]>(chunk.size());
 			std::copy(chunk.cbegin(), chunk.cend(), ptr.get());
-			decoded_body(std::move(ptr), chunk.size());
+			this->decoded_body(std::move(ptr), chunk.size());
 		};
 		auto tcb = [this](std::string&& k, std::string&& v) { decoded_trailer(std::move(k), std::move(v));};
 		auto ccb = [this]() {decoding_end(); };
