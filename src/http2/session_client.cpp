@@ -159,6 +159,7 @@ int session_client::on_header_callback( nghttp2_session *session_,
 	}
 
 	static const char AUTHORITY[] = ":authority";
+	static const char STATUS[] = ":status";
 	switch (frame->hd.type) //fixme
 	{
 	case NGHTTP2_HEADERS:
@@ -171,6 +172,11 @@ int session_client::on_header_callback( nghttp2_session *session_,
 		{
 			std::string uri_host{value, value + valuelen};
 			stream_data->uri_host( uri_host );
+		}
+		else if ( namelen == sizeof(STATUS) - 1 && memcmp(STATUS, name, namelen ) == 0 )
+		{
+			std::string status{value, value + valuelen};
+			stream_data->status( std::stoi(status) );
 		}
 		else // Normal headers
 		{

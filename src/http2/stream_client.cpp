@@ -189,7 +189,7 @@ void stream_client::flush() noexcept
 {
 	if ( closed_ ) return;
 
-	if ( status != 101 )
+	if ( status_ != 101 )
 	{
 		if ( resume_needed_ )
 		{
@@ -359,6 +359,11 @@ stream_client::~stream_client()
 void stream_client::uri_host( const std::string &p ) noexcept
 {
 	response.hostname( p );
+}
+
+void stream_client::status(int32_t s) noexcept
+{
+	response.status(s);
 }
 
 void stream_client::set_handlers(std::shared_ptr< http::client_request > req_handler, std::shared_ptr< http::client_response > res_handler)

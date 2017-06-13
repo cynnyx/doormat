@@ -34,7 +34,10 @@ class stream_client final
 			, scheme{req.schema()}
 			, authority{req.hostname()}
 			, path{req.path()}
-		{}
+		{
+			if(!req.query().empty())
+				path += '?' + req.query();
+		}
 
 		std::string method;
 		std::string scheme;
@@ -43,7 +46,7 @@ class stream_client final
 	};
 
 	std::int32_t id_;
-	std::int32_t status;
+	std::int32_t status_;
 	bool headers_sent{false};
 	bool body_sent{false};
 	bool resume_needed_{false};
@@ -94,6 +97,7 @@ public:
 //	std::string path() const { return response.path(); }
 //	void method( const std::string& p ) { response.method( p ); }
 	void uri_host( const std::string& p ) noexcept;
+	void status( int32_t s) noexcept;
 //	void scheme( const std::string& p ) noexcept { response.schema( p ); }
 	void add_header(std::string key, std::string value);
 //	void query( const std::string& query ) { response.query( query ); }
