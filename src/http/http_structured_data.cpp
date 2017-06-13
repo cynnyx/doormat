@@ -3,6 +3,7 @@
 
 #include <string>
 #include <ctime>
+#include <algorithm>
 
 static std::string empty;
 
@@ -37,24 +38,26 @@ bool http_structured_data::has_same_headers ( const http::http_structured_data& 
 
 void http_structured_data::header( const std::string& key, const std::string& value_out ) noexcept
 {
+	std::string lowercase_key = key;
+	std::transform(lowercase_key.begin(), lowercase_key.end(), lowercase_key.begin(), ::tolower);
+
 	std::string value{value_out}; // ugly string/dstring proxying
-	if( key == http::hf_connection )
+	if( lowercase_key == http::hf_connection )
 	{
-		remove_header(key);
+		remove_header(lowercase_key);
 	}
-	else if( key == http::hf_content_len )
+	else if( lowercase_key == http::hf_content_len )
 	{
 		_content_len = std::stoull(value);
-		remove_header(key);
+		remove_header(lowercase_key);
 	}
-	else if( key == http::hf_transfer_encoding && utils::icompare(value,"chunked"))
+	else if( lowercase_key == http::hf_transfer_encoding && utils::icompare(value,"chunked"))
 	{
 		_chunked = true;
 		remove_header(http::hf_transfer_encoding);
 		remove_header(http::hf_content_len);
 	}
-
-	_headers.insert( std::make_pair( key, value ) );
+	_headers.insert( std::make_pair( std::move(lowercase_key), value ) );
 }
 
 const std::string& http_structured_data::header( const std::string& key ) const noexcept
@@ -146,6 +149,8 @@ void http_structured_data::keepalive(bool val) noexcept
 void http_structured_data::content_len(const size_t& val) noexcept
 {
 	assert(!_chunked || val == 0);
+	_content_len = val;
+	remove_header(http::hf_content_len);
 	header( http::hf_content_len, std::to_string(val) );
 }
 
