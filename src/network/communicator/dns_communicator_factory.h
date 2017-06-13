@@ -22,6 +22,8 @@ public:
 	void stop() override { stopping = true; }
 
 private:
+	using ssl_socket_t = boost::asio::ssl::stream<boost::asio::ip::tcp::socket>;
+
 	void dns_resolver(const std::string& address, uint16_t port, bool tls, connector_callback_t, error_callback_t);
 	//template<typename T> // boost::asio::ip::tcp::socket
 	void endpoint_connect(boost::asio::ip::tcp::resolver::iterator, std::shared_ptr<boost::asio::ip::tcp::socket>, 
@@ -31,6 +33,7 @@ private:
 		connector_callback_t, error_callback_t);
 
 	static boost::asio::ssl::context init_ssl_ctx();
+	static http::proto_version chose_protocol(std::shared_ptr<ssl_socket_t> stream);
 
 	bool stopping{false};
 	boost::asio::io_service &io;

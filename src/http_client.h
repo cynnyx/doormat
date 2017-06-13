@@ -34,10 +34,9 @@ struct handler_from_connector_factory
 {
 	using connect_callback_t = std::function<void(std::shared_ptr<http::client_connection>)>;
 
-	handler_from_connector_factory(http::proto_version v, connect_callback_t cb) noexcept;
-	void operator()(std::shared_ptr<server::connector_interface>);
+	handler_from_connector_factory(connect_callback_t cb) noexcept;
+	void operator()(std::shared_ptr<server::connector_interface>, http::proto_version);
 private:
-	http::proto_version v_;
 	connect_callback_t cb_;
 };
 
@@ -57,7 +56,7 @@ public:
 	template<typename... connector_args_t>
 	void get_connection(connect_callback_t ccb, error_callback_t ecb, http::proto_version v, connector_args_t&&... args)
 	{
-		factory.get_connector(std::forward<connector_args_t>(args)..., [v, ccb = std::move(ccb)](std::shared_ptr<server::connector_interface> conn){
+		factory.get_connector(std::forward<connector_args_t>(args)..., [v, ccb = std::move(ccb)](auto conn, auto){
 			if(v == http::proto_version::HTTP20)
 			{
 				assert(false && "currently http20 is not supported on the client side!");
@@ -98,7 +97,7 @@ public:
 	template<typename... connector_args_t>
 	void connect(connect_callback_t ccb, error_callback_t ecb, http::proto_version v, connector_args_t&&... args)
 	{
-		connector_factory_.get_connector(std::forward<connector_args_t>(args)..., detail::handler_from_connector_factory(v, std::move(ccb)),
+		connector_factory_.get_connector(std::forward<connector_args_t>(args)..., detail::handler_from_connector_factory(std::move(ccb)),
 		                                 [ecb](const auto& error)
 		                                 {
 			                                 ecb(error);

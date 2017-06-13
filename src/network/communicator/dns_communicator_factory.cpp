@@ -103,8 +103,29 @@ void dns_connector_factory::endpoint_connect(boost::asio::ip::tcp::resolver::ite
 
 			auto connector = std::make_shared<server::connector<server::tcp_socket>>(std::move(socket));
 			connector->set_timeout(conn_timeout);
-			connector_cb(std::move(connector));
+			connector_cb(std::move(connector), http::proto_version::HTTP11); // TODO: we are forcing http clear to http1.1
 		});
+}
+
+http::proto_version dns_connector_factory::chose_protocol(std::shared_ptr<dns_connector_factory::ssl_socket_t> stream)
+{
+	const unsigned char* proto{nullptr};
+	unsigned int len{0};
+	const SSL *ssl_handle = stream->native_handle();
+
+	//ALPN
+	SSL_get0_alpn_selected(ssl_handle, &proto, &len);
+	if( !len )
+		//NPN
+		SSL_get0_next_proto_negotiated(ssl_handle, &proto, &len);
+
+	http::proto_version v = http::proto_version::HTTP10;
+	if(len >= 2 && proto[0] == 'h' && proto[1] == '2')
+		v = http::proto_version::HTTP20;
+	else if(len == 8 && memcmp(proto, "http/1.1", 8) == 0)
+		v = http::proto_version::HTTP11;
+
+	return v;
 }
 
 void dns_connector_factory::endpoint_connect(boost::asio::ip::tcp::resolver::iterator it,
@@ -151,9 +172,12 @@ void dns_connector_factory::endpoint_connect(boost::asio::ip::tcp::resolver::ite
 						LOGERROR( ec.message() );
 						return;
 					}
+
+					http::proto_version v = chose_protocol(stream);
+
 					auto connector = std::make_shared<server::connector<server::ssl_socket>>(std::move(stream));
 					connector->set_timeout(conn_timeout);
-					connector_cb(std::move(connector));
+					connector_cb(std::move(connector), v);
 				});
 	});
 }
@@ -161,8 +185,10 @@ void dns_connector_factory::endpoint_connect(boost::asio::ip::tcp::resolver::ite
 namespace
 {
 static const std::string NGHTTP2_H2_ALPN = "\x2h2";
-static const std::string NGHTTP2_H2_14_ALPN = "\x5h2-14";
 static const std::string NGHTTP2_H2_16_ALPN = "\x5h2-16";
+static const std::string NGHTTP2_H2_14_ALPN = "\x5h2-14";
+static const std::string HTTP1_1_ALPN = "\x8http/1.1";
+static const std::string HTTP1_0_ALPN = "\x8http/1.0";
 
 bool select_proto(const unsigned char **out, unsigned char *outlen,
 				  const unsigned char *in, unsigned int inlen,
@@ -178,32 +204,50 @@ bool select_proto(const unsigned char **out, unsigned char *outlen,
 }
 
 bool select_h2(const unsigned char **out, unsigned char *outlen,
-			   const unsigned char *in, unsigned int inlen) {
+			   const unsigned char *in, unsigned int inlen)
+{
   return select_proto(out, outlen, in, inlen, NGHTTP2_H2_ALPN) ||
 		 select_proto(out, outlen, in, inlen, NGHTTP2_H2_16_ALPN) ||
-		 select_proto(out, outlen, in, inlen, NGHTTP2_H2_14_ALPN);
+		  select_proto(out, outlen, in, inlen, NGHTTP2_H2_14_ALPN);
+}
+
+bool select_h1(const unsigned char **out, unsigned char *outlen,
+			   const unsigned char *in, unsigned int inlen)
+{
+  return select_proto(out, outlen, in, inlen, HTTP1_1_ALPN) ||
+		 select_proto(out, outlen, in, inlen, HTTP1_0_ALPN);
 }
 
 int client_select_next_proto_cb(SSL *ssl, unsigned char **out,
 								unsigned char *outlen, const unsigned char *in,
-								unsigned int inlen, void *arg) {
-  if (!select_h2(const_cast<const unsigned char **>(out), outlen, in,
-					   inlen)) {
-	return SSL_TLSEXT_ERR_NOACK;
-  }
-  return SSL_TLSEXT_ERR_OK;
+								unsigned int inlen, void *arg)
+{
+	if (!select_h2(const_cast<const unsigned char **>(out), outlen, in, inlen) &&
+			!select_h1(const_cast<const unsigned char **>(out), outlen, in, inlen))
+	{
+		return SSL_TLSEXT_ERR_NOACK;
+	}
+	return SSL_TLSEXT_ERR_OK;
 }
 
-std::vector<unsigned char> get_default_alpn() {
-
-  auto res = std::vector<unsigned char>(NGHTTP2_H2_ALPN.size() +
+const std::vector<unsigned char>& get_default_alpn()
+{
+  static auto res = std::vector<unsigned char>(NGHTTP2_H2_ALPN.size() +
 										NGHTTP2_H2_16_ALPN.size() +
-										NGHTTP2_H2_14_ALPN.size());
-  auto p = std::begin(res);
-
-  p = std::copy_n(std::begin(NGHTTP2_H2_ALPN), NGHTTP2_H2_ALPN.size(), p);
-  p = std::copy_n(std::begin(NGHTTP2_H2_16_ALPN), NGHTTP2_H2_16_ALPN.size(), p);
-  p = std::copy_n(std::begin(NGHTTP2_H2_14_ALPN), NGHTTP2_H2_14_ALPN.size(), p);
+										NGHTTP2_H2_14_ALPN.size() +
+										HTTP1_1_ALPN.size() +
+										HTTP1_0_ALPN.size());
+  static bool initialized = false;
+  if(!initialized)
+  {
+	  initialized = true;
+	  auto p = std::begin(res);
+	  p = std::copy_n(std::begin(NGHTTP2_H2_ALPN), NGHTTP2_H2_ALPN.size(), p);
+	  p = std::copy_n(std::begin(NGHTTP2_H2_16_ALPN), NGHTTP2_H2_16_ALPN.size(), p);
+	  p = std::copy_n(std::begin(NGHTTP2_H2_14_ALPN), NGHTTP2_H2_14_ALPN.size(), p);
+	  p = std::copy_n(std::begin(HTTP1_1_ALPN), HTTP1_1_ALPN.size(), p);
+	  p = std::copy_n(std::begin(HTTP1_0_ALPN), HTTP1_0_ALPN.size(), p);
+  }
 
   return res;
 }
@@ -217,8 +261,7 @@ boost::asio::ssl::context dns_connector_factory::init_ssl_ctx()
 	auto ctx_h = ctx.native_handle();
 	SSL_CTX_set_next_proto_select_cb(ctx_h, client_select_next_proto_cb, nullptr);
 	// enable ALPN for http2
-	auto proto_list = get_default_alpn();
-	SSL_CTX_set_alpn_protos(ctx_h, proto_list.data(), proto_list.size());
+	SSL_CTX_set_alpn_protos(ctx_h, get_default_alpn().data(), get_default_alpn().size());
 	return ctx;
 }
 

@@ -13,14 +13,13 @@ namespace detail
 using connector_ptr = std::shared_ptr<server::connector_interface>;
 
 
-handler_from_connector_factory::handler_from_connector_factory(http::proto_version v, connect_callback_t cb) noexcept
-	: v_{v}
-	, cb_{std::move(cb)}
+handler_from_connector_factory::handler_from_connector_factory(connect_callback_t cb) noexcept
+	: cb_{std::move(cb)}
 {}
 
-void handler_from_connector_factory::operator()(connector_ptr c)
+void handler_from_connector_factory::operator()(connector_ptr c, http::proto_version v)
 {
-	if(v_ == http::proto_version::HTTP20)
+	if(v == http::proto_version::HTTP20)
 	{
 		auto h = std::make_shared<http2::session_client>();
 		c->handler(h);
