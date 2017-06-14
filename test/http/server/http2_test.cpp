@@ -41,6 +41,11 @@ public:
 	http2_test() { tx = this; }
 	void SetUp()
 	{
+		data_recv = false;
+		stream_terminated = false;
+		session_terminated = false;
+		closing_error_code = -1;
+		data_recv_v.clear();
 		_write_cb = [this](std::string d)
 		{
 			std::string chunk{ d.data(), d.size() };
@@ -86,6 +91,8 @@ public:
 	static bool stream_terminated;
 	static bool session_terminated;
 	static int closing_error_code;
+	static std::vector<std::string> data_recv_v;
+	static std::vector<std::multimap<std::string, std::string>> header_recv_v;
 };
 
 http2_test* http2_test::tx{nullptr};
@@ -94,6 +101,8 @@ bool http2_test::header_recv{false};
 bool http2_test::stream_terminated{false};
 bool http2_test::session_terminated{false};
 int http2_test::closing_error_code{-1};
+std::vector<std::string> http2_test::data_recv_v;
+std::vector<std::multimap<std::string, std::string>> http2_test::header_recv_v;
 
 struct Connection 
 {
@@ -234,8 +243,7 @@ static int on_data_chunk_recv_callback(nghttp2_session *session,
 	void *user_data) 
 {
 	LOGTRACE("CHUNK RECV");
-	Request *req;
-	req = static_cast<Request *>( nghttp2_session_get_stream_user_data(session, stream_id) );
+	Request *req = static_cast<Request *>( nghttp2_session_get_stream_user_data(session, stream_id) );
 	if (req)
 	{
 		LOGTRACE("[INFO] C <---------------------------- S (DATA chunk)\n", (unsigned long int)len, " bytes");
@@ -243,6 +251,20 @@ static int on_data_chunk_recv_callback(nghttp2_session *session,
 		
 		http2_test::data_recv = true;
 	}
+
+	http2_test::data_recv_v.resize(stream_id + 1);
+	http2_test::data_recv_v[stream_id].append(data, data + len);
+	return 0;
+}
+
+static int on_header_callback(nghttp2_session *session, const nghttp2_frame *frame,
+							  const uint8_t *name, size_t namelen, const uint8_t *value,
+							  size_t valuelen, uint8_t flags, void *user_data)
+
+{
+	LOGTRACE("HEADER RECV: ", std::string{name, name + namelen}, ": ", std::string{value, value + valuelen});
+	http2_test::header_recv_v.resize(frame->hd.stream_id + 1);
+	http2_test::header_recv_v[frame->hd.stream_id].emplace(std::string{name, name + namelen}, std::string{value, value + valuelen});
 	return 0;
 }
 
@@ -258,6 +280,7 @@ static void setup_nghttp2_callbacks(nghttp2_session_callbacks *callbacks)
 		callbacks, on_stream_close_callback);
 	nghttp2_session_callbacks_set_on_data_chunk_recv_callback(
 		callbacks, on_data_chunk_recv_callback);
+	nghttp2_session_callbacks_set_on_header_callback(callbacks, on_header_callback);
 }
 
 static void exec_io(struct Connection *connection) 
@@ -327,6 +350,9 @@ static std::unique_ptr<char[]> make_data_ptr(const std::string& s)
 
 TEST_F(http2_test, connection)
 {
+	static const std::string body{"Ave client, dummy node says hello"};
+	static const std::string content_type{"text/plain"};
+	static const std::string host{"cristo.it"};
 	std::unique_ptr<Connection>  c = start_client();
 	Connection* cnx =  c.get();
 	cnx->test = this;
@@ -337,11 +363,10 @@ TEST_F(http2_test, connection)
 		{
 			http::http_response r;
 			r.protocol(http::proto_version::HTTP20);
-			std::string body{"Ave client, dummy node says hello"};
 			r.status(200);
 			r.header("content-type", "text/plain");
 			r.header("date", "Tue, 17 May 2016 14:53:09 GMT");
-			r.hostname("cristo.it");
+			r.hostname(host);
 			r.content_len(body.size());
 			res->headers(std::move(r));
 			res->body(make_data_ptr(body), body.size());
@@ -371,26 +396,29 @@ TEST_F(http2_test, connection)
 	{
 		Request req;
 		Request* greq = &req;
-		greq->host = "www.cristo.it";
-		greq->port = 80;
 		greq->path = "/";
 		greq->stream_id = -1;
 		greq->hostport = "80";
 
 		submit_settings(cnx);
-		
+
 		submit_request(cnx, greq);
 
 		io_poll();
 	});
 	mock_connector->io_service().run();
+	nghttp2_session_del( cnx->session );
 
 	ASSERT_TRUE( terminated );
 	EXPECT_TRUE( http2_test::stream_terminated );
 	EXPECT_TRUE( http2_test::data_recv );
 	EXPECT_TRUE( http2_test::header_recv );
 	EXPECT_EQ( http2_test::closing_error_code, NGHTTP2_NO_ERROR );
-	nghttp2_session_del( cnx->session );
+	EXPECT_EQ( http2_test::data_recv_v[1], body );
+	EXPECT_EQ( http2_test::header_recv_v[1].find(":status")->second, std::string{"200"} );
+	EXPECT_EQ( http2_test::header_recv_v[1].find("content-length")->second, std::to_string(body.size()) );
+	EXPECT_EQ( http2_test::header_recv_v[1].find("content-type")->second, content_type );
+	EXPECT_EQ( http2_test::header_recv_v[1].find("host")->second, host );
 }
 
 TEST_F(http2_test, randomdata)
