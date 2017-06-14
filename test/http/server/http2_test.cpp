@@ -41,12 +41,15 @@ public:
 	http2_test() { tx = this; }
 	void SetUp()
 	{
-		_write_cb = [](std::string) {};
+		_write_cb = [this](std::string d)
+		{
+			std::string chunk{ d.data(), d.size() };
+			response_raw += chunk;
+			LOGTRACE("Append response ", response_raw.size(), " appended ", d.size(), " bytes ");
+		};
 		mock_connector = std::make_shared<MockConnector>(io, _write_cb);
 		_handler = std::make_shared<server_connection_t>();
 		mock_connector->handler(_handler);
-		response_raw.clear(); 
-		request_raw.clear();
 		go_away = false;
 	}
 
@@ -66,7 +69,7 @@ public:
 		r =  len < r ? len : r;
 		memcpy(buf, tx->response_raw.data(), r );
 		if ( r > 0 )
-			tx->response_raw = tx->response_raw.erase(0, r);
+			tx->response_raw.erase(0, r);
 		return static_cast<ssize_t>(r);
 	}
 	
@@ -82,6 +85,7 @@ public:
 	static bool header_recv;
 	static bool stream_terminated;
 	static bool session_terminated;
+	static int closing_error_code;
 };
 
 http2_test* http2_test::tx{nullptr};
@@ -89,6 +93,7 @@ bool http2_test::data_recv{false};
 bool http2_test::header_recv{false};
 bool http2_test::stream_terminated{false};
 bool http2_test::session_terminated{false};
+int http2_test::closing_error_code{-1};
 
 struct Connection 
 {
@@ -138,7 +143,7 @@ static int on_stream_close_callback(nghttp2_session *session, int32_t stream_id,
 	uint32_t error_code, void *user_data) 
 {
 	LOGTRACE("stream close cb");
-	struct Request *req;
+	Request *req;
 	req = static_cast<Request*> ( nghttp2_session_get_stream_user_data(session, stream_id) );
 	if (req) 
 	{
@@ -148,6 +153,7 @@ static int on_stream_close_callback(nghttp2_session *session, int32_t stream_id,
 			diec("nghttp2_session_terminate_session", rv);
 	}
 	http2_test::stream_terminated = true;
+	http2_test::closing_error_code = error_code;
 	return 0;
 }
 
@@ -156,7 +162,7 @@ static int on_frame_send_callback(nghttp2_session *session,
 {
 	LOGTRACE("FRAME SEND");
 // 	size_t i;
-	switch (frame->hd.type) 
+	switch (frame->hd.type)
 	{
 	case NGHTTP2_HEADERS:
 		if (nghttp2_session_get_stream_user_data(session, frame->hd.stream_id)) 
@@ -271,12 +277,12 @@ static std::unique_ptr<Connection> start_client()
 	
 	std::unique_ptr<Connection> c{ new Connection };
 	Connection* connection = c.get();
-	ssize_t rv = nghttp2_session_callbacks_new(&callbacks);
-	if ( rv > 0 ) throw rv;
+	auto rv = nghttp2_session_callbacks_new(&callbacks);
+	if ( rv != 0 ) throw rv;
 	setup_nghttp2_callbacks(callbacks);
 	
 	rv = nghttp2_session_client_new(&(connection->session), callbacks, &connection);
-	if ( rv > 0 ) throw rv;
+	if ( rv != 0 ) throw rv;
 	nghttp2_session_callbacks_del(callbacks);
 	return c;
 }
@@ -324,20 +330,10 @@ TEST_F(http2_test, connection)
 	std::unique_ptr<Connection>  c = start_client();
 	Connection* cnx =  c.get();
 	cnx->test = this;
-	// pass this as answer to http2 stuff
-	_write_cb = [this, cnx](std::string d)
+
+	_handler->on_request([&](auto conn, auto req, auto res)
 	{
-		std::string chunk{ d.data(), d.size() };
-		response_raw += chunk;
-		LOGTRACE("Append response ", response_raw.size(), " appended ", d.size(), " bytes ");
-		
-// 		if ( nghttp2_session_want_read( cnx->session ) )
-// 			exec_io( cnx );
-	};
-	
-	_handler->on_request([&](auto conn, auto req, auto res) 
-	{
-		req->on_finished([res](auto req) 
+		req->on_finished([res](auto req)
 		{
 			http::http_response r;
 			r.protocol(http::proto_version::HTTP20);
@@ -353,8 +349,25 @@ TEST_F(http2_test, connection)
 		});
 	});
 	
+	auto keep_alive = std::make_unique<boost::asio::io_service::work>(mock_connector->io_service());
 	bool terminated{false};
-	mock_connector->io_service().post([this, &terminated, cnx]() 
+	std::function<void()> io_poll;
+	io_poll = [&io_poll, &keep_alive, cnx, &terminated, this] {
+		if (nghttp2_session_want_read(cnx->session) ||
+			nghttp2_session_want_write(cnx->session))
+		{
+			exec_io( cnx );
+			mock_connector->read( request_raw );
+			request_raw = "";
+			mock_connector->io_service().post(io_poll);
+		}
+		else
+		{
+			terminated = true;
+			keep_alive.reset();
+		}
+	};
+	mock_connector->io_service().post([this, &terminated, cnx, &io_poll]()
 	{
 		Request req;
 		Request* greq = &req;
@@ -368,28 +381,20 @@ TEST_F(http2_test, connection)
 		
 		submit_request(cnx, greq);
 
-		while (nghttp2_session_want_read(cnx->session) ||
-			nghttp2_session_want_write(cnx->session)) 
-		{
-			exec_io( cnx );
-			mock_connector->read( request_raw );
-			request_raw = "";
-		}
-		terminated = true;
+		io_poll();
 	});
 	mock_connector->io_service().run();
 
 	ASSERT_TRUE( terminated );
-// TODO THESE ASSERTION FAIL BECAUSE NGHTTP2 DOES NOT CALL ITS CALLBACKS!?!?!?
-// 	ASSERT_TRUE( http2_test::stream_terminated );
-// 	ASSERT_TRUE( http2_test::data_recv );
-// 	ASSERT_TRUE( http2_test::header_recv );
+	EXPECT_TRUE( http2_test::stream_terminated );
+	EXPECT_TRUE( http2_test::data_recv );
+	EXPECT_TRUE( http2_test::header_recv );
+	EXPECT_EQ( http2_test::closing_error_code, NGHTTP2_NO_ERROR );
 	nghttp2_session_del( cnx->session );
 }
 
 TEST_F(http2_test, randomdata)
 {
-	// This should not throw!
 	const char raw_request[] = 
 		"\x00\x05\x06\x04\x00\x00\x00\x00\x00\x00\x03\x00\x00\x00\x64\x50"
 		"\x52\x49\x20\x2A\x20\x48\x54\x54\x50\x2F\x32\x2E\x30\x0D\x0A\x0D"
