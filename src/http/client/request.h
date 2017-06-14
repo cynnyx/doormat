@@ -70,7 +70,6 @@ private:
 
 	void cleared()
 	{
-		std::cout << "CLEARED" << std::endl;
 		if(write_callback)
 			io.post([self = this->shared_from_this()](){ self->write_callback(self); });
 		myself = nullptr;

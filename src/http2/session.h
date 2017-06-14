@@ -96,8 +96,6 @@ public:
 
 	void unsubscribe(stream *s)
 	{
-		std::cout << std::endl; // AHHHHHH 
-
 		listeners.remove(s);
 	}
 };

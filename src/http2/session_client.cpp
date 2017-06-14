@@ -412,7 +412,6 @@ bool session_client::on_write(std::string& ch )
 			std::string tdata{data, data + static_cast<size_t>(consumed)};
 			ch = std::move( tdata );
 	}
-	std::cout << "client write: " << ch << std::endl;
 	if ( connector() == nullptr ) return false;
 	return true;
 }
@@ -420,7 +419,6 @@ bool session_client::on_write(std::string& ch )
 bool session_client::on_read(const char* data, size_t len)
 {
 	LOGTRACE("on_read");
-	std::cout << "client on_read: " << std::string{data, data + len} << std::endl;
 	int rv = nghttp2_session_mem_recv( session_data.get(), reinterpret_cast<const uint8_t*>(data), len );
 
 	if ( rv < 0 )
