@@ -54,9 +54,9 @@ public:
 	{}
 
 	template<typename... connector_args_t>
-	void get_connection(connect_callback_t ccb, error_callback_t ecb, http::proto_version v, connector_args_t&&... args)
+	void get_connection(connect_callback_t ccb, error_callback_t ecb, connector_args_t&&... args)
 	{
-		factory.get_connector(std::forward<connector_args_t>(args)..., [v, ccb = std::move(ccb)](auto conn, auto){
+		factory.get_connector(std::forward<connector_args_t>(args)..., [v = http::proto_version::HTTP11, ccb = std::move(ccb)](auto conn, auto){
 			if(v == http::proto_version::HTTP20)
 			{
 				assert(false && "currently http20 is not supported on the client side!");
@@ -95,7 +95,7 @@ public:
 	{}
 
 	template<typename... connector_args_t>
-	void connect(connect_callback_t ccb, error_callback_t ecb, http::proto_version v, connector_args_t&&... args)
+	void connect(connect_callback_t ccb, error_callback_t ecb, connector_args_t&&... args)
 	{
 		connector_factory_.get_connector(std::forward<connector_args_t>(args)..., detail::handler_from_connector_factory(std::move(ccb)),
 		                                 [ecb](const auto& error)

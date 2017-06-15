@@ -31,8 +31,7 @@ TEST_F(http_client_test, connect_ipv4_clear)
 				   },
 				   [](auto error) {
 					   FAIL();
-				   },
-				   http::proto_version::HTTP11, "127.0.0.1", port, false);
+				   }, "127.0.0.1", port, false);
 
 	io.run();
 	ASSERT_TRUE(succeeded);
@@ -55,7 +54,7 @@ TEST_F(http_client_test, connect_ipv4_ssl)
 	[](auto error)
 	{
 		FAIL();
-	}, http::proto_version::HTTP11, "127.0.0.1", port, true);
+	}, "127.0.0.1", port, true);
 
 	io.run();
 	ASSERT_TRUE(succeeded);
@@ -78,7 +77,7 @@ TEST_F(http_client_test, connect_ipv6_clear)
 	[](auto error)
 	{
 		FAIL();
-	}, http::proto_version::HTTP11, "::1", port, false);
+	}, "::1", port, false);
 
 	io.run();
 	ASSERT_TRUE(succeeded);
@@ -101,7 +100,7 @@ TEST_F(http_client_test, connect_ipv6_ssl)
 	[](auto error)
 	{
 		FAIL();
-	}, http::proto_version::HTTP11, "::1", port, true);
+	}, "::1", port, true);
 
 	io.run();
 	ASSERT_TRUE(succeeded);
@@ -124,7 +123,7 @@ TEST_F(http_client_test, fail_connect)
 		SUCCEED();
 		called = true;
 		server.stop();
-	}, http::proto_version::HTTP11, "::1", port + 1, true);
+	},"::1", port + 1, true);
 
 	io.run();
 	ASSERT_TRUE(called);
@@ -146,7 +145,7 @@ TEST_F(http_client_test, connect_ipv4_clear2)
 	               [](auto error) {
 		               FAIL();
 	               },
-	               http::proto_version::HTTP11, "127.0.0.1", port, false);
+	               "127.0.0.1", port, false);
 
 	io.run();
 	ASSERT_TRUE(succeeded);

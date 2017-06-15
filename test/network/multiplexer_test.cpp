@@ -42,7 +42,7 @@ TEST(multiplexer, single_timeout)
 		},
 		[](auto error) {
 			FAIL();
-		}, http::proto_version::HTTP11, "127.0.0.1", port, false);
+		}, "127.0.0.1", port, false);
 
 	io.run();
 	ASSERT_TRUE(succeeded);
@@ -82,7 +82,7 @@ TEST(multiplexer, multiple_errors)
 	               },
 	               [](auto error) {
 		               FAIL();
-	               }, http::proto_version::HTTP11, "127.0.0.1", port, false);
+	               }, "127.0.0.1", port, false);
 
 	io.run();
 	ASSERT_EQ(errors, 2U);
@@ -123,7 +123,7 @@ TEST(multiplexer, multiple_timeout)
 	               },
 	               [](auto error) {
 		               FAIL();
-	               }, http::proto_version::HTTP11, "127.0.0.1", port, false);
+	               }, "127.0.0.1", port, false);
 
 	io.run();
 	ASSERT_EQ(timeouts, 3U);
@@ -208,7 +208,7 @@ TEST(multiplexer, single_req_res)
 	               },
 	               [](auto error) {
 		               FAIL();
-	               }, http::proto_version::HTTP11, "127.0.0.1", port, false);
+	               }, "127.0.0.1", port, false);
 
 	io.run();
 	std::cout << "multi is " << multi << std::endl;
@@ -289,7 +289,7 @@ TEST(multiplexer, multiple_req_res)
 	               },
 	               [](auto error) {
 		               FAIL();
-	               }, http::proto_version::HTTP11, "127.0.0.1", port, false);
+	               }, "127.0.0.1", port, false);
 
 	io.run();
 	ASSERT_EQ(headers_rcvd, 10);
