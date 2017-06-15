@@ -260,7 +260,7 @@ TEST(multiplexer, multiple_req_res)
 	               {
 		               multi = std::make_shared<http::client_connection_multiplexer>(std::move(connection));
 		               multi->init();
-		               for(int i = 0; i < 10; ++i)
+					   for(size_t i = 0; i < 10; ++i)
 		               {
 			               auto handler = multi->get_handler();
 			               auto transaction = handler->create_transaction();
@@ -292,8 +292,8 @@ TEST(multiplexer, multiple_req_res)
 	               }, "127.0.0.1", port, false);
 
 	io.run();
-	ASSERT_EQ(headers_rcvd, 10);
-	ASSERT_EQ(body_rcvd, 10);
-	ASSERT_EQ(finished_rcvd, 10);
+	ASSERT_EQ(headers_rcvd, 10U);
+	ASSERT_EQ(body_rcvd, 10U);
+	ASSERT_EQ(finished_rcvd, 10U);
 }
 
