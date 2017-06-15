@@ -24,9 +24,9 @@ int main ( int argc, const char**argv )
 	if(argc > 1)
 		cert = argv[1];
 	if(argc > 2)
-		cert = argv[2];
+		key = argv[2];
 	if(argc > 3)
-		cert = argv[3];
+		password = argv[3];
 
 	::log_wrapper::init ( false, "trace", "" );
 	std::unique_ptr<doormat::http_server> doormat_srv = std::make_unique<doormat::http_server>(5000, 1443, 8081);
