@@ -1,7 +1,7 @@
 #ifndef SESSION_CLIENT_H
 #define SESSION_CLIENT_H
 
-#include "../../deps/nghttp2/build/include/nghttp2/nghttp2.h"
+#include <nghttp2/nghttp2.h>
 #include "../utils/doormat_types.h"
 #include "../connector.h"
 #include "../protocol/http_handler.h"

@@ -14,15 +14,15 @@
 #
 
 find_path(NGHTTP2_INCLUDE_DIR NAMES nghttp2/nghttp2.h
-	HINTS ${NGHTTP2_ROOT}/build/include
+	HINTS ${NGHTTP2_ROOT}/INSTALL/include
 )
 
 find_library(NGHTTP2_LIBRARY NAMES libnghttp2.so
-	HINTS ${NGHTTP2_ROOT}/build/lib
+	HINTS ${NGHTTP2_ROOT}/INSTALL/lib
 )
 
 find_library(NGHTTP2_ASIO_LIBRARY NAMES libnghttp2_asio.so
-	HINTS ${NGHTTP2_ROOT}/build/lib
+	HINTS ${NGHTTP2_ROOT}/INSTALL/lib
 )
 
 set(NGHTTP2_INCLUDE_DIRS ${NGHTTP2_INCLUDE_DIR})
