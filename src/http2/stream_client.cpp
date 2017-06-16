@@ -310,20 +310,23 @@ void stream_client::on_header(http::http_request&& req )
 			prepared_headers.emplace( http::http_structured_data::header_t{ it.first, it.second } );
 	}
 
-	prepared_headers.clear();
 	nvlen = prepared_headers.size() + 4;
 	create_headers( &nva );
 
 	static const std::string method = ":method";
 	static const std::string scheme = ":scheme";
-	static const std::string authority = ":authority";
 	static const std::string path = ":path";
+	static const std::string authority = ":authority";
 
+	assert(!pseudo.method.empty());
+	assert(!pseudo.scheme.empty());
+	assert(!pseudo.path.empty());
+	assert(!pseudo.authority.empty()); // note: this is not completely h2-conformat, but...
 	std::size_t i = 0;
 	nva[i++] = MAKE_NV(method, pseudo.method);
 	nva[i++] = MAKE_NV(scheme, pseudo.scheme);
-	nva[i++] = MAKE_NV(authority, pseudo.authority);
 	nva[i++] = MAKE_NV(path, pseudo.path);
+	nva[i++] = MAKE_NV(authority, pseudo.authority);
 	for ( auto&& it : prepared_headers )
 	{
 		LOGTRACE( "Name:", static_cast<std::string>( it.first ),

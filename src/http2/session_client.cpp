@@ -109,8 +109,11 @@ http2::stream_client* session_client::create_stream( std::int32_t id )
 
 	stream_data->set_handlers(req_handler, res_handler);
 
-	int rv = nghttp2_session_set_stream_user_data( session_data.get(), id, stream_data );
-	if ( rv != 0 ) LOGERROR ( "nghttp2_session_set_stream_user_data ",  nghttp2_strerror( rv ) );
+	if(id >= 0)
+	{
+		int rv = nghttp2_session_set_stream_user_data( session_data.get(), id, stream_data );
+		if ( rv != 0 ) LOGERROR ( "nghttp2_session_set_stream_user_data ",  nghttp2_strerror( rv ) );
+	}
 
 	++stream_counter;
 	LOGTRACE(" stream is ", stream_data, " stream counter ", stream_counter );

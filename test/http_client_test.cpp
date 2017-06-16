@@ -2,6 +2,8 @@
 
 #include "src/http_client.h"
 #include "src/network/communicator/dns_communicator_factory.h"
+#include "src/protocol/handler_http1.h"
+#include "src/http2/session_client.h"
 
 #include "mocks/mock_server/mock_server.h"
 
@@ -11,6 +13,7 @@ struct http_client_test: public ::testing::Test
 };
 
 using http_client = client::http_client<network::dns_connector_factory>;
+using handler_http1 = server::handler_http1<http::client_traits>;
 
 using http_client2 = client::http_client<client::detail::handler_factory<network::dns_connector_factory>>;
 const auto port = 8454U;
@@ -25,7 +28,8 @@ TEST_F(http_client_test, connect_ipv4_clear)
 	bool succeeded{false};
 	http_client client{io, timeout};
 	client.connect([&server, &succeeded](auto connection) {
-					   SUCCEED();
+					   // check that clear connections go with http1.x proto
+					   EXPECT_TRUE(std::dynamic_pointer_cast<handler_http1>(connection));
 					   succeeded = true;
 					   server.stop();
 				   },
@@ -48,7 +52,8 @@ TEST_F(http_client_test, connect_ipv4_ssl)
 	client.connect([&server, &succeeded](auto connection)
 	{
 		succeeded = true;
-		SUCCEED();
+		// check that ssl connections go with http2 proto
+		EXPECT_TRUE(std::dynamic_pointer_cast<http2::session_client>(connection));
 		server.stop();
 	},
 	[](auto error)
@@ -71,7 +76,8 @@ TEST_F(http_client_test, connect_ipv6_clear)
 	client.connect([&server, &succeeded](auto connection)
 	{
 		succeeded = true;
-		SUCCEED();
+		// check that clear connections go with http1.x proto
+		EXPECT_TRUE(std::dynamic_pointer_cast<handler_http1>(connection));
 		server.stop();
 	},
 	[](auto error)
@@ -94,7 +100,8 @@ TEST_F(http_client_test, connect_ipv6_ssl)
 	client.connect([&server, &succeeded](auto connection)
 	{
 		succeeded = true;
-		SUCCEED();
+		// check that ssl connections go with http2 proto
+		EXPECT_TRUE(std::dynamic_pointer_cast<http2::session_client>(connection));
 		server.stop();
 	},
 	[](auto error)

@@ -1,7 +1,7 @@
 #ifndef STREAM_CLIENT_H
 #define STREAM_CLIENT_H
 
-#include "../../deps/nghttp2/build/include/nghttp2/nghttp2.h"
+#include <nghttp2/nghttp2.h>
 
 #include <cstdint>
 #include <cstddef>
@@ -28,12 +28,27 @@ class stream_client final
 {
 	struct req_pseudo_headers
 	{
+		/**
+		 * @brief init_path: check h2spec 8.1.2.3
+		 * @param path
+		 * @param method
+		 * @return
+		 */
+		static std::string init_path(const std::string& path, const std::string& method)
+		{
+			if(!path.empty())
+				return path;
+
+			static const std::string options = "OPTIONS";
+			return method == options ? "*" : "/";
+		}
+
 		req_pseudo_headers() = default;
 		req_pseudo_headers(const http::http_request& req)
 			: method{req.method()}
 			, scheme{req.schema()}
 			, authority{req.hostname()}
-			, path{req.path()}
+			, path{init_path(req.path(), req.method())}
 		{
 			if(!req.query().empty())
 				path += '?' + req.query();

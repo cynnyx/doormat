@@ -17,7 +17,6 @@ function printUsage(){
     -r| --rebuild       DEP     Clean and Build dependency DEP
 
                                 Options (case insensitive) for --with --rebuild --clean:
-                                    CityHash
                                     Cynnypp
                                     GoogleTest
                                     NgHttp2
@@ -70,9 +69,6 @@ function setWith(){
     local arg="$1"
     arg=$(toLower ${arg})
     case ${arg} in
-        cityhash)
-            buildCityHashFlag=true
-            ;;
         cynnypp)
             buildCynnyppFlag=true
             ;;
@@ -89,10 +85,9 @@ function setWith(){
             buildSpdLogFlag=true
             ;;
         all)
-            buildCityHashFlag=true
             buildCynnyppFlag=true
             buildGoogleTestFlag=true
-            buildNgHttp2Flag=true;
+            buildNgHttp2Flag=true
             buildOpenSSLFlag=true
             buildSpdLogFlag=true
             ;;
@@ -108,9 +103,6 @@ function setClean(){
     local arg="$1"
     arg=$(toLower ${arg})
     case ${arg} in
-        cityhash)
-            cleanCityHashFlag=true
-            ;;
         cynnypp)
             cleanCynnyppFlag=true
             ;;
@@ -127,10 +119,9 @@ function setClean(){
             cleanSpdlogFlag=true
             ;;
         all)
-            cleanCityHashFlag=true
             cleanCynnyppFlag=true
             cleanGoogleTestFlag=true
-            cleanNghttp2Flag=true;
+            cleanNghttp2Flag=true
             cleanOpensslFlag=true
             cleanSpdlogFlag=true
             ;;
@@ -166,27 +157,6 @@ function cleanOpenSSL(){
     cd ${DIR}
 }
 
-function buildCityHash(){
-    local repo_dir="$1"
-    local flag=$2
-    local cmake_fwd_args="$3"
-    local JOBS=$4
-    if ${flag}; then
-        echo "Building CityHash..."
-        cd ${repo_dir} &&
-        if [ -L "build/lib/libcityhash.$(sharedLibraryExtension)" ] &&
-           [ -L "build/lib/libcityhash.$(staticLibraryExtension)" ]; then
-            echo "CityHash already built, skip rebuilding..."
-        else
-            echo "CityHash not found, building..."
-            ./configure --enable-sse4.2 --prefix="$(pwd)/build"
-            make CXXFLAGS="-g -O3 -msse4.2" || ( echo "fatal: cityhash build failed"; exit )
-            make install
-        fi
-    fi
-    cd ${DIR}
-}
-
 function buildCynnypp(){
     local repo_dir="$1"
     local flag=$2
@@ -213,18 +183,19 @@ function buildNgHttp2(){
     local JOBS=$4
     if ${flag}; then
         cd ${repo_dir} && git fetch -p &&
-        if [ -L "build/lib/libnghttp.$(sharedLibraryExtension)" ] &&
-           [ -L "build/lib/libnghttp2_asio.$(sharedLibraryExtension)" ]; then
+        if [ -f "INSTALL/lib/libnghttp2.$(sharedLibraryExtension)" ] &&
+           [ -f "INSTALL/lib/libnghttp2_asio.$(sharedLibraryExtension)" ]; then
             echo "NgHttp2 already built, skip rebuilding..."
         else
-            buildOpenSSL ${DIR}/deps/openssl true "${cmake_fwd_args}" ${JOBS}
+            buildOpenSSL ${DIR}/deps/openssl true ${JOBS}
             echo "NgHttp2 not found, building..."
             cd ${repo_dir}
             autoreconf -i
             automake
             autoconf
+            rm -rf ${repo_dir}/INSTALL
             OPENSSL_CFLAGS="-I${OPENSSL_ROOT_DIR}/include/" OPENSSL_LIBS="-L${OPENSSL_ROOT_DIR} -lssl -lcrypto" \
-                ./configure --enable-asio-lib=yes --enable-lib-only --prefix="${repo_dir}/build"
+                ./configure --enable-asio-lib=yes --enable-lib-only --prefix="${repo_dir}/INSTALL"
             make -j${JOBS} || ( echo "fatal: nghttp2 build failed"; exit )
             make install
         fi
@@ -256,6 +227,7 @@ function buildGoogleTest(){
 function buildOpenSSL(){
     local repo_dir="$1"
     local flag=$2
+    local JOBS=$3
     if ${flag}; then
         cd ${repo_dir}
         if [ -L "libssl.$(sharedLibraryExtension)" ] &&
@@ -286,7 +258,6 @@ function showStatus(){
     echo "=================================="
     echo "${name} Dependency Status: "
     echo "=================================="
-    echo "   Clean CityHash:                        $cleanCityHashFlag"
     echo "   Clean Cynnypp:                         $cleanCynnyppFlag"
     echo "   Clean GoogleTest:                      $cleanGoogleTestFlag"
     echo "   Clean NgHttp2:                         $cleanNghttp2Flag"
@@ -294,7 +265,6 @@ function showStatus(){
     echo "   Clean SpdLog:                          $cleanSpdlogFlag"
 
     echo ""
-    echo "   Build (if necessary) CityHash:         $buildCityHashFlag"
     echo "   Build (if necessary) Cynnypp:          $buildCynnyppFlag"
     echo "   Build (if necessary) GoogleTest:       $buildGoogleTestFlag"
     echo "   Build (if necessary) NgHttp2:          $buildNgHttp2Flag"
@@ -305,14 +275,12 @@ function showStatus(){
 
 ###  Start
 JOBS=4
-buildCityHashFlag=false
 buildCynnyppFlag=false
 buildGoogleTestFlag=false
 buildNgHttp2Flag=false
 buildOpenSSLFlag=false
 buildSpdLogFlag=false
 
-cleanCityHashFlag=false
 cleanCynnyppFlag=false
 cleanGoogleTestFlag=false
 cleanNghttp2Flag=false
@@ -380,14 +348,12 @@ FWD_CMAKE_ARGUMENTS="$CC $CXX -DCMAKE_BUILD_TYPE=Release"
 ### Apply submodules
 git submodule update --init && git submodule sync
 
-cleanRepo           ${DIR}/deps/cityhash         ${cleanCityHashFlag}
 cleanRepo           ${DIR}/deps/cynnypp          ${cleanCynnyppFlag}
 cleanRepo           ${DIR}/deps/gtest            ${cleanGoogleTestFlag}
 cleanRepo           ${DIR}/deps/nghttp2          ${cleanNghttp2Flag}
 cleanOpenSSL        ${OPENSSL_ROOT_DIR}          ${cleanOpensslFlag}
 
 
-buildCityHash       ${DIR}/deps/cityhash         ${buildCityHashFlag}        "${FWD_CMAKE_ARGUMENTS}"    ${JOBS}
 buildCynnypp        ${DIR}/deps/cynnypp          ${buildCynnyppFlag}         "${FWD_CMAKE_ARGUMENTS}"    ${JOBS}
 buildGoogleTest     ${DIR}/deps/gtest            ${buildGoogleTestFlag}      "${FWD_CMAKE_ARGUMENTS}"    ${JOBS}
 buildNgHttp2        ${DIR}/deps/nghttp2          ${buildNgHttp2Flag}         "${FWD_CMAKE_ARGUMENTS}"    ${JOBS}
