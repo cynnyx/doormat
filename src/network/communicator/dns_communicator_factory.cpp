@@ -154,7 +154,7 @@ void dns_connector_factory::endpoint_connect(boost::asio::ip::tcp::resolver::ite
 			error_cb(3);
 		}
 	});
-	boost::asio::async_connect( stream->lowest_layer(), it, [ this, begin, stream, connector_cb = std::move(connector_cb),
+	boost::asio::async_connect( stream->lowest_layer(), it, [ this, stream, connector_cb = std::move(connector_cb),
 		error_cb = std::move(error_cb), connect_timer, dead = dead ]( const boost::system::error_code &ec,
 			boost::asio::ip::tcp::resolver::iterator it )
 	{
