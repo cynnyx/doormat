@@ -87,7 +87,7 @@ function setWith(){
         all)
             buildCynnyppFlag=true
             buildGoogleTestFlag=true
-            buildNgHttp2Flag=true;
+            buildNgHttp2Flag=true
             buildOpenSSLFlag=true
             buildSpdLogFlag=true
             ;;
@@ -121,7 +121,7 @@ function setClean(){
         all)
             cleanCynnyppFlag=true
             cleanGoogleTestFlag=true
-            cleanNghttp2Flag=true;
+            cleanNghttp2Flag=true
             cleanOpensslFlag=true
             cleanSpdlogFlag=true
             ;;
