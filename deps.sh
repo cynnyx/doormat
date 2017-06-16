@@ -183,18 +183,19 @@ function buildNgHttp2(){
     local JOBS=$4
     if ${flag}; then
         cd ${repo_dir} && git fetch -p &&
-        if [ -L "build/lib/libnghttp.$(sharedLibraryExtension)" ] &&
-           [ -L "build/lib/libnghttp2_asio.$(sharedLibraryExtension)" ]; then
+        if [ -f "INSTALL/lib/libnghttp2.$(sharedLibraryExtension)" ] &&
+           [ -f "INSTALL/lib/libnghttp2_asio.$(sharedLibraryExtension)" ]; then
             echo "NgHttp2 already built, skip rebuilding..."
         else
-            buildOpenSSL ${DIR}/deps/openssl true "${cmake_fwd_args}" ${JOBS}
+            buildOpenSSL ${DIR}/deps/openssl true ${JOBS}
             echo "NgHttp2 not found, building..."
             cd ${repo_dir}
             autoreconf -i
             automake
             autoconf
+            rm -rf ${repo_dir}/INSTALL
             OPENSSL_CFLAGS="-I${OPENSSL_ROOT_DIR}/include/" OPENSSL_LIBS="-L${OPENSSL_ROOT_DIR} -lssl -lcrypto" \
-                ./configure --enable-asio-lib=yes --enable-lib-only --prefix="${repo_dir}/build"
+                ./configure --enable-asio-lib=yes --enable-lib-only --prefix="${repo_dir}/INSTALL"
             make -j${JOBS} || ( echo "fatal: nghttp2 build failed"; exit )
             make install
         fi
@@ -226,6 +227,7 @@ function buildGoogleTest(){
 function buildOpenSSL(){
     local repo_dir="$1"
     local flag=$2
+    local JOBS=$3
     if ${flag}; then
         cd ${repo_dir}
         if [ -L "libssl.$(sharedLibraryExtension)" ] &&
