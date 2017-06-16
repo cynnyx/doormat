@@ -1,5 +1,7 @@
 #include "dns_communicator_factory.h"
 #include "../../connector.h"
+#include "../../../../../../../../usr/include/c++/6/chrono"
+#include "../../../../../../../../usr/include/boost/system/error_code.hpp"
 
 #include <chrono>
 
@@ -41,14 +43,13 @@ void dns_connector_factory::dns_resolver(const std::string& address, uint16_t po
 	{
 		if ( ! ec ) r->cancel();
 	});
-
+	auto begin = std::chrono::high_resolution_clock::now();
 	r->async_resolve(q,
-		[this, r, tls, connector_cb = std::move(connector_cb), error_cb = std::move(error_cb), resolve_timer, dead=dead]
+		[this, begin, r, tls, connector_cb = std::move(connector_cb), error_cb = std::move(error_cb), resolve_timer, dead=dead]
 		(const boost::system::error_code &ec, boost::asio::ip::tcp::resolver::iterator iterator)
 		{
 			if(*dead)
 				return;
-
 			resolve_timer->cancel();
 			if(ec || iterator == boost::asio::ip::tcp::resolver::iterator())
 			{
@@ -64,8 +65,7 @@ void dns_connector_factory::dns_resolver(const std::string& address, uint16_t po
 						(io, ctx ),
 							std::move(connector_cb), std::move(error_cb));
 			}
-			else
-				return endpoint_connect(std::move(iterator),
+			endpoint_connect(std::move(iterator),
 					std::make_shared<boost::asio::ip::tcp::socket>
 						(io),
 							std::move(connector_cb), std::move(error_cb));
@@ -75,15 +75,20 @@ void dns_connector_factory::dns_resolver(const std::string& address, uint16_t po
 void dns_connector_factory::endpoint_connect(boost::asio::ip::tcp::resolver::iterator it, 
 	std::shared_ptr<boost::asio::ip::tcp::socket> socket, connector_callback_t connector_cb, error_callback_t error_cb)
 {
+
 	if(it == boost::asio::ip::tcp::resolver::iterator() || stopping) //finished
 		return error_cb(3);
 	auto&& endpoint = *it;
 	auto connect_timer = 
 		std::make_shared<boost::asio::deadline_timer>(io);
 	connect_timer->expires_from_now(boost::posix_time::milliseconds(connect_timeout));
-	connect_timer->async_wait([socket, connect_timer](const boost::system::error_code &ec)
+	connect_timer->async_wait([socket, connect_timer, error_cb](const boost::system::error_code &ec)
 	{
-		if(!ec) socket->cancel();
+		if(!ec)
+		{
+			socket->cancel();
+			error_cb(3);
+		}
 	});
 	++it;
 	socket->async_connect(endpoint,
@@ -93,12 +98,13 @@ void dns_connector_factory::endpoint_connect(boost::asio::ip::tcp::resolver::ite
 		{
 			if(*dead)
 				return;
-
 			connect_timer->cancel();
-			if ( ec )
+			if ( ec)
 			{
-				LOGERROR(ec.message());
-				return endpoint_connect(std::move(it), std::move(socket), std::move(connector_cb), std::move(error_cb));
+				if(ec != boost::system::errc::operation_canceled) {
+						endpoint_connect(std::move(it), std::move(socket), std::move(connector_cb), std::move(error_cb));
+				}
+				return;
 			}
 
 			auto connector = std::make_shared<server::connector<server::tcp_socket>>(std::move(socket));
@@ -134,36 +140,38 @@ void dns_connector_factory::endpoint_connect(boost::asio::ip::tcp::resolver::ite
 {
 	if ( it == boost::asio::ip::tcp::resolver::iterator() || stopping ) //finished
 		return error_cb(3);
-	
 	stream->set_verify_mode( boost::asio::ssl::verify_none );
-
-	auto connect_timer = 
+	auto connect_timer =
 		std::make_shared<boost::asio::deadline_timer>(io);
 	connect_timer->expires_from_now(boost::posix_time::milliseconds(connect_timeout));
-	connect_timer->async_wait([stream, connect_timer](const boost::system::error_code &ec)
+	connect_timer->async_wait([stream, connect_timer, error_cb](const boost::system::error_code &ec)
 	{
 		if ( !ec ) //stream->cancel();
 		{
 			boost::system::error_code sec;
 			stream->shutdown( sec );
+			stream->lowest_layer().cancel(sec);
+			error_cb(3);
 		}
 	});
-	
-	boost::asio::async_connect( stream->lowest_layer(), it, [ this, stream, connector_cb = std::move(connector_cb), 
-		error_cb = std::move(error_cb), connect_timer=std::move(connect_timer), dead = dead ]( const boost::system::error_code &ec,
+	boost::asio::async_connect( stream->lowest_layer(), it, [ this, begin, stream, connector_cb = std::move(connector_cb),
+		error_cb = std::move(error_cb), connect_timer, dead = dead ]( const boost::system::error_code &ec,
 			boost::asio::ip::tcp::resolver::iterator it )
 	{
+
 		if(*dead)
 			return;
 
-		if ( ec ) 
+		if ( ec )
 		{
 			LOGERROR(ec.message());
 			//++it ?
-			return endpoint_connect(std::move(it), std::move(stream), std::move(connector_cb), std::move(error_cb));
+			if(ec != boost::system::errc::operation_canceled)
+				endpoint_connect(std::move(it), std::move(stream), std::move(connector_cb), std::move(error_cb));
+			return;
 		}
 		stream->async_handshake( boost::asio::ssl::stream_base::client, 
-			[ this, stream, connector_cb = std::move(connector_cb), error_cb = std::move(error_cb), connect_timer=std::move(connect_timer) ]
+			[ this, stream, connector_cb = std::move(connector_cb), error_cb = std::move(error_cb), connect_timer ]
 				( const boost::system::error_code &ec )
 				{
 					connect_timer->cancel();
