@@ -16,6 +16,5 @@ target_link_libraries(
         PRIVATE ${OPENSSL_LIBRARIES}
         PRIVATE ${NGHTTP2_LIB}
         PRIVATE ${NGHTTP2_ASIO_LIB}
-        PRIVATE ${CITYHASH_LIB}
         PRIVATE ${ZLIB_LIBRARIES}
 )
