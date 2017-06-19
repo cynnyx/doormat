@@ -85,7 +85,7 @@ void dns_connector_factory::endpoint_connect(boost::asio::ip::tcp::resolver::ite
 		if(!ec)
 		{
 			socket->cancel();
-			error_cb(3);
+			error_cb(4);
 		}
 	});
 	++it;
@@ -149,7 +149,7 @@ void dns_connector_factory::endpoint_connect(boost::asio::ip::tcp::resolver::ite
 			boost::system::error_code sec;
 			stream->shutdown( sec );
 			stream->lowest_layer().cancel(sec);
-			error_cb(3);
+			error_cb(4);
 		}
 	});
 	boost::asio::async_connect( stream->lowest_layer(), it, [ this, stream, connector_cb = std::move(connector_cb),
@@ -159,15 +159,15 @@ void dns_connector_factory::endpoint_connect(boost::asio::ip::tcp::resolver::ite
 
 		if(*dead)
 			return;
-
 		if ( ec )
 		{
 			LOGERROR(ec.message());
 			//++it ?
 			if(ec != boost::system::errc::operation_canceled)
-				endpoint_connect(std::move(it), std::move(stream), std::move(connector_cb), std::move(error_cb));
+				return endpoint_connect(std::move(it), std::move(stream), std::move(connector_cb), std::move(error_cb));
 			return;
 		}
+
 		stream->async_handshake( boost::asio::ssl::stream_base::client, 
 			[ this, stream, connector_cb = std::move(connector_cb), error_cb = std::move(error_cb), connect_timer ]
 				( const boost::system::error_code &ec )
@@ -176,6 +176,8 @@ void dns_connector_factory::endpoint_connect(boost::asio::ip::tcp::resolver::ite
 					if ( ec )
 					{
 						LOGERROR( ec.message() );
+						if(ec != boost::system::errc::operation_canceled) error_cb(3);
+
 						return;
 					}
 

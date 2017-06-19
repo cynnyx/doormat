@@ -44,7 +44,7 @@ private:
 
 	static thread_local boost::asio::ssl::context ctx;
 	static constexpr int resolve_timeout = 2000;
-	static constexpr int connect_timeout = 1000;
+	static constexpr int connect_timeout = 2000;
 };
 
 }
