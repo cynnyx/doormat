@@ -34,11 +34,11 @@ static void diec(const char *func, int error_code)
 
 using server_connection_t = http2::session;
 
-class http2_test : public ::testing::Test
+class http2_server_test : public ::testing::Test
 {
-	static http2_test* tx;
+	static http2_server_test* tx;
 public:
-	http2_test() { tx = this; }
+	http2_server_test() { tx = this; }
 	void SetUp()
 	{
 		data_recv = false;
@@ -65,7 +65,7 @@ public:
  	std::string response_raw;
  	std::string request_raw;
 	bool go_away{false};
-	~http2_test() { tx = nullptr; }
+	~http2_server_test() { tx = nullptr; }
 	
 	static ssize_t read( char* buf, std::size_t len )
 	{
@@ -95,19 +95,19 @@ public:
 	static std::vector<std::multimap<std::string, std::string>> header_recv_v;
 };
 
-http2_test* http2_test::tx{nullptr};
-bool http2_test::data_recv{false};
-bool http2_test::header_recv{false};
-bool http2_test::stream_terminated{false};
-bool http2_test::session_terminated{false};
-int http2_test::closing_error_code{-1};
-std::vector<std::string> http2_test::data_recv_v;
-std::vector<std::multimap<std::string, std::string>> http2_test::header_recv_v;
+http2_server_test* http2_server_test::tx{nullptr};
+bool http2_server_test::data_recv{false};
+bool http2_server_test::header_recv{false};
+bool http2_server_test::stream_terminated{false};
+bool http2_server_test::session_terminated{false};
+int http2_server_test::closing_error_code{-1};
+std::vector<std::string> http2_server_test::data_recv_v;
+std::vector<std::multimap<std::string, std::string>> http2_server_test::header_recv_v;
 
 struct Connection 
 {
 	nghttp2_session *session;
-	http2_test* test;
+	http2_server_test* test;
 };
 
 struct Request 
@@ -126,13 +126,13 @@ struct Request
 static int test_read(char* buf, std::size_t len )
 {
 	LOGTRACE("Reading");
-	return http2_test::read( buf, len );
+	return http2_server_test::read( buf, len );
 }
 
 static int test_write( const char* buf, std::size_t len )
 {
 	LOGTRACE("Writing");
-	return http2_test::write( buf, len );
+	return http2_server_test::write( buf, len );
 }
 
 static ssize_t send_callback( nghttp2_session *session, 
@@ -161,8 +161,8 @@ static int on_stream_close_callback(nghttp2_session *session, int32_t stream_id,
 		if (rv != 0)
 			diec("nghttp2_session_terminate_session", rv);
 	}
-	http2_test::stream_terminated = true;
-	http2_test::closing_error_code = error_code;
+	http2_server_test::stream_terminated = true;
+	http2_server_test::closing_error_code = error_code;
 	return 0;
 }
 
@@ -222,7 +222,7 @@ static int on_frame_recv_callback(nghttp2_session *session,
 				}
 			}
 		}
-		http2_test::header_recv = true;
+		http2_server_test::header_recv = true;
 		break;
 		case NGHTTP2_RST_STREAM:
 		LOGTRACE("[INFO] C <---------------------------- S (RST_STREAM)");
@@ -249,11 +249,11 @@ static int on_data_chunk_recv_callback(nghttp2_session *session,
 		LOGTRACE("[INFO] C <---------------------------- S (DATA chunk)\n", (unsigned long int)len, " bytes");
 		LOGTRACE( std::string{ (const char*)data, len } );
 		
-		http2_test::data_recv = true;
+		http2_server_test::data_recv = true;
 	}
 
-	http2_test::data_recv_v.resize(stream_id + 1);
-	http2_test::data_recv_v[stream_id].append(data, data + len);
+	http2_server_test::data_recv_v.resize(stream_id + 1);
+	http2_server_test::data_recv_v[stream_id].append(data, data + len);
 	return 0;
 }
 
@@ -263,8 +263,8 @@ static int on_header_callback(nghttp2_session *session, const nghttp2_frame *fra
 
 {
 	LOGTRACE("HEADER RECV: ", std::string{name, name + namelen}, ": ", std::string{value, value + valuelen});
-	http2_test::header_recv_v.resize(frame->hd.stream_id + 1);
-	http2_test::header_recv_v[frame->hd.stream_id].emplace(std::string{name, name + namelen}, std::string{value, value + valuelen});
+	http2_server_test::header_recv_v.resize(frame->hd.stream_id + 1);
+	http2_server_test::header_recv_v[frame->hd.stream_id].emplace(std::string{name, name + namelen}, std::string{value, value + valuelen});
 	return 0;
 }
 
@@ -348,7 +348,7 @@ static std::unique_ptr<char[]> make_data_ptr(const std::string& s)
 	return std::move(ptr);
 }
 
-TEST_F(http2_test, connection)
+TEST_F(http2_server_test, connection)
 {
 	static const std::string body{"Ave client, dummy node says hello"};
 	static const std::string content_type{"text/plain"};
@@ -410,18 +410,18 @@ TEST_F(http2_test, connection)
 	nghttp2_session_del( cnx->session );
 
 	ASSERT_TRUE( terminated );
-	EXPECT_TRUE( http2_test::stream_terminated );
-	EXPECT_TRUE( http2_test::data_recv );
-	EXPECT_TRUE( http2_test::header_recv );
-	EXPECT_EQ( http2_test::closing_error_code, NGHTTP2_NO_ERROR );
-	EXPECT_EQ( http2_test::data_recv_v[1], body );
-	EXPECT_EQ( http2_test::header_recv_v[1].find(":status")->second, std::string{"200"} );
-	EXPECT_EQ( http2_test::header_recv_v[1].find("content-length")->second, std::to_string(body.size()) );
-	EXPECT_EQ( http2_test::header_recv_v[1].find("content-type")->second, content_type );
-	EXPECT_EQ( http2_test::header_recv_v[1].find("host")->second, host );
+	EXPECT_TRUE( http2_server_test::stream_terminated );
+	EXPECT_TRUE( http2_server_test::data_recv );
+	EXPECT_TRUE( http2_server_test::header_recv );
+	EXPECT_EQ( http2_server_test::closing_error_code, NGHTTP2_NO_ERROR );
+	EXPECT_EQ( http2_server_test::data_recv_v[1], body );
+	EXPECT_EQ( http2_server_test::header_recv_v[1].find(":status")->second, std::string{"200"} );
+	EXPECT_EQ( http2_server_test::header_recv_v[1].find("content-length")->second, std::to_string(body.size()) );
+	EXPECT_EQ( http2_server_test::header_recv_v[1].find("content-type")->second, content_type );
+	EXPECT_EQ( http2_server_test::header_recv_v[1].find("host")->second, host );
 }
 
-TEST_F(http2_test, randomdata)
+TEST_F(http2_server_test, randomdata)
 {
 	const char raw_request[] = 
 		"\x00\x05\x06\x04\x00\x00\x00\x00\x00\x00\x03\x00\x00\x00\x64\x50"
@@ -436,7 +436,7 @@ TEST_F(http2_test, randomdata)
 	ASSERT_FALSE( error );
 }
 
-// TEST_F(http2_test, getting_200_at_once)
+// TEST_F(http2_server_test, getting_200_at_once)
 // {
 // 	_handler->on_request([&](auto conn, auto req, auto res) 
 // 	{
