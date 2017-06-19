@@ -187,7 +187,7 @@ function buildNgHttp2(){
            [ -f "INSTALL/lib/libnghttp2_asio.$(sharedLibraryExtension)" ]; then
             echo "NgHttp2 already built, skip rebuilding..."
         else
-            buildOpenSSL ${DIR}/deps/openssl true ${JOBS}
+            buildOpenSSL ${DIR}/deps/openssl true ${cmake_fwd_args} ${JOBS}
             echo "NgHttp2 not found, building..."
             cd ${repo_dir}
             autoreconf -i
@@ -227,7 +227,8 @@ function buildGoogleTest(){
 function buildOpenSSL(){
     local repo_dir="$1"
     local flag=$2
-    local JOBS=$3
+    local cmake_fwd_args="$3"
+    local JOBS=$4
     if ${flag}; then
         cd ${repo_dir}
         if [ -L "libssl.$(sharedLibraryExtension)" ] &&
