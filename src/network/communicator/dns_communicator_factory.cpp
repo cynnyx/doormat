@@ -179,7 +179,8 @@ void dns_connector_factory::endpoint_connect(boost::asio::ip::tcp::resolver::ite
 					{
 						LOGERROR( ec.message() );
 						if(ec != boost::system::errc::operation_canceled) error_cb(3);
-						return; 
+
+						return;
 					}
 
 					http::proto_version v = chose_protocol(stream);
