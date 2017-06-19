@@ -29,7 +29,6 @@ static void diec(const char *func, int error_code)
 {
 	fprintf(stderr, "FATAL: %s: error_code=%d, msg=%s\n", func, error_code,
 		nghttp2_strerror(error_code));
-	//FAIL();
 }
 
 using server_connection_t = http2::session;
@@ -41,7 +40,8 @@ public:
 	http2_test() { tx = this; }
 	void SetUp()
 	{
-		data_recv = false;
+		data_recv = 0;
+		header_recv = 0;
 		stream_terminated = false;
 		session_terminated = false;
 		closing_error_code = -1;
@@ -86,9 +86,9 @@ public:
 		return len;
 	}
 	
-	static bool data_recv;
-	static bool header_recv;
-	static bool stream_terminated;
+	static int data_recv;
+	static int header_recv;
+	static int stream_terminated;
 	static bool session_terminated;
 	static int closing_error_code;
 	static std::vector<std::string> data_recv_v;
@@ -96,9 +96,9 @@ public:
 };
 
 http2_test* http2_test::tx{nullptr};
-bool http2_test::data_recv{false};
-bool http2_test::header_recv{false};
-bool http2_test::stream_terminated{false};
+int http2_test::data_recv{0};
+int http2_test::header_recv{0};
+int http2_test::stream_terminated{0};
 bool http2_test::session_terminated{false};
 int http2_test::closing_error_code{-1};
 std::vector<std::string> http2_test::data_recv_v;
@@ -222,7 +222,7 @@ static int on_frame_recv_callback(nghttp2_session *session,
 				}
 			}
 		}
-		http2_test::header_recv = true;
+		++http2_test::header_recv;
 		break;
 		case NGHTTP2_RST_STREAM:
 		LOGTRACE("[INFO] C <---------------------------- S (RST_STREAM)");
@@ -249,7 +249,7 @@ static int on_data_chunk_recv_callback(nghttp2_session *session,
 		LOGTRACE("[INFO] C <---------------------------- S (DATA chunk)\n", (unsigned long int)len, " bytes");
 		LOGTRACE( std::string{ (const char*)data, len } );
 		
-		http2_test::data_recv = true;
+		++http2_test::data_recv;
 	}
 
 	http2_test::data_recv_v.resize(stream_id + 1);
@@ -258,13 +258,13 @@ static int on_data_chunk_recv_callback(nghttp2_session *session,
 }
 
 static int on_header_callback(nghttp2_session *session, const nghttp2_frame *frame,
-							  const uint8_t *name, size_t namelen, const uint8_t *value,
-							  size_t valuelen, uint8_t flags, void *user_data)
-
+	const uint8_t *name, size_t namelen, const uint8_t *value,
+	size_t valuelen, uint8_t flags, void *user_data)
 {
 	LOGTRACE("HEADER RECV: ", std::string{name, name + namelen}, ": ", std::string{value, value + valuelen});
 	http2_test::header_recv_v.resize(frame->hd.stream_id + 1);
-	http2_test::header_recv_v[frame->hd.stream_id].emplace(std::string{name, name + namelen}, std::string{value, value + valuelen});
+	http2_test::header_recv_v[frame->hd.stream_id].emplace(std::string{name, name + namelen}, 
+		std::string{value, value + valuelen});
 	return 0;
 }
 
@@ -364,7 +364,7 @@ TEST_F(http2_test, connection)
 			http::http_response r;
 			r.protocol(http::proto_version::HTTP20);
 			r.status(200);
-			r.header("content-type", "text/plain");
+			r.header("content-type", content_type);
 			r.header("date", "Tue, 17 May 2016 14:53:09 GMT");
 			r.hostname(host);
 			r.content_len(body.size());
@@ -377,7 +377,8 @@ TEST_F(http2_test, connection)
 	auto keep_alive = std::make_unique<boost::asio::io_service::work>(mock_connector->io_service());
 	bool terminated{false};
 	std::function<void()> io_poll;
-	io_poll = [&io_poll, &keep_alive, cnx, &terminated, this] {
+	io_poll = [&io_poll, &keep_alive, cnx, &terminated, this] 
+	{
 		if (nghttp2_session_want_read(cnx->session) ||
 			nghttp2_session_want_write(cnx->session))
 		{
@@ -411,6 +412,101 @@ TEST_F(http2_test, connection)
 
 	ASSERT_TRUE( terminated );
 	EXPECT_TRUE( http2_test::stream_terminated );
+	EXPECT_EQ( http2_test::data_recv, 1 );
+	EXPECT_EQ( http2_test::header_recv, 1 );
+	EXPECT_EQ( http2_test::closing_error_code, NGHTTP2_NO_ERROR );
+	EXPECT_EQ( http2_test::data_recv_v[1], body );
+	EXPECT_EQ( http2_test::header_recv_v[1].find(":status")->second, std::string{"200"} );
+	EXPECT_EQ( http2_test::header_recv_v[1].find("content-length")->second, std::to_string(body.size()) );
+	EXPECT_EQ( http2_test::header_recv_v[1].find("content-type")->second, content_type );
+	EXPECT_EQ( http2_test::header_recv_v[1].find("host")->second, host );
+}
+
+TEST_F(http2_test, multiple_request)
+{
+	static const std::string body{"Ave client, dummy node says hello"};
+	static const std::string content_type{"text/plain"};
+	static const std::string host{"cristo.it"};
+	
+	static const std::string body2{"Ave client, dummy node says hello hello"};
+	std::unique_ptr<Connection>  c = start_client();
+	Connection* cnx =  c.get();
+	cnx->test = this;
+
+	int request_done = 0;
+	_handler->on_request([&](auto conn, auto req, auto res)
+	{
+		req->on_finished([res, &request_done](auto req)
+		{
+			http::http_response r;
+			r.protocol(http::proto_version::HTTP20);
+			r.status(200);
+			r.header("content-type", content_type);
+			r.header("date", "Tue, 17 May 2016 14:53:09 GMT");
+			r.hostname(host);
+			if ( request_done == 0 )
+			{
+				r.content_len(body.size());
+				res->headers(std::move(r));
+				res->body(make_data_ptr(body), body.size());
+				++request_done;
+			}
+			else
+			{
+				r.content_len(body2.size());
+				res->headers(std::move(r));
+				res->body(make_data_ptr(body2), body2.size());
+			}
+			res->end();
+		});
+	});
+	
+	auto keep_alive = std::make_unique<boost::asio::io_service::work>(mock_connector->io_service());
+	bool terminated{false};
+	std::function<void()> io_poll;
+	io_poll = [&io_poll, &keep_alive, cnx, &terminated, this] 
+	{
+		if (nghttp2_session_want_read(cnx->session) ||
+			nghttp2_session_want_write(cnx->session))
+		{
+			exec_io( cnx );
+			mock_connector->read( request_raw );
+			request_raw = "";
+			mock_connector->io_service().post(io_poll);
+		}
+		else
+		{
+			terminated = true;
+			keep_alive.reset();
+		}
+	};
+	mock_connector->io_service().post([this, &terminated, cnx, &io_poll]()
+	{
+		Request req;
+		Request* greq = &req;
+		greq->path = "/";
+		greq->stream_id = -1;
+		greq->hostport = "80";
+
+		submit_settings(cnx);
+
+		submit_request(cnx, greq);
+		
+		Request req2;
+		Request* greq2 = &req2;
+		greq2->path = "/second";
+		greq2->stream_id = -1;
+		greq2->hostport = "80";
+		
+		submit_request(cnx, greq2);
+
+		io_poll();
+	});
+	mock_connector->io_service().run();
+	nghttp2_session_del( cnx->session );
+
+	ASSERT_TRUE( terminated );
+	EXPECT_TRUE( http2_test::stream_terminated );
 	EXPECT_TRUE( http2_test::data_recv );
 	EXPECT_TRUE( http2_test::header_recv );
 	EXPECT_EQ( http2_test::closing_error_code, NGHTTP2_NO_ERROR );
@@ -419,7 +515,37 @@ TEST_F(http2_test, connection)
 	EXPECT_EQ( http2_test::header_recv_v[1].find("content-length")->second, std::to_string(body.size()) );
 	EXPECT_EQ( http2_test::header_recv_v[1].find("content-type")->second, content_type );
 	EXPECT_EQ( http2_test::header_recv_v[1].find("host")->second, host );
+	
+	EXPECT_EQ( http2_test::data_recv_v[3], body2 );
+	EXPECT_EQ( http2_test::header_recv_v[3].find(":status")->second, std::string{"200"} );
+	EXPECT_EQ( http2_test::header_recv_v[3].find("content-length")->second, std::to_string(body2.size()) );
+	EXPECT_EQ( http2_test::header_recv_v[3].find("content-type")->second, content_type );
+	EXPECT_EQ( http2_test::header_recv_v[3].find("host")->second, host );
 }
+
+// TEST_F(http2_test, error_on_goaway)
+// {
+// 	// What callback needs to return an error?
+// 	FAIL("TODO");
+// }
+// 
+// TEST_F(http2_test, error_on_settings )
+// {
+// 	FAIL("TODO");
+// }
+// 
+// TEST_F(http2_test, frame_not_sent)
+// {
+// 	// When a frame is not sent? What callback needs to return an error?
+// 	FAIL("TODO");
+// 	
+// }
+// 
+// TEST_F(http2_test, continuation_management)
+// {
+// 	// Should we manage 101? 
+// 	FAIL("TODO");
+// }
 
 TEST_F(http2_test, randomdata)
 {
