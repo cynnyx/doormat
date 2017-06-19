@@ -165,7 +165,7 @@ void dns_connector_factory::endpoint_connect(boost::asio::ip::tcp::resolver::ite
 			LOGERROR(ec.message());
 			//++it ?
 			if(ec != boost::system::errc::operation_canceled)
-				endpoint_connect(std::move(it), std::move(stream), std::move(connector_cb), std::move(error_cb));
+				return endpoint_connect(std::move(it), std::move(stream), std::move(connector_cb), std::move(error_cb));
 			return;
 		}
 		stream->async_handshake( boost::asio::ssl::stream_base::client, 
@@ -176,6 +176,8 @@ void dns_connector_factory::endpoint_connect(boost::asio::ip::tcp::resolver::ite
 					if ( ec )
 					{
 						LOGERROR( ec.message() );
+						if(ec != boost::system::errc::operation_canceled) error_cb(3);
+
 						return;
 					}
 
