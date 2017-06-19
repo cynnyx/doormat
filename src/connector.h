@@ -216,6 +216,9 @@ public:
 	{
 		if (_writing || _stopped)
 			return;
+
+		renew_ttl();
+
 		_out = {};
 		if ( !_handler->on_write(_out) )
 		{
@@ -237,7 +240,6 @@ public:
 			stop();
 			return;
 		}
-		renew_ttl();
 
 		if( _out.empty() )
 		{
