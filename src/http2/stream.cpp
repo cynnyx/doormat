@@ -85,14 +85,17 @@ void stream::on_eom()
 	LOGTRACE("on_eom");
 	eof_ = true;
 
-	if ( closed_ ) die();
+	if ( closed_ ) 
+		die();
 	else
 	{
 		if(auto response = res.lock())
 		{
-			s_owner->add_pending_callbacks([response](){
+			s_owner->add_pending_callbacks([response]()
+			{
 				response->cleared();
-			}, [response](){
+			}, [response]()
+			{
 				response->error(http::connection_error{http::error_code::write_error});
 			});
 		}
