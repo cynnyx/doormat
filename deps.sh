@@ -169,7 +169,6 @@ function buildCynnypp(){
         else
             echo "Cynnypp not found, building..."
             mkdir -p ${repo_dir}/build && cd ${repo_dir}/build && rm -rf * &&
-            LIBRARY_TYPE=shared cmake ..
             cmake ${cmake_fwd_args} .. && make -j${JOBS} async_fs_shared
         fi
     fi
