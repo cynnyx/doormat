@@ -42,7 +42,7 @@ void http_structured_data::header( const std::string& key, const std::string& va
 	std::transform(lowercase_key.begin(), lowercase_key.end(), lowercase_key.begin(), ::tolower);
 
 	std::string value{value_out}; // ugly string/dstring proxying
-	if( lowercase_key == http::hf_connection )
+	if( lowercase_key == http::hf_connection || lowercase_key == http::hf_host  || lowercase_key == http::hf_via || lowercase_key == http::hf_accept_encoding)
 	{
 		remove_header(lowercase_key);
 	}
