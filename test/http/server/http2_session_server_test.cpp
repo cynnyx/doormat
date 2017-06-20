@@ -746,6 +746,7 @@ TEST_F(http2_server_test, double_settings)
 		greq2->stream_id = -1;
 		greq2->hostport = "80";
 		
+		submit_settings(cnx);
 		submit_request(cnx, greq2);
 
 		io_poll();
@@ -771,9 +772,9 @@ TEST_F(http2_server_test, double_settings)
 	EXPECT_EQ( http2_server_test::header_recv_v[3].find("host")->second, host );
 }
 
-TEST_F(http2_server_test, settings_parameters_MAX)
+TEST_F(http2_server_test, too_many_streams)
 {
-	static const std::string body{"Ave client, dummy node says hello"};
+static const std::string body{"Ave client, dummy node says hello"};
 	static const std::string content_type{"text/plain"};
 	static const std::string host{"cristo.it"};
 	
@@ -847,19 +848,8 @@ TEST_F(http2_server_test, settings_parameters_MAX)
 		greq2->stream_id = -1;
 		greq2->hostport = "80";
 		
-		const int ivlen = 6;
-		nghttp2_settings_entry iv[ivlen] = 
-		{
-			{ NGHTTP2_SETTINGS_HEADER_TABLE_SIZE, std::numeric_limits<uint32_t>::max() },
-			{ NGHTTP2_SETTINGS_ENABLE_PUSH, std::numeric_limits<uint32_t>::max() },
-			{ NGHTTP2_SETTINGS_MAX_CONCURRENT_STREAMS, std::numeric_limits<uint32_t>::max() },
-			{ NGHTTP2_SETTINGS_INITIAL_WINDOW_SIZE, std::numeric_limits<uint32_t>::max() },
-			{ NGHTTP2_SETTINGS_MAX_FRAME_SIZE, std::numeric_limits<uint32_t>::max() },
-			{ NGHTTP2_SETTINGS_MAX_HEADER_LIST_SIZE, std::numeric_limits<uint32_t>::max() }
-		};
-		
-		nghttp2_submit_settings(cnx->session, NGHTTP2_FLAG_NONE, iv, ivlen);
-		submit_request(cnx, greq2);
+		for ( int i = 0; i < 104; ++i )
+			submit_request(cnx, greq2);
 
 		io_poll();
 	});
@@ -867,135 +857,10 @@ TEST_F(http2_server_test, settings_parameters_MAX)
 	nghttp2_session_del( cnx->session );
 
 	ASSERT_TRUE( terminated );
-	EXPECT_EQ( http2_server_test::stream_terminated, 2 );
-	EXPECT_EQ( http2_server_test::data_recv, 2 );
-	EXPECT_EQ( http2_server_test::header_recv, 2 );
-	EXPECT_EQ( http2_server_test::closing_error_code, NGHTTP2_NO_ERROR );
-	EXPECT_EQ( http2_server_test::data_recv_v[1], body );
-	EXPECT_EQ( http2_server_test::header_recv_v[1].find(":status")->second, std::string{"200"} );
-	EXPECT_EQ( http2_server_test::header_recv_v[1].find("content-length")->second, std::to_string(body.size()) );
-	EXPECT_EQ( http2_server_test::header_recv_v[1].find("content-type")->second, content_type );
-	EXPECT_EQ( http2_server_test::header_recv_v[1].find("host")->second, host );
-	
-	EXPECT_EQ( http2_server_test::data_recv_v[3], body2 );
-	EXPECT_EQ( http2_server_test::header_recv_v[3].find(":status")->second, std::string{"200"} );
-	EXPECT_EQ( http2_server_test::header_recv_v[3].find("content-length")->second, std::to_string(body2.size()) );
-	EXPECT_EQ( http2_server_test::header_recv_v[3].find("content-type")->second, content_type );
-	EXPECT_EQ( http2_server_test::header_recv_v[3].find("host")->second, host );
-}
-
-
-TEST_F(http2_server_test, settings_parameters_MIN)
-{
-	static const std::string body{"Ave client, dummy node says hello"};
-	static const std::string content_type{"text/plain"};
-	static const std::string host{"cristo.it"};
-	
-	static const std::string body2{"Ave client, dummy node says hello hello"};
-	std::unique_ptr<Connection>  c = start_client();
-	Connection* cnx =  c.get();
-	cnx->test = this;
-
-	int request_done = 0;
-	_handler->on_request([&](auto conn, auto req, auto res)
-	{
-		req->on_finished([res, &request_done](auto req)
-		{
-			http::http_response r;
-			r.protocol(http::proto_version::HTTP20);
-			r.status(200);
-			r.header("content-type", content_type);
-			r.header("date", "Tue, 17 May 2016 14:53:09 GMT");
-			r.hostname(host);
-			if ( request_done == 0 )
-			{
-				r.content_len(body.size());
-				res->headers(std::move(r));
-				res->body(make_data_ptr(body), body.size());
-				++request_done;
-			}
-			else
-			{
-				r.content_len(body2.size());
-				res->headers(std::move(r));
-				res->body(make_data_ptr(body2), body2.size());
-			}
-			res->end();
-		});
-	});
-	
-	auto keep_alive = std::make_unique<boost::asio::io_service::work>(mock_connector->io_service());
-	bool terminated{false};
-	std::function<void()> io_poll;
-	io_poll = [&io_poll, &keep_alive, cnx, &terminated, this] 
-	{
-		if (nghttp2_session_want_read(cnx->session) ||
-			nghttp2_session_want_write(cnx->session))
-		{
-			exec_io( cnx );
-			mock_connector->read( request_raw );
-			request_raw = "";
-			mock_connector->io_service().post(io_poll);
-		}
-		else
-		{
-			terminated = true;
-			keep_alive.reset();
-		}
-	};
-	mock_connector->io_service().post([this, &terminated, cnx, &io_poll]()
-	{
-		Request req;
-		Request* greq = &req;
-		greq->path = "/";
-		greq->stream_id = -1;
-		greq->hostport = "80";
-
-		submit_settings(cnx);
-
-		submit_request(cnx, greq);
-		
-		Request req2;
-		Request* greq2 = &req2;
-		greq2->path = "/second";
-		greq2->stream_id = -1;
-		greq2->hostport = "80";
-		
-		const int ivlen = 6;
-		nghttp2_settings_entry iv[ivlen] = 
-		{
-			{ NGHTTP2_SETTINGS_HEADER_TABLE_SIZE, 1 },
-			{ NGHTTP2_SETTINGS_ENABLE_PUSH, 0},
-			{ NGHTTP2_SETTINGS_MAX_CONCURRENT_STREAMS, 1 },
-			{ NGHTTP2_SETTINGS_INITIAL_WINDOW_SIZE, 1 },
-			{ NGHTTP2_SETTINGS_MAX_FRAME_SIZE, 1 },
-			{ NGHTTP2_SETTINGS_MAX_HEADER_LIST_SIZE, 1 }
-		};
-		
-		nghttp2_submit_settings(cnx->session, NGHTTP2_FLAG_NONE, iv, ivlen);
-		submit_request(cnx, greq2);
-
-		io_poll();
-	});
-	mock_connector->io_service().run();
-	nghttp2_session_del( cnx->session );
-
-	ASSERT_TRUE( terminated );
-	EXPECT_EQ( http2_server_test::stream_terminated, 2 );
-	EXPECT_EQ( http2_server_test::data_recv, 2 );
-	EXPECT_EQ( http2_server_test::header_recv, 2 );
-	EXPECT_EQ( http2_server_test::closing_error_code, NGHTTP2_NO_ERROR );
-	EXPECT_EQ( http2_server_test::data_recv_v[1], body );
-	EXPECT_EQ( http2_server_test::header_recv_v[1].find(":status")->second, std::string{"200"} );
-	EXPECT_EQ( http2_server_test::header_recv_v[1].find("content-length")->second, std::to_string(body.size()) );
-	EXPECT_EQ( http2_server_test::header_recv_v[1].find("content-type")->second, content_type );
-	EXPECT_EQ( http2_server_test::header_recv_v[1].find("host")->second, host );
-	
-	EXPECT_EQ( http2_server_test::data_recv_v[3], body2 );
-	EXPECT_EQ( http2_server_test::header_recv_v[3].find(":status")->second, std::string{"200"} );
-	EXPECT_EQ( http2_server_test::header_recv_v[3].find("content-length")->second, std::to_string(body2.size()) );
-	EXPECT_EQ( http2_server_test::header_recv_v[3].find("content-type")->second, content_type );
-	EXPECT_EQ( http2_server_test::header_recv_v[3].find("host")->second, host );
+	EXPECT_EQ( http2_server_test::stream_terminated, 105 );
+	EXPECT_EQ( http2_server_test::data_recv, 100 );
+	EXPECT_EQ( http2_server_test::header_recv, 100 );
+	EXPECT_EQ( http2_server_test::closing_error_code,  NGHTTP2_REFUSED_STREAM );
 }
 
 // 
