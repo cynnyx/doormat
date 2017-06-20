@@ -524,6 +524,83 @@ TEST_F(http2_server_test, multiple_request)
 	EXPECT_EQ( http2_server_test::header_recv_v[3].find("host")->second, host );
 }
 
+TEST_F(http2_server_test, trailer_recv)
+{
+	static const std::string body{"Ave client, dummy node says hello"};
+	static const std::string content_type{"text/plain"};
+	static const std::string host{"cristo.it"};
+	std::unique_ptr<Connection>  c = start_client();
+	Connection* cnx =  c.get();
+	cnx->test = this;
+
+	_handler->on_request([&](auto conn, auto req, auto res)
+	{
+		req->on_finished([res](auto req)
+		{
+			http::http_response r;
+			r.protocol(http::proto_version::HTTP20);
+			r.status(200);
+			r.header("content-type", content_type);
+			r.header("date", "Tue, 17 May 2016 14:53:09 GMT");
+			r.hostname(host);
+			r.content_len(body.size());
+			res->headers(std::move(r));
+			res->body(make_data_ptr(body), body.size());
+			res->trailer("francesco", "in ritardo");
+			res->trailer("francesco", "a zoppo galletto");
+			res->end();
+		});
+	});
+	
+	auto keep_alive = std::make_unique<boost::asio::io_service::work>(mock_connector->io_service());
+	bool terminated{false};
+	std::function<void()> io_poll;
+	io_poll = [&io_poll, &keep_alive, cnx, &terminated, this] 
+	{
+		if (nghttp2_session_want_read(cnx->session) ||
+			nghttp2_session_want_write(cnx->session))
+		{
+			exec_io( cnx );
+			mock_connector->read( request_raw );
+			request_raw = "";
+			mock_connector->io_service().post(io_poll);
+		}
+		else
+		{
+			terminated = true;
+			keep_alive.reset();
+		}
+	};
+	mock_connector->io_service().post([this, &terminated, cnx, &io_poll]()
+	{
+		Request req;
+		Request* greq = &req;
+		greq->path = "/";
+		greq->stream_id = -1;
+		greq->hostport = "80";
+
+		submit_settings(cnx);
+
+		submit_request(cnx, greq);
+
+		io_poll();
+	});
+	mock_connector->io_service().run();
+	nghttp2_session_del( cnx->session );
+
+	ASSERT_TRUE( terminated );
+	EXPECT_EQ( http2_server_test::stream_terminated, 1 );
+	EXPECT_EQ( http2_server_test::data_recv, 1 );
+	// Trailers are mixed up with headers
+	EXPECT_EQ( http2_server_test::header_recv, 2 );
+	EXPECT_EQ( http2_server_test::closing_error_code, NGHTTP2_NO_ERROR );
+	EXPECT_EQ( http2_server_test::data_recv_v[1], body );
+	EXPECT_EQ( http2_server_test::header_recv_v[1].find(":status")->second, std::string{"200"} );
+	EXPECT_EQ( http2_server_test::header_recv_v[1].find("content-length")->second, std::to_string(body.size()) );
+	EXPECT_EQ( http2_server_test::header_recv_v[1].find("content-type")->second, content_type );
+	EXPECT_EQ( http2_server_test::header_recv_v[1].find("host")->second, host );
+}
+
 // TEST_F(http2_test, error_on_goaway)
 // {
 // 	// What callback needs to return an error?
