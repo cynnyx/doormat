@@ -45,6 +45,7 @@ public:
 		session_terminated = false;
 		closing_error_code = -1;
 		data_recv_v.clear();
+		data_size = 0;
 		_write_cb = [this](std::string d)
 		{
 			std::string chunk{ d.data(), d.size() };
@@ -91,6 +92,7 @@ public:
 	static bool session_terminated;
 	static int closing_error_code;
 	static std::vector<std::string> data_recv_v;
+	static std::size_t data_size;
 	static std::vector<std::multimap<std::string, std::string>> header_recv_v;
 };
 
@@ -101,6 +103,7 @@ int http2_server_test::stream_terminated{0};
 bool http2_server_test::session_terminated{false};
 int http2_server_test::closing_error_code{-1};
 std::vector<std::string> http2_server_test::data_recv_v;
+std::size_t http2_server_test::data_size{0};
 std::vector<std::multimap<std::string, std::string>> http2_server_test::header_recv_v;
 
 struct Connection 
@@ -246,10 +249,11 @@ static int on_data_chunk_recv_callback(nghttp2_session *session,
 	if (req)
 	{
 		LOGTRACE("[INFO] C <---------------------------- S (DATA chunk)\n", (unsigned long int)len, " bytes");
-		LOGTRACE( std::string{ (const char*)data, len } );
+// 		LOGTRACE( std::string{ (const char*)data, len } );
 		
 		++http2_server_test::data_recv;
 	}
+	http2_server_test::data_size += len;
 	http2_server_test::data_recv_v.resize(stream_id + 1);
 	http2_server_test::data_recv_v[stream_id].append(data, data + len);
 	return 0;
@@ -936,12 +940,94 @@ TEST_F(http2_server_test, chunked)
 
 	ASSERT_TRUE( terminated );
 	EXPECT_EQ( http2_server_test::stream_terminated, 1 );
-	EXPECT_EQ( http2_server_test::data_recv, 498 );
+	EXPECT_EQ( http2_server_test::data_recv, 1 + times );
 	EXPECT_EQ( http2_server_test::header_recv, 1 );
 	EXPECT_EQ( http2_server_test::closing_error_code, NGHTTP2_NO_ERROR );
 	EXPECT_EQ( http2_server_test::data_recv_v[1], exp );
 	EXPECT_EQ( http2_server_test::header_recv_v[1].find(":status")->second, std::string{"200"} );
 	EXPECT_EQ( http2_server_test::header_recv_v[1].find("content-length")->second, std::to_string(s) );
+	EXPECT_EQ( http2_server_test::header_recv_v[1].find("content-type")->second, content_type );
+	EXPECT_EQ( http2_server_test::header_recv_v[1].find("host")->second, host );
+}
+
+TEST_F(http2_server_test, larger_than_frame)
+{
+	static const std::string body{"Ave client, dummy node says hello"};
+	static const std::string content_type{"text/plain"};
+	static const std::string host{"cristo.it"};
+	
+	int times =  1 + 16384 / body.size();
+	
+	static std::string exp = "";
+	for ( int i = 0; i < times; ++i )
+		exp += body;
+			
+	std::unique_ptr<Connection>  c = start_client();
+	Connection* cnx =  c.get();
+	cnx->test = this;
+
+	_handler->on_request([&](auto conn, auto req, auto res)
+	{
+		req->on_finished([res](auto req)
+		{
+			http::http_response r;
+			r.protocol(http::proto_version::HTTP20);
+			r.status(200);
+			r.header("content-type", content_type);
+			r.header("date", "Tue, 17 May 2016 14:53:09 GMT");
+			r.hostname(host);
+			r.content_len(exp.size());
+			res->headers(std::move(r));
+			res->body(make_data_ptr(exp), exp.size());
+			res->end();
+		});
+	});
+	
+	auto keep_alive = std::make_unique<boost::asio::io_service::work>(mock_connector->io_service());
+	bool terminated{false};
+	std::function<void()> io_poll;
+	io_poll = [&io_poll, &keep_alive, cnx, &terminated, this] 
+	{
+		if (nghttp2_session_want_read(cnx->session) ||
+			nghttp2_session_want_write(cnx->session))
+		{
+			exec_io( cnx );
+			mock_connector->read( request_raw );
+			request_raw = "";
+			mock_connector->io_service().post(io_poll);
+		}
+		else
+		{
+			terminated = true;
+			keep_alive.reset();
+		}
+	};
+	mock_connector->io_service().post([this, &terminated, cnx, &io_poll]()
+	{
+		Request req;
+		Request* greq = &req;
+		greq->path = "/";
+		greq->stream_id = -1;
+		greq->hostport = "80";
+
+		submit_settings(cnx);
+
+		submit_request(cnx, greq);
+
+		io_poll();
+	});
+	mock_connector->io_service().run();
+	nghttp2_session_del( cnx->session );
+
+	ASSERT_TRUE( terminated );
+	EXPECT_EQ( http2_server_test::stream_terminated, 1 );
+	EXPECT_EQ( http2_server_test::data_recv, 3 );
+	EXPECT_EQ( http2_server_test::header_recv, 1 );
+	EXPECT_EQ( http2_server_test::closing_error_code, NGHTTP2_NO_ERROR );
+	EXPECT_EQ( http2_server_test::data_size, exp.size() );
+// 	EXPECT_EQ( http2_server_test::data_recv_v[1], exp );
+	EXPECT_EQ( http2_server_test::header_recv_v[1].find(":status")->second, std::string{"200"} );
+	EXPECT_EQ( http2_server_test::header_recv_v[1].find("content-length")->second, std::to_string(exp.size()) );
 	EXPECT_EQ( http2_server_test::header_recv_v[1].find("content-type")->second, content_type );
 	EXPECT_EQ( http2_server_test::header_recv_v[1].find("host")->second, host );
 }
