@@ -340,7 +340,8 @@ static void submit_request(struct Connection *connection, struct Request *req)
 
 static void submit_settings(struct Connection* connection)
 {
-	nghttp2_submit_settings(connection->session, NGHTTP2_FLAG_NONE, NULL, 0);
+	int rv = nghttp2_submit_settings(connection->session, NGHTTP2_FLAG_NONE, NULL, 0);
+	EXPECT_EQ( rv, 0 );
 }
 
 
