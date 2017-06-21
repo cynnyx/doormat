@@ -88,16 +88,8 @@ public:
     nghttp2_session* next_layer() noexcept { return session_data.get(); }
     nghttp2_mem* next_layer_allocator() noexcept { return &all; }
 
-	void subscribe(stream *s)
-	{
-		assert(std::find(listeners.begin(), listeners.end(), s) == listeners.end());
-		listeners.push_back(s);
-	}
-
-	void unsubscribe(stream *s)
-	{
-		listeners.remove(s);
-	}
+	void subscribe(stream *s);
+	void unsubscribe(stream *s);
 };
 
 }

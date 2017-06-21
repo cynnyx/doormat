@@ -451,6 +451,19 @@ bool session::on_read(const char* data, size_t len)
 	return true;
 }
 
+
+void session::subscribe(stream* s)
+{
+    assert(std::find(listeners.begin(), listeners.end(), s) == listeners.end());
+    listeners.push_back(s);
+}
+
+
+void session::unsubscribe(stream* s)
+{
+    listeners.remove(s);
+}
+
 }
 
 
