@@ -42,11 +42,11 @@ int main ( int argc, const char**argv )
 				req->on_trailer([](auto&&, auto&& k, auto&& v) {
 					std::cout << "ON TRAILER" << std::endl;
 				});
-				req->on_finished([res](auto&&) {
+				req->on_finished([res, proto=req->preamble().protocol_version()](auto&&) {
 					std::cout << "ON FINISHED" << std::endl;
 					std::string body = "Ave http2 client, server te salutat";
 					http::http_response r;
-					r.protocol(http::proto_version::HTTP20);
+					r.protocol(proto);
 					r.status(200);
 					r.header("content-type", "text/plain");
 					r.header("date", "Tue, 17 May 2016 14:53:09 GMT");
