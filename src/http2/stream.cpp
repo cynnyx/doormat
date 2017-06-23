@@ -154,6 +154,30 @@ ssize_t stream::data_source_read_callback ( nghttp2_session *session_, std::int3
 
 	// STATE MACHINE!
 	//https://nghttp2.org/documentation/types.html#c.nghttp2_data_source_read_callback
+	if ( s_this->has_trailers() )
+	{
+		LOGTRACE("stream::data_source_read_callback NO END stream ", stream_id );
+		*data_flags |= NGHTTP2_DATA_FLAG_NO_END_STREAM;
+	}
+
+	size_t r{0U};
+	if ( !s_this->body_empty() )
+	{
+		//*data_flags |= NGHTTP2_DATA_FLAG_NO_COPY; needed sooner or later
+		auto& first = s_this->body.front();
+
+		std::size_t len = first.size() - s_this->body_index;
+		r = std::min( len, length );
+		std::memcpy( buf, first.data() + s_this->body_index, r );
+		s_this->body_index += r;
+
+		if ( s_this->body_index == first.size() )
+		{
+			s_this->body.pop_front();
+			s_this->body_index = 0;
+		}
+	}
+
 	if ( s_this->body_eof() || s_this->is_last_frame( length ) )
 	{
 		LOGTRACE("stream::data_source_read_callback EOF in stream ", stream_id );
@@ -161,28 +185,6 @@ ssize_t stream::data_source_read_callback ( nghttp2_session *session_, std::int3
 		*data_flags |= NGHTTP2_DATA_FLAG_EOF;
 	}
 
-	if ( s_this->has_trailers() )
-	{
-		LOGTRACE("stream::data_source_read_callback NO END stream ", stream_id );
-		*data_flags |= NGHTTP2_DATA_FLAG_NO_END_STREAM;
-	}
-
-	if ( s_this->body_empty() )
-		return 0;
-
-	//*data_flags |= NGHTTP2_DATA_FLAG_NO_COPY; needed sooner or later
-	auto& first = s_this->body.front();
-
-	std::size_t len = first.size() - s_this->body_index;
-	ssize_t r = std::min( len, length );
-	s_this->body_index += r;
-	std::memcpy( buf, first.data(), r );
-
-	if ( s_this->body_index == first.size() )
-	{
-		s_this->body.pop_front();
-		s_this->body_index = 0;
-	}
 
 	return r;
 }
@@ -217,7 +219,7 @@ void stream::flush() noexcept
 			{
 				LOGTRACE( "Name:", static_cast<std::string>( it.first ),
 					" Value:", static_cast<std::string>( it.second ), "-"  );
-				nva[i++] = MAKE_NV( it.first, it.second );
+				trailers_nva[i++] = MAKE_NV( it.first, it.second );
 			}
 
 			int r = nghttp2_submit_trailer( s_owner->next_layer(), id_, trailers_nva, trailers_nvlen );

@@ -46,6 +46,7 @@ public:
 		closing_error_code = -1;
 		data_recv_v.clear();
 		data_size = 0;
+		header_recv_v.clear();
 		_write_cb = [this](std::string d)
 		{
 			std::string chunk{ d.data(), d.size() };

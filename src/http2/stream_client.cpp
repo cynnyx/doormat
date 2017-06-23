@@ -173,8 +173,8 @@ ssize_t stream_client::data_source_read_callback ( nghttp2_session *session_, st
 
 	std::size_t len = first.size() - s_this->body_index;
 	ssize_t r = std::min( len, length );
+	std::copy_n(first.begin() + s_this->body_index, r, buf);
 	s_this->body_index += r;
-	std::copy(first.begin(), first.begin() + r, buf);
 
 	if ( s_this->body_index == first.size() )
 	{
@@ -214,7 +214,7 @@ void stream_client::flush() noexcept
 			{
 				LOGTRACE( "Name:", static_cast<std::string>( it.first ),
 					" Value:", static_cast<std::string>( it.second ), "-"  );
-				nva[i++] = MAKE_NV( it.first, it.second );
+				trailers_nva[i++] = MAKE_NV( it.first, it.second );
 			}
 
 			int r = nghttp2_submit_trailer( s_owner->next_layer(), id_, trailers_nva, trailers_nvlen );

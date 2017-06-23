@@ -285,93 +285,93 @@ TEST(http2_session_client_test, chunked)
 	EXPECT_EQ( real_body, body );
 }
 
-//TEST(http2_session_client_test, frame_size_overflow)
-//{
-//	static int headers{0};
-//	static int finished{0};
-//	static std::size_t real_size{0};
-//	static std::string real_body{};
-//
-//	std::function<void(std::string)> wcb_c;
-//	std::function<void(std::string)> wcb_s;
-//	boost::asio::io_service io;
-//	auto keep_alive = std::make_unique<boost::asio::io_service::work>(io);
-//	auto conn_c = std::make_shared<MockConnector>(io, wcb_c);
-//	auto conn_s = std::make_shared<MockConnector>(io, wcb_s);
-//	wcb_c = [&conn_s, &io](auto&& s)
-//	{
-//		io.post([&conn_s, s=std::move(s)] { conn_s->read(std::move(s)); });
-//	};
-//	wcb_s = [&conn_c, &io](auto&& s)
-//	{
-//		io.post([&conn_c, s=std::move(s)] { conn_c->read(std::move(s)); });
-//	};
-//
-//	auto server = std::make_shared<http2::session>();
-//	server->connector(conn_s);
-//	conn_s->handler(server);
-//	server->on_request([](auto conn, auto req, auto res)
-//	{
-//		req->on_headers([](auto)
-//		{
-//			++headers;
-//		});
-//		req->on_finished([res=std::move(res)](auto&&)
-//		{
-//			static const std::string body{"Allright"};
-//			real_size = body.size();
-//			std::size_t multiplier = overflowing_frame_size( real_size );
-//			real_size *= multiplier;
-//
-//			http::http_response r;
-//			r.protocol(http::proto_version::HTTP20);
-//			r.status(200);
-//			r.header("content-type", "text/plain");
-//			r.header("date", "Tue, 17 May 2016 14:53:09 GMT");
-//			r.hostname("doormat_app.org");
-//			r.content_len(real_size);
-//			res->headers(std::move(r));
-//			for ( std::size_t i = 0; i < multiplier; ++i )
-//				real_body += body;
-//
-//			res->body( make_data_ptr( real_body ), real_size );
-//			res->end();
-//		});
-//	});
-//
-//	auto client = std::make_shared<http2::session_client>();
-//	client->connector(conn_c);
-//	conn_c->handler(client);
-//
-//	std::shared_ptr<http::client_request> req;
-//	std::shared_ptr<http::client_response> res;
-//	std::tie(req, res) = client->create_transaction();
-//
-//	auto host = "gstatic.com";
-//	http::http_request preamble{};
-//	preamble.schema("schema");
-//	preamble.hostname(host);
-//	req->headers(std::move(preamble));
-//	req->end();
-//	static std::string body;
-//	res->on_body([]( auto res, auto char_array, auto len )
-//	{
-//		std::string lbod{ char_array.get(), len };
-//		body += lbod;
-//	});
-//	res->on_finished([&keep_alive, &server, &client](auto res)
-//	{
-//		++finished;
-//		keep_alive.reset();
-//		server->close();
-//		client->close();
-//		LOGTRACE("Finished: ", res->preamble().serialize()  );
-//	});
-//
-//	io.run();
-//
-//	EXPECT_EQ( finished, 1 );
-//	EXPECT_EQ( headers, 1 );
-//	EXPECT_EQ( body.size(), real_size );
-//	EXPECT_EQ( real_body, body );
-//}
+TEST(http2_session_client_test, frame_size_overflow)
+{
+	static int headers{0};
+	static int finished{0};
+	static std::size_t real_size{0};
+	static std::string real_body{};
+
+	std::function<void(std::string)> wcb_c;
+	std::function<void(std::string)> wcb_s;
+	boost::asio::io_service io;
+	auto keep_alive = std::make_unique<boost::asio::io_service::work>(io);
+	auto conn_c = std::make_shared<MockConnector>(io, wcb_c);
+	auto conn_s = std::make_shared<MockConnector>(io, wcb_s);
+	wcb_c = [&conn_s, &io](auto&& s)
+	{
+		io.post([&conn_s, s=std::move(s)] { conn_s->read(std::move(s)); });
+	};
+	wcb_s = [&conn_c, &io](auto&& s)
+	{
+		io.post([&conn_c, s=std::move(s)] { conn_c->read(std::move(s)); });
+	};
+
+	auto server = std::make_shared<http2::session>();
+	server->connector(conn_s);
+	conn_s->handler(server);
+	server->on_request([](auto conn, auto req, auto res)
+	{
+		req->on_headers([](auto)
+		{
+			++headers;
+		});
+		req->on_finished([res=std::move(res)](auto&&)
+		{
+			static const std::string body{"Allright"};
+			real_size = body.size();
+			std::size_t multiplier = overflowing_frame_size( real_size );
+			real_size *= multiplier;
+
+			http::http_response r;
+			r.protocol(http::proto_version::HTTP20);
+			r.status(200);
+			r.header("content-type", "text/plain");
+			r.header("date", "Tue, 17 May 2016 14:53:09 GMT");
+			r.hostname("doormat_app.org");
+			r.content_len(real_size);
+			res->headers(std::move(r));
+			for ( std::size_t i = 0; i < multiplier; ++i )
+				real_body += body;
+
+			res->body( make_data_ptr( real_body ), real_size );
+			res->end();
+		});
+	});
+
+	auto client = std::make_shared<http2::session_client>();
+	client->connector(conn_c);
+	conn_c->handler(client);
+
+	std::shared_ptr<http::client_request> req;
+	std::shared_ptr<http::client_response> res;
+	std::tie(req, res) = client->create_transaction();
+
+	auto host = "gstatic.com";
+	http::http_request preamble{};
+	preamble.schema("schema");
+	preamble.hostname(host);
+	req->headers(std::move(preamble));
+	req->end();
+	static std::string body;
+	res->on_body([]( auto res, auto char_array, auto len )
+	{
+		std::string lbod{ char_array.get(), len };
+		body += lbod;
+	});
+	res->on_finished([&keep_alive, &server, &client](auto res)
+	{
+		++finished;
+		keep_alive.reset();
+		server->close();
+		client->close();
+		LOGTRACE("Finished: ", res->preamble().serialize()  );
+	});
+
+	io.run();
+
+	EXPECT_EQ( finished, 1 );
+	EXPECT_EQ( headers, 1 );
+	EXPECT_EQ( body.size(), real_size );
+	EXPECT_EQ( real_body, body );
+}
