@@ -63,7 +63,7 @@ public:
 		auto all_pending = std::move(pending);
 		pending = {};
 		return all_pending;
-	};
+	}
 
 	void add_pending_callbacks(std::function<void()> clear, std::function<void()> error) {
 		pending.emplace_back(std::move(clear), std::move(error));
