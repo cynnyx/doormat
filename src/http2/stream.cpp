@@ -288,14 +288,14 @@ void stream::on_header(  http::http_response && resp )
 	{
 		return
 			utils::icompare ( h.first, "connection" ) || // Mandatory
-			utils::icompare ( h.first, "Keep-Alive" ) || // SHOULD be removed
-			utils::icompare ( h.first, "Upgrade" ) || // Ditto //
-			utils::icompare ( h.first, "Proxy-Connection" /* Ditto */ );
+			utils::icompare ( h.first, "keep-alive" ) || // SHOULD be removed
+			utils::icompare ( h.first, "upgrade" ) || // Ditto //
+			utils::icompare ( h.first, "proxy-connection" /* Ditto */ );
 	});
-	if ( resp.has("Transfer-Encoding") )
+	if ( resp.has("transfer-encoding") )
 	{
-		resp.remove_header( "Transfer-Encoding" );
-		resp.header( "Transfer-Encoding", "trailers" );
+		resp.remove_header( "transfer-encoding" );
+		resp.header( "transfer-encoding", "trailers" );
 	}
 
 	status = resp.status_code();
