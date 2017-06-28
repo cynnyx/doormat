@@ -61,7 +61,7 @@ class stream_client final
 	};
 
 	std::int32_t id_;
-	std::int32_t status_;
+	std::int32_t status_{200};
 	bool headers_sent{false};
 	bool body_sent{false};
 	bool resume_needed_{false};
