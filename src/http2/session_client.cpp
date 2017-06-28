@@ -106,6 +106,10 @@ http2::stream_client* session_client::create_stream( std::int32_t id )
 	[stream_data]() {
 		stream_data->on_eom();
 	}, connector()->io_service());
+	req_handler->on_error([stream_data] {
+		stream_data->die();
+	});
+
 
 	stream_data->set_handlers(req_handler, res_handler);
 
