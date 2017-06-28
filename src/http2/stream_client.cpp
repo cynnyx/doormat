@@ -366,6 +366,7 @@ void stream_client::uri_host( const std::string &p ) noexcept
 
 void stream_client::status(int32_t s) noexcept
 {
+	status_ = s;
 	response.status(s);
 }
 
