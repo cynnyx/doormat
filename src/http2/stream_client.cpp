@@ -284,15 +284,15 @@ void stream_client::on_header(http::http_request&& req )
 	{
 		return
 			utils::icompare ( h.first, "connection" ) || // Mandatory
-			utils::icompare ( h.first, "Keep-Alive" ) || // SHOULD be removed
+			utils::icompare ( h.first, "keep-alive" ) || // SHOULD be removed
 			utils::icompare ( h.first, "host" ) || // Ditto
-			utils::icompare ( h.first, "Upgrade" ) || // Ditto //
-			utils::icompare ( h.first, "Proxy-Connection" /* Ditto */ );
+			utils::icompare ( h.first, "upgrade" ) || // Ditto //
+			utils::icompare ( h.first, "proxy-connection" /* Ditto */ );
 	});
-	if ( req.has("Transfer-Encoding") )
+	if ( req.has("transfer-encoding") )
 	{
-		req.remove_header( "Transfer-Encoding" );
-		req.header( "Transfer-Encoding", "trailers" );
+		req.remove_header( "transfer-encoding" );
+		req.header( "transfer-encoding", "trailers" );
 	}
 
 	for ( auto&& it : req.headers() )
