@@ -16,6 +16,7 @@ namespace errors
 enum class http_error_code : uint16_t
 {
 	bad_request = 400,
+	unauthorized = 401,
 	forbidden = 403,
 	not_found = 404,
 	method_not_allowed = 405,
