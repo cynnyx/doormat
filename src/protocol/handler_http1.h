@@ -235,7 +235,8 @@ public:
 	void close() override
 	{
 		user_close = true;
-		if(auto s = connector()) s->close();
+		if(auto s = connector())
+			s->close();
 		notify_all(http::error_code::connection_closed);
 		connection_t::deinit();
 	}

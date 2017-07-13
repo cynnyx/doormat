@@ -245,7 +245,7 @@ session_client::~session_client()
 void session_client::set_timeout(std::chrono::milliseconds ms) {
 	if(auto s = connector())
 	{
-			s->set_timeout(ms);
+		s->set_timeout(ms);
 	}
 }
 

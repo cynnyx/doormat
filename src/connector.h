@@ -151,8 +151,11 @@ public:
 			berror_code ec = boost::system::errc::make_error_code(boost::system::errc::errc_t::operation_canceled);
 			_stopped = true;
 			_timer.cancel(ec);
+
+			_socket->lowest_layer().shutdown(boost::asio::socket_base::shutdown_both, ec);
 			_socket->lowest_layer().cancel(ec);
-			_socket->shutdown(ec); // Shutdown - does it cause a TCP RESET?
+			//// Shutdown - does it cause a TCP RESET?
+			_socket->lowest_layer().close();
 			_ttl = boost::posix_time::milliseconds{0};
 		}
 	}
@@ -167,8 +170,9 @@ public:
 			berror_code ec = boost::system::errc::make_error_code(boost::system::errc::errc_t::operation_canceled);
 			_stopped = true;
 			_timer.cancel(ec);
-			_socket->lowest_layer().cancel(ec);
 			_socket->shutdown(boost::asio::socket_base::shutdown_both, ec);
+			_socket->lowest_layer().cancel(ec);
+			_socket->close();
 			_ttl = boost::posix_time::milliseconds{0};
 		}
 	}
