@@ -1,7 +1,7 @@
 ![cynny-logo](https://web.cynny.com/live/static/favicon/favicon-16.png) **Sponsored and contributed by [Cynny SpA](https://www.cynny.com/).**
 
 # Doormat
-Reverse Proxy supporting protocols such as HTTP 2.0 and HTTP 1.*
+Reverse Proxy supporting HTTP 2.0 and HTTP 1.*
 
 # Contributors
 
